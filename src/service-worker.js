@@ -7,25 +7,30 @@ const CACHE = `cache-${version}`;
 
 // The app shell: built JS/CSS, files in static/, and prerendered pages.
 // Dotfiles like .nojekyll are skipped: one failed download aborts the whole install.
-const SHELL = [...immutable, ...assets, ...prerendered]
-	.filter(({ path }) => !path.split('/').pop().startsWith('.'))
-	.map(({ path }) => new URL(path, self.registration.scope).pathname);
+const SHELL = new Set(
+	[...immutable, ...assets, ...prerendered]
+		.filter(({ path }) => !path.split('/').pop().startsWith('.'))
+		.map(({ path }) => new URL(path, self.registration.scope).pathname)
+);
 
 self.addEventListener('install', (event) => {
 	event.waitUntil(
-		caches
-			.open(CACHE)
-			.then((cache) => cache.addAll(SHELL))
-			.then(() => self.skipWaiting())
+		(async () => {
+			const cache = await caches.open(CACHE);
+			await cache.addAll([...SHELL]);
+			await self.skipWaiting();
+		})()
 	);
 });
 
 self.addEventListener('activate', (event) => {
 	event.waitUntil(
-		caches
-			.keys()
-			.then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))
-			.then(() => self.clients.claim())
+		(async () => {
+			for (const key of await caches.keys()) {
+				if (key !== CACHE) await caches.delete(key);
+			}
+			await self.clients.claim();
+		})()
 	);
 });
 
@@ -40,7 +45,7 @@ self.addEventListener('fetch', (event) => {
 			const cache = await caches.open(CACHE);
 
 			// App shell files never change within a deploy, so serve them from the cache
-			if (SHELL.includes(url.pathname)) {
+			if (SHELL.has(url.pathname)) {
 				const cached = await cache.match(url.pathname);
 				if (cached) return cached;
 			}

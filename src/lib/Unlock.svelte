@@ -1,8 +1,8 @@
 <script>
+	import { onMount } from 'svelte';
 	import { session, unlock } from '#lib/session.svelte.js';
-	import { login, setup, NeedsSetupError } from '#lib/vault.js';
-	import { WrongPasswordError } from '#lib/crypto.js';
-	import { TokenError, NetworkError } from '#lib/github.js';
+	import { login, setup } from '#lib/vault.js';
+	import { UserError, NeedsSetupError, WrongPasswordError } from '#lib/errors.js';
 
 	let token = $state(session.token);
 	let key = $state('');
@@ -12,6 +12,11 @@
 	let busy = $state(false);
 	// 'setup' when joia2data has no salt.json yet: the password is then chosen, and typed twice
 	let mode = $state('login');
+
+	// Until the app has loaded, a submit would be a plain HTML form submission that puts the
+	// token and password into the page address. A disabled button blocks that, Enter included.
+	let ready = $state(false);
+	onMount(() => (ready = true));
 
 	async function submit(event) {
 		event.preventDefault();
@@ -40,13 +45,9 @@
 			if (e instanceof NeedsSetupError) {
 				mode = 'setup';
 				repeat = '';
-			} else if (e instanceof WrongPasswordError) {
-				error = 'Wrong encryption password.';
-				key = '';
-			} else if (e instanceof TokenError || e instanceof NetworkError) {
-				error = e.message;
 			} else {
-				error = `Something went wrong: ${e.message}`;
+				error = e instanceof UserError ? e.message : `Something went wrong: ${e.message}`;
+				if (e instanceof WrongPasswordError) key = '';
 			}
 		} finally {
 			busy = false;
@@ -113,7 +114,7 @@
 		<p class="error" role="alert">{error}</p>
 	{/if}
 
-	<button type="submit" disabled={busy}>
+	<button type="submit" disabled={busy || !ready}>
 		{busy ? 'Checking…' : mode === 'setup' ? 'Set password' : 'Unlock'}
 	</button>
 </form>

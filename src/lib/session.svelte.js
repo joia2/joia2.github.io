@@ -7,16 +7,19 @@ const TOKEN_STORAGE = 'joia2.token';
 // and the password itself is never kept: only the key made from it.
 export const session = $state({ token: '', key: null, remember: false });
 
+// Storage can be blocked (private mode); the token then just isn't remembered
+function saveToken(token) {
+	try {
+		if (token) localStorage.setItem(TOKEN_STORAGE, token);
+		else localStorage.removeItem(TOKEN_STORAGE);
+	} catch {}
+}
+
 if (browser) {
 	try {
-		const saved = localStorage.getItem(TOKEN_STORAGE);
-		if (saved) {
-			session.token = saved;
-			session.remember = true;
-		}
-	} catch {
-		// Storage can be blocked (private mode); the token just won't be remembered
-	}
+		session.token = localStorage.getItem(TOKEN_STORAGE) ?? '';
+	} catch {}
+	session.remember = session.token !== '';
 }
 
 export function isUnlocked() {
@@ -24,18 +27,11 @@ export function isUnlocked() {
 }
 
 export function unlock(token, key, remember) {
-	session.token = token;
-	session.key = key;
-	session.remember = remember;
-	try {
-		if (remember) localStorage.setItem(TOKEN_STORAGE, token);
-		else localStorage.removeItem(TOKEN_STORAGE);
-	} catch {
-		// See above
-	}
+	Object.assign(session, { token, key, remember });
+	saveToken(remember && token);
 }
 
-// Drops the key but keeps the token, so unlocking again only needs the password
+// Drops the key but keeps a remembered token, so unlocking again only needs the password
 export function lock() {
 	session.key = null;
 	if (!session.remember) session.token = '';
@@ -43,14 +39,9 @@ export function lock() {
 
 // Drops everything, including a remembered token
 export function forget() {
-	session.token = '';
-	session.key = null;
 	session.remember = false;
-	try {
-		localStorage.removeItem(TOKEN_STORAGE);
-	} catch {
-		// See above
-	}
+	lock();
+	saveToken(null);
 }
 
 // Encrypted files in joia2data, using this session's token and key
