@@ -5,7 +5,6 @@
 <header>
 	<nav>
 		<a href="/">joia2</a>
-		<a href="/about">About</a>
 	</nav>
 </header>
 

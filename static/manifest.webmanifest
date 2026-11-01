@@ -1,0 +1,10 @@
+{
+	"name": "joia2",
+	"short_name": "joia2",
+	"start_url": "/",
+	"scope": "/",
+	"display": "standalone",
+	"background_color": "#141414",
+	"theme_color": "#141414",
+	"icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
