@@ -1,12 +1,19 @@
 <script>
 	import { session, unlock } from '#lib/session.svelte.js';
+	import { login, setup, NeedsSetupError } from '#lib/vault.js';
+	import { WrongPasswordError } from '#lib/crypto.js';
+	import { TokenError, NetworkError } from '#lib/github.js';
 
 	let token = $state(session.token);
 	let key = $state('');
+	let repeat = $state('');
 	let remember = $state(session.remember);
 	let error = $state('');
+	let busy = $state(false);
+	// 'setup' when joia2data has no salt.json yet: the password is then chosen, and typed twice
+	let mode = $state('login');
 
-	function submit(event) {
+	async function submit(event) {
 		event.preventDefault();
 		const t = token.trim();
 
@@ -19,9 +26,37 @@
 			error = 'Enter your encryption password.';
 			return;
 		}
+		if (mode === 'setup' && key !== repeat) {
+			error = "The two passwords don't match.";
+			return;
+		}
 
 		error = '';
-		unlock(t, key, remember);
+		busy = true;
+		try {
+			const cryptoKey = mode === 'setup' ? await setup(t, key) : await login(t, key);
+			unlock(t, cryptoKey, remember);
+		} catch (e) {
+			if (e instanceof NeedsSetupError) {
+				mode = 'setup';
+				repeat = '';
+			} else if (e instanceof WrongPasswordError) {
+				error = 'Wrong encryption password.';
+				key = '';
+			} else if (e instanceof TokenError || e instanceof NetworkError) {
+				error = e.message;
+			} else {
+				error = `Something went wrong: ${e.message}`;
+			}
+		} finally {
+			busy = false;
+		}
+	}
+
+	// A different token may point at a set-up repo again
+	function tokenChanged() {
+		mode = 'login';
+		repeat = '';
 	}
 </script>
 
@@ -37,6 +72,7 @@
 			type="text"
 			name="username"
 			bind:value={token}
+			oninput={tokenChanged}
 			autocomplete="username"
 			autocapitalize="off"
 			spellcheck="false"
@@ -49,16 +85,37 @@
 		Remember token on this device
 	</label>
 
+	{#if mode === 'setup'}
+		<p class="note">
+			joia2data has no encryption password yet. Choose one and type it twice. If you forget it, your
+			data can't be recovered.
+		</p>
+	{/if}
+
 	<label>
 		encryption password
-		<input type="password" name="password" bind:value={key} autocomplete="current-password" />
+		<input
+			type="password"
+			name="password"
+			bind:value={key}
+			autocomplete={mode === 'setup' ? 'new-password' : 'current-password'}
+		/>
 	</label>
+
+	{#if mode === 'setup'}
+		<label>
+			repeat encryption password
+			<input type="password" name="repeat" bind:value={repeat} autocomplete="new-password" />
+		</label>
+	{/if}
 
 	{#if error}
 		<p class="error" role="alert">{error}</p>
 	{/if}
 
-	<button type="submit">Unlock</button>
+	<button type="submit" disabled={busy}>
+		{busy ? 'Checking…' : mode === 'setup' ? 'Set password' : 'Unlock'}
+	</button>
 </form>
 
 <style>
@@ -94,6 +151,9 @@
 	.masked {
 		-webkit-text-security: disc;
 	}
+	.note {
+		margin: 0;
+	}
 	.error {
 		margin: 0;
 		color: #c62828;
@@ -107,6 +167,10 @@
 		background: #22d3ee;
 		color: #0b2a2e;
 		cursor: pointer;
+	}
+	button:disabled {
+		opacity: 0.6;
+		cursor: wait;
 	}
 	@media (prefers-color-scheme: dark) {
 		input:not([type='checkbox']) {
