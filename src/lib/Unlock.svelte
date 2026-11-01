@@ -30,7 +30,18 @@
 
 	<label>
 		joia2data token
-		<input type="password" bind:value={token} autocomplete="off" spellcheck="false" placeholder="github_…" />
+		<!-- A text field marked as the username, so password managers fill it together with the password.
+		     It stays masked like a password where the browser supports -webkit-text-security. -->
+		<input
+			class="masked"
+			type="text"
+			name="username"
+			bind:value={token}
+			autocomplete="username"
+			autocapitalize="off"
+			spellcheck="false"
+			placeholder="github_…"
+		/>
 	</label>
 
 	<label class="check">
@@ -40,7 +51,7 @@
 
 	<label>
 		encryption password
-		<input type="password" bind:value={key} autocomplete="current-password" />
+		<input type="password" name="password" bind:value={key} autocomplete="current-password" />
 	</label>
 
 	{#if error}
@@ -72,13 +83,16 @@
 		gap: 0.5rem;
 		font-weight: normal;
 	}
-	input[type='password'] {
+	input:not([type='checkbox']) {
 		font: inherit;
 		padding: 0.6rem 0.75rem;
 		border: 1px solid #c4c4c4;
 		border-radius: 0.5rem;
 		background: transparent;
 		color: inherit;
+	}
+	.masked {
+		-webkit-text-security: disc;
 	}
 	.error {
 		margin: 0;
@@ -95,7 +109,7 @@
 		cursor: pointer;
 	}
 	@media (prefers-color-scheme: dark) {
-		input[type='password'] {
+		input:not([type='checkbox']) {
 			border-color: #444;
 		}
 		.error {
