@@ -44,9 +44,14 @@ export function changed() {
 	timer = setTimeout(save, SAVE_DELAY);
 }
 
-// Saves a pending edit now, e.g. before locking
+// Saves now: after a failed save, or before locking so a pending or failed edit isn't lost
+export function retry() {
+	clearTimeout(timer);
+	return save();
+}
+
 export async function flush() {
-	if (loan.status === 'pending') {
+	if (loan.status === 'pending' || loan.status === 'error') {
 		clearTimeout(timer);
 		await save();
 	} else {
@@ -56,6 +61,7 @@ export async function flush() {
 
 async function save() {
 	await saving; // one save at a time, each building on the previous one's version
+	if (!loan.data) return; // nothing loaded, so nothing to save
 	const data = $state.snapshot(loan.data);
 	data.payments = Object.fromEntries(Object.entries(data.payments).sort(([a], [b]) => (a < b ? -1 : 1)));
 	loan.status = 'saving';
@@ -70,4 +76,4 @@ async function save() {
 	}
 }
 
-export const hasUnsavedChanges = () => loan.status === 'pending' || loan.status === 'saving';
+export const hasUnsavedChanges = () => ['pending', 'saving', 'error'].includes(loan.status);

@@ -8,7 +8,7 @@
 	import PiggyBank from '@lucide/svelte/icons/piggy-bank';
 	import { ui } from '#lib/ui.svelte.js';
 	import { lock } from '#lib/session.svelte.js';
-	import { flush } from '#lib/loan.svelte.js';
+	import { flush, hasUnsavedChanges } from '#lib/loan.svelte.js';
 
 	let first = $state();
 
@@ -25,10 +25,12 @@
 
 	const show = (view) => () => (ui.view = view);
 
-	// Locking saves any pending edit first, and the next login starts at home
+	// Locking saves any pending edit first, and the next login starts at home. If saving fails,
+	// locking would lose that edit, so it asks first.
 	const leave = (action) => async () => {
-		ui.view = 'home';
 		await flush();
+		if (hasUnsavedChanges() && !confirm('Your last change could not be saved. Lock anyway and lose it?')) return;
+		ui.view = 'home';
 		action();
 	};
 
