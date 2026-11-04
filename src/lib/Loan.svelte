@@ -26,7 +26,8 @@
 	let expanded = $state(false);
 	const rows = $derived(result?.rows ?? []);
 	const filled = $derived(rows.filter((r) => PEOPLE.some((p) => loan.data.payments[r.month]?.[p] != null)));
-	const hidden = $derived(expanded || filled.length < 2 ? 0 : rows.indexOf(filled.at(-2)));
+	const earlier = $derived(filled.length < 2 ? 0 : rows.indexOf(filled.at(-2)));
+	const hidden = $derived(expanded ? 0 : earlier);
 
 	const edit = (month) => (key, value, person) => {
 		setValue(loan.data, month, key, value, person);
@@ -99,8 +100,10 @@
 	<InterestYears interestPaid={result.interestPaid} {names} highlight={tax?.year} bind:open={yearsOpen} />
 
 	<div class="rows">
-		{#if hidden}
-			<button class="more" onclick={() => (expanded = true)}>show {hidden} earlier months</button>
+		{#if earlier}
+			<button class="more" onclick={() => (expanded = !expanded)}>
+				{expanded ? 'hide' : 'show'} {earlier} earlier months
+			</button>
 		{/if}
 		{#each rows.slice(hidden) as row (row.month)}
 			<LoanRow
