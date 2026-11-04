@@ -3,8 +3,9 @@
 // amounts round the way the bank's do.
 //
 // Each person has their own internal part of the loan: their half of the apartment minus their
-// egenkapital. Their payments pay that part down, with interest on it for the actual days of the
-// month. When one pays less than their minimum and the other covers it, the covered amount moves
+// egenkapital. Like the bank's, each person's monthly payment stays fixed; interest for the actual
+// days of the month only changes how much of it is principal. The payment is worked out again only
+// when the rate changes or a month's payment differs from it (extra, or short and not covered). When one pays less than their minimum and the other covers it, the covered amount moves
 // ownership to the one who covered: first as the unpaid principal, then (for covered interest
 // and fees) from the paid-in equity of the one who fell short. Once that equity is used up, the
 // rest becomes a personal debt with the bank's interest, repaid from the debtor's later principal.
@@ -16,8 +17,11 @@ const LIMIT = TERM + 1200; // stops a debt that is never repaid from producing r
 export const other = (person) => (person === 'cyan' ? 'mint' : 'cyan');
 export const toOre = (kr) => Math.round(Number(kr) * 100);
 
-const amountFormat = new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 0 });
-export const formatKr = (ore) => amountFormat.format(Math.round(ore / 100));
+// Kroner always with øre, Norwegian style: 1 000,00
+const amountFormat = new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const formatKr = (ore) => amountFormat.format(ore / 100);
+// The same for an amount in kroner as the data file holds it; empty stays empty
+export const formatAmount = (kr) => (kr === undefined || kr === null || kr === '' ? '' : amountFormat.format(Number(kr)));
 
 export function addMonths(month, n) {
 	const [y, m] = month.split('-').map(Number);
@@ -69,6 +73,7 @@ export function compute(data, today = currentMonth()) {
 	const own = { ...half }; // each person's share of the apartment
 	const equity = { cyan: toOre(data.egenkapital?.cyan ?? 0), mint: toOre(data.egenkapital?.mint ?? 0) };
 	const end = { cyan: TERM - 1, mint: TERM - 1 }; // index of each person's last scheduled month
+	const payment = { cyan: null, mint: null }; // each person's fixed monthly payment; null: work it out
 	let debt = 0; // between the two: above 0, cyan owes mint; below 0, mint owes cyan
 	let rate = 0;
 	let fee = 0;
@@ -104,7 +109,9 @@ export function compute(data, today = currentMonth()) {
 			const feeShare = i < 0 ? 0 : i === 0 ? Math.ceil(fee / active.length) : Math.floor(fee / active.length);
 			const interest = b ? interestFor(b, rate, days) : 0;
 			const monthsLeft = Math.max(1, end[p] - k + 1);
-			const due = !b ? 0 : monthsLeft === 1 ? b + interest : Math.min(annuity(b, rate, monthsLeft), b + interest);
+			if (b && payment[p] === null) payment[p] = annuity(b, rate, monthsLeft);
+			// The last payment settles whatever is left, so the part ends at exactly 0
+			const due = !b ? 0 : monthsLeft === 1 ? b + interest : Math.min(payment[p], b + interest);
 			const min = due + feeShare;
 			const typed = isEntered(entry[p]);
 			const paid = typed ? toOre(entry[p]) : min;
@@ -140,6 +147,7 @@ export function compute(data, today = currentMonth()) {
 
 		for (const p of PEOPLE) {
 			const s = people[p];
+			const expected = balance(p) - s.principalDue; // where the part would be after the minimum
 			let rest = s.paid - Math.max(0, s.covered); // what this person paid for their own part
 			const feePaid = Math.min(rest, s.feeDue);
 			rest -= feePaid;
@@ -172,8 +180,12 @@ export function compute(data, today = currentMonth()) {
 			s.uncovered = s.short + Math.min(0, s.covered);
 			equity[p] -= costLeft; // unpaid interest and fees are added to what this person owes
 
-			// Extra paid either lowers the next payments (the default) or keeps them and ends sooner
-			if (s.extra > 0 && s.time && balance(p) > 0) end[p] = k + monthsFor(balance(p), rate, s.due);
+			// Off schedule: an extra either lowers the next payments (the default) or keeps them and ends
+			// sooner; anything else (short and not covered) works the payment out again
+			if (balance(p) > 0 && balance(p) !== expected) {
+				if (s.extra > 0 && s.time) end[p] = k + monthsFor(balance(p), rate, payment[p]);
+				else payment[p] = null;
+			}
 		}
 
 		return { people };
@@ -192,7 +204,10 @@ export function compute(data, today = currentMonth()) {
 	let state = snapshot();
 	for (let k = 0, month = months[0]; k < LIMIT; k++, month = addMonths(month, 1)) {
 		const entry = payments[month] ?? {};
-		if (isEntered(entry.interest)) rate = Number(entry.interest);
+		if (isEntered(entry.interest) && Number(entry.interest) !== rate) {
+			rate = Number(entry.interest);
+			payment.cyan = payment.mint = null; // a new rate means new payments, same end
+		}
 		if (isEntered(entry.fee)) fee = toOre(entry.fee);
 		const days = interestDays(month);
 		const loan = balance('cyan') + balance('mint') > 0;
@@ -241,9 +256,10 @@ export function setValue(data, month, key, value, person) {
 	else delete payments[month];
 }
 
-// "12 345,50" or "12345.5" → 12345.5; an empty field → null; anything else → undefined
+// "12 345,50", "12.345,50" or "12345.5" → 12345.5; an empty field → null; anything else → undefined
 export function parseAmount(text) {
-	const clean = String(text).replace(/[\s ]/g, '').replace(',', '.');
+	let clean = String(text).replace(/[\s\u00a0\u202f]/g, '');
+	if (clean.includes(',')) clean = clean.replace(/\./g, '').replace(',', '.'); // comma decimals, dots group
 	if (clean === '') return null;
 	const value = Number(clean);
 	return Number.isFinite(value) && value >= 0 ? value : undefined;

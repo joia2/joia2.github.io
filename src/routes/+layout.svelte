@@ -4,6 +4,7 @@
 	import MenuIcon from '@lucide/svelte/icons/menu';
 	import Menu from '#lib/Menu.svelte';
 	import SaveStatus from '#lib/SaveStatus.svelte';
+	import RawData from '#lib/RawData.svelte';
 	import { ui } from '#lib/ui.svelte.js';
 	import { isUnlocked } from '#lib/session.svelte.js';
 
@@ -28,6 +29,7 @@
 <!-- Outside the header: its blur would otherwise trap the fixed-position menu inside the bar -->
 {#if isUnlocked()}
 	<Menu />
+	<RawData />
 {/if}
 
 <main>

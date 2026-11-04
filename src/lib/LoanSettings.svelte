@@ -5,7 +5,7 @@
 	import Calendar from '@lucide/svelte/icons/calendar';
 	import Face from '#lib/Face.svelte';
 	import { loan, changed } from '#lib/loan.svelte.js';
-	import { addMonths, currentMonth, parseAmount, PEOPLE } from '#lib/loan.js';
+	import { addMonths, currentMonth, formatAmount, parseAmount, PEOPLE } from '#lib/loan.js';
 
 	// section: 'names' | 'apartment' | 'egenkapital'
 	let { section, onclose } = $props();
@@ -16,9 +16,9 @@
 	const startLocked = months.some((m) => PEOPLE.some((p) => data.payments[m][p] != null));
 
 	let names = $state({ ...data.names });
-	let total = $state(data.total ? String(data.total) : '');
+	let total = $state(data.total ? formatAmount(data.total) : '');
 	let start = $state(months[0] ?? addMonths(currentMonth(), 1));
-	let egenkapital = $state({ cyan: String(data.egenkapital.cyan || ''), mint: String(data.egenkapital.mint || '') });
+	let egenkapital = $state({ cyan: formatAmount(data.egenkapital.cyan || ''), mint: formatAmount(data.egenkapital.mint || '') });
 	let error = $state('');
 
 	function submit(event) {
@@ -77,7 +77,7 @@
 			total price (kr)
 			<span class="field">
 				<House size={20} />
-				<input bind:value={total} inputmode="decimal" placeholder="8 700 000" />
+				<input bind:value={total} inputmode="decimal" placeholder="8 700 000,00" />
 			</span>
 		</label>
 		<label>
@@ -96,7 +96,7 @@
 				{data.names[p]} (kr)
 				<span class="field">
 					<Face person={p} size={20} />
-					<input bind:value={egenkapital[p]} inputmode="decimal" placeholder="0" />
+					<input bind:value={egenkapital[p]} inputmode="decimal" placeholder="0,00" />
 				</span>
 			</label>
 		{/each}

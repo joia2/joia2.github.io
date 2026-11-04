@@ -1,6 +1,7 @@
 <script>
 	import TriangleAlert from '@lucide/svelte/icons/triangle-exclamation-point';
-	import { formatKr, parseAmount, PEOPLE } from '#lib/loan.js';
+	import Check from '@lucide/svelte/icons/check';
+	import { formatAmount, formatKr, parseAmount, PEOPLE } from '#lib/loan.js';
 
 	// row: one month from compute(); entry: what the data file holds for that month
 	let { row, entry, first, today, names, onedit } = $props();
@@ -16,10 +17,18 @@
 		const value = parseAmount(input.value);
 		const keepsRate = key === 'interest' && first && value === null; // the first month must have a rate
 		if (value === undefined || keepsRate) {
-			input.value = entry[key] ?? '';
+			input.value = key === 'interest' ? (entry.interest ?? '') : formatAmount(entry[key]);
 			return;
 		}
 		onedit(key, value);
+	};
+
+	// The checkbox inside a paid field: checked when exactly the minimum is entered. Checking it
+	// enters the minimum; unchecking clears the field again.
+	const paidMinimum = (s) => s.typed && s.paid === s.min;
+	const toggleMinimum = (p) => {
+		const s = row.people[p];
+		onedit(p, paidMinimum(s) ? null : s.min / 100);
 	};
 </script>
 
@@ -45,7 +54,7 @@
 						<input
 							class="prefixed suffixed"
 							inputmode="decimal"
-							value={entry.fee ?? ''}
+							value={formatAmount(entry.fee)}
 							placeholder={formatKr(row.fee)}
 							aria-label="fee in kroner"
 							onchange={edited('fee')}
@@ -59,13 +68,26 @@
 		<div class="side {p}">
 			{#if row.loan}
 				{@const s = row.people[p]}
-				<input
-					inputmode="decimal"
-					value={entry[p] ?? ''}
-					placeholder={formatKr(s.min)}
-					aria-label="paid by {names[p]}"
-					onchange={edited(p)}
-				/>
+				<span class="affix">
+					<button
+						class="minimum {p}"
+						role="checkbox"
+						aria-checked={paidMinimum(s)}
+						aria-label="{names[p]} paid exactly the minimum"
+						disabled={!s.min}
+						onclick={() => toggleMinimum(p)}
+					>
+						{#if paidMinimum(s)}<Check size={14} />{/if}
+					</button>
+					<input
+						class="checkable"
+						inputmode="decimal"
+						value={formatAmount(entry[p])}
+						placeholder={formatKr(s.min)}
+						aria-label="paid by {names[p]}"
+						onchange={edited(p)}
+					/>
+				</span>
 				<dl class:projected={!s.typed}>
 					<dt>as principal</dt>
 					<dd>{formatKr(s.principal)}</dd>
@@ -95,7 +117,7 @@
 					</button>
 				{/if}
 			{:else if row.debtor === p}
-				<input inputmode="decimal" value={entry[p] ?? ''} placeholder="0" aria-label="paid by {names[p]}" onchange={edited(p)} />
+				<input inputmode="decimal" value={formatAmount(entry[p])} placeholder="0,00" aria-label="paid by {names[p]}" onchange={edited(p)} />
 				<dl>
 					<dt>interest</dt>
 					<dd>+{formatKr(row.debtInterest)}</dd>
@@ -111,7 +133,7 @@
 <style>
 	.row {
 		display: grid;
-		grid-template-columns: 1fr 6.5rem 1fr;
+		grid-template-columns: 1fr 5.75rem 1fr;
 		gap: 0.75rem;
 		padding: 0.9rem 0.25rem;
 		border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
@@ -162,8 +184,9 @@
 	}
 	.mid input {
 		text-align: right;
-		padding: 0.25rem 0.45rem;
-		font-size: 0.85rem;
+		padding: 0.15rem 0.4rem;
+		border-radius: 8px;
+		font-size: 0.75rem;
 	}
 	/* A unit or name shown inside a field, not editable: "fee [ 50 ] kr", "[ 4.78 ] %" */
 	.affix {
@@ -175,21 +198,55 @@
 		position: absolute;
 		top: 50%;
 		transform: translateY(-50%);
-		font-size: 0.72rem;
+		font-size: 0.65rem;
 		color: var(--muted);
 		pointer-events: none;
 	}
 	.prefix {
-		left: 0.5rem;
+		left: 0.45rem;
 	}
 	.suffix {
-		right: 0.5rem;
+		right: 0.45rem;
+	}
+	/* The minimum checkbox, inside the paid field on the left */
+	.minimum {
+		position: absolute;
+		left: 0.5rem;
+		top: 50%;
+		transform: translateY(-50%);
+		display: grid;
+		place-items: center;
+		width: 1.05rem;
+		height: 1.05rem;
+		padding: 0;
+		border: 1.5px solid var(--border);
+		border-radius: 5px;
+		background: transparent;
+		color: #0b2a2e;
+	}
+	.minimum:hover:not(:disabled) {
+		border-color: var(--muted);
+		background: transparent;
+	}
+	.minimum[aria-checked='true'].cyan {
+		border-color: var(--cyan);
+		background: var(--cyan);
+	}
+	.minimum[aria-checked='true'].mint {
+		border-color: var(--mint);
+		background: var(--mint);
+	}
+	.minimum:disabled {
+		opacity: 0.3;
+	}
+	input.checkable {
+		padding-left: 2rem;
 	}
 	.mid input.prefixed {
-		padding-left: 1.85rem;
+		padding-left: 1.6rem;
 	}
 	.mid input.suffixed {
-		padding-right: 1.45rem;
+		padding-right: 1.25rem;
 	}
 	dl {
 		display: grid;
@@ -280,7 +337,7 @@
 	/* Phones: a narrower middle and smaller details keep each side on one line per value */
 	@media (max-width: 480px) {
 		.row {
-			grid-template-columns: 1fr 5.25rem 1fr;
+			grid-template-columns: 1fr 5.6rem 1fr;
 			gap: 0.5rem;
 			padding-inline: 0;
 		}

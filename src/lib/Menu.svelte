@@ -6,6 +6,7 @@
 	import Users from '@lucide/svelte/icons/users';
 	import House from '@lucide/svelte/icons/house';
 	import PiggyBank from '@lucide/svelte/icons/piggy-bank';
+	import FileBraces from '@lucide/svelte/icons/file-braces';
 	import { ui } from '#lib/ui.svelte.js';
 	import { lock } from '#lib/session.svelte.js';
 	import { flush, hasUnsavedChanges } from '#lib/loan.svelte.js';
@@ -31,6 +32,7 @@
 		await flush();
 		if (hasUnsavedChanges() && !confirm('Your last change could not be saved. Lock anyway and lose it?')) return;
 		ui.view = 'home';
+		ui.rawOpen = false;
 		action();
 	};
 
@@ -59,6 +61,7 @@
 		<button bind:this={first} onclick={choose(show('names'))}><Users size={20} />names</button>
 		<button onclick={choose(show('apartment'))}><House size={20} />apartment</button>
 		<button onclick={choose(show('egenkapital'))}><PiggyBank size={20} />egenkapital</button>
+		<button onclick={choose(() => (ui.rawOpen = true))}><FileBraces size={20} />raw data</button>
 		<hr />
 		<button onclick={choose(show('password'))}><KeyRound size={20} />change password</button>
 		<button onclick={choose(leave(lock))}><Lock size={20} />lock</button>

@@ -59,11 +59,17 @@ export async function flush() {
 	}
 }
 
+// The loan data as a plain object, months in order: exactly what is encrypted into loan.json
+export function plain() {
+	const data = $state.snapshot(loan.data);
+	data.payments = Object.fromEntries(Object.entries(data.payments).sort(([a], [b]) => (a < b ? -1 : 1)));
+	return data;
+}
+
 async function save() {
 	await saving; // one save at a time, each building on the previous one's version
 	if (!loan.data) return; // nothing loaded, so nothing to save
-	const data = $state.snapshot(loan.data);
-	data.payments = Object.fromEntries(Object.entries(data.payments).sort(([a], [b]) => (a < b ? -1 : 1)));
+	const data = plain();
 	loan.status = 'saving';
 	saving = write(FILE, data, loan.sha);
 	try {
