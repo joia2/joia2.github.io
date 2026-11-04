@@ -7,16 +7,16 @@
 	import LoanRow from '#lib/LoanRow.svelte';
 	import InterestYears from '#lib/InterestYears.svelte';
 	import { loan, changed } from '#lib/loan.svelte.js';
-	import { compute, currentMonth, formatKr, other, setValue, taxShares, PEOPLE } from '#lib/loan.js';
+	import { compute, currentMonth, formatKr, formatPercent, other, setValue, taxShares, PEOPLE } from '#lib/loan.js';
 	import { ui } from '#lib/ui.svelte.js';
 
-	const today = currentMonth();
+	// The current month, refreshed when the page is shown again (the app may stay open past the 1st)
+	let today = $state(currentMonth());
 	const result = $derived(compute(loan.data, today));
 	const names = $derived(loan.data.names);
 	const first = $derived(Object.keys(loan.data.payments).sort()[0]);
 	const tax = $derived(result && taxShares(result, today));
 	let yearsOpen = $state(false);
-	const percent = new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 	const debtor = $derived(result && (result.state.debt > 0 ? 'cyan' : result.state.debt < 0 ? 'mint' : null));
 
 	// How far each half of the bar is filled: what that person has paid in, of their share
@@ -33,6 +33,8 @@
 		document.querySelector('.row.now')?.scrollIntoView({ block: 'center' });
 	});
 </script>
+
+<svelte:document onvisibilitychange={() => document.visibilityState === 'visible' && (today = currentMonth())} />
 
 {#if !result}
 	<div class="empty">
@@ -57,21 +59,21 @@
 		<span class="cyan" style:width="{fill('cyan') * 50}%"></span>
 		<span class="mint" style:width="{fill('mint') * 50}%"></span>
 	</div>
+	<!-- Each end: that person's share of the year's interest, for the skattemelding (rentefradrag) -->
+	{#snippet taxShare(p)}
+		<span class="tax {p}">
+			{#if tax}
+				<span title="{names[p]}'s share of the {tax.year} interest, for the tax return">{formatPercent(tax[p])} %</span>
+				<button class="icon-button info" onclick={() => (yearsOpen = true)} aria-label="interest paid per year">
+					<Info size={16} />
+				</button>
+			{/if}
+		</span>
+	{/snippet}
 	<div class="shares">
-		<!-- Each person's share of the year's interest, to enter in the skattemelding (rentefradrag) -->
-		{#if tax}
-			{#each PEOPLE as p, i (p)}
-				{#if i === 1}<span>{formatKr(result.state.own.cyan)} / {formatKr(result.state.own.mint)}</span>{/if}
-				<span class="tax {p}">
-					<span title="{names[p]}'s share of the {tax.year} interest, for the tax return">{percent.format(tax[p])} %</span>
-					<button class="info" onclick={() => (yearsOpen = true)} aria-label="interest paid per year">
-						<Info size={16} />
-					</button>
-				</span>
-			{/each}
-		{:else}
-			<span>{formatKr(result.state.own.cyan)} / {formatKr(result.state.own.mint)}</span>
-		{/if}
+		{@render taxShare('cyan')}
+		<span>{formatKr(result.state.own.cyan)} / {formatKr(result.state.own.mint)}</span>
+		{@render taxShare('mint')}
 	</div>
 
 	{#if debtor}
@@ -171,9 +173,10 @@
 		margin-left: -1px;
 		background: var(--bg);
 	}
+	/* Three parts: cyan's share at the left edge, the ownership split centered, mint's at the right */
 	.shares {
-		display: flex;
-		justify-content: space-between;
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
 		gap: 0.75rem;
 		max-width: 44rem;
 		margin: 0.5rem auto 0;
@@ -200,26 +203,26 @@
 		max-width: 44rem;
 		margin: 1.5rem auto 0;
 	}
-	/* Without percentages the shares stay centered */
-	.shares > span:only-child {
-		flex: 1;
-	}
 	.tax {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
+		white-space: nowrap;
+	}
+	@media (max-width: 480px) {
+		.shares {
+			gap: 0.4rem;
+			font-size: 0.72rem;
+		}
 	}
 	/* The info icon sits on the inner side: after cyan's percentage, before mint's */
 	.tax.mint {
 		flex-direction: row-reverse;
+		justify-self: end;
 	}
 	.info {
-		display: grid;
-		place-items: center;
 		width: 26px;
 		height: 26px;
-		padding: 0;
-		border: 0;
 		color: var(--muted);
 	}
 </style>

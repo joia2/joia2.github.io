@@ -19,7 +19,7 @@
 		<a href="/"><img src="/favicon.svg" alt="" width="22" height="22" />joia2</a>
 		{#if isUnlocked()}
 			<SaveStatus />
-			<button id="menu-button" class="menu" onclick={() => (ui.menuOpen = true)} aria-label="Open menu" aria-expanded={ui.menuOpen}>
+			<button id="menu-button" class="icon-button menu" onclick={() => (ui.menuOpen = true)} aria-label="Open menu" aria-expanded={ui.menuOpen}>
 				<MenuIcon size={22} />
 			</button>
 		{/if}
@@ -69,13 +69,7 @@
 		letter-spacing: -0.015em;
 	}
 	.menu {
-		display: grid;
-		place-items: center;
-		width: 40px;
-		height: 40px;
 		margin-right: -8px;
-		padding: 0;
-		border: 0;
 	}
 	main {
 		max-width: 980px;

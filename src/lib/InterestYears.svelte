@@ -1,38 +1,20 @@
 <script>
-	import X from '@lucide/svelte/icons/x';
 	import Face from '#lib/Face.svelte';
-	import { formatKr, PEOPLE } from '#lib/loan.js';
+	import Sheet from '#lib/Sheet.svelte';
+	import { formatKr, formatPercent, PEOPLE } from '#lib/loan.js';
 
 	// interestPaid: from compute(); open: bindable, whether the popup shows
 	let { interestPaid, names, highlight, open = $bindable(false) } = $props();
 
-	let dialog = $state();
-	const percent = new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 	const share = (paid, p) => {
 		const sum = paid.cyan + paid.mint;
-		return sum ? percent.format((paid[p] / sum) * 100) : '–';
+		return sum ? formatPercent((paid[p] / sum) * 100) : '–';
 	};
 	const years = $derived(Object.entries(interestPaid));
-
-	$effect(() => {
-		if (open && !dialog.open) dialog.showModal();
-		if (!open && dialog.open) dialog.close();
-	});
 </script>
 
 <!-- The bank interest each person paid per year: what the skattemelding splits (rentefradrag) -->
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-<dialog
-	class="sheet"
-	bind:this={dialog}
-	aria-label="interest paid per year"
-	onclose={() => (open = false)}
-	onclick={(e) => e.target === dialog && dialog.close()}
->
-	<div class="sheet-top">
-		<h1>interest paid</h1>
-		<button onclick={() => dialog.close()} aria-label="close"><X size={22} /></button>
-	</div>
+<Sheet title="interest paid" bind:open>
 	<div class="scroll">
 		<table>
 			<thead>
@@ -67,7 +49,7 @@
 			count months not entered yet at the minimum.
 		</p>
 	</div>
-</dialog>
+</Sheet>
 
 <style>
 	.scroll {

@@ -9,7 +9,7 @@
 	import FileBraces from '@lucide/svelte/icons/file-braces';
 	import { ui } from '#lib/ui.svelte.js';
 	import { lock } from '#lib/session.svelte.js';
-	import { flush, hasUnsavedChanges } from '#lib/loan.svelte.js';
+	import { save, hasUnsavedChanges } from '#lib/loan.svelte.js';
 
 	let first = $state();
 
@@ -26,15 +26,15 @@
 
 	const show = (view) => () => (ui.view = view);
 
-	// Locking saves any pending edit first, and the next login starts at home. If saving fails,
+	// Locking saves any waiting edit first, and the next login starts at home. If saving fails,
 	// locking would lose that edit, so it asks first.
-	const leave = (action) => async () => {
-		await flush();
+	async function lockApp() {
+		await save();
 		if (hasUnsavedChanges() && !confirm('Your last change could not be saved. Lock anyway and lose it?')) return;
 		ui.view = 'home';
 		ui.rawOpen = false;
-		action();
-	};
+		lock();
+	}
 
 	$effect(() => {
 		if (!ui.menuOpen) return;
@@ -53,7 +53,7 @@
 
 <aside class:open={ui.menuOpen} inert={!ui.menuOpen} aria-label="Menu">
 	<div class="top">
-		<button class="close" onclick={close} aria-label="Close menu">
+		<button class="icon-button" onclick={close} aria-label="Close menu">
 			<X size={22} />
 		</button>
 	</div>
@@ -64,7 +64,7 @@
 		<button onclick={choose(() => (ui.rawOpen = true))}><FileBraces size={20} />raw data</button>
 		<hr />
 		<button onclick={choose(show('password'))}><KeyRound size={20} />change password</button>
-		<button onclick={choose(leave(lock))}><Lock size={20} />lock</button>
+		<button onclick={choose(lockApp)}><Lock size={20} />lock</button>
 	</nav>
 </aside>
 
@@ -91,7 +91,7 @@
 		width: min(22rem, 85vw);
 		box-sizing: border-box;
 		padding: 0 2rem 2rem;
-		background: color-mix(in srgb, var(--surface) 60%, transparent);
+		background: color-mix(in srgb, var(--surface) 88%, transparent);
 		backdrop-filter: saturate(180%) blur(20px);
 		-webkit-backdrop-filter: saturate(180%) blur(20px);
 		box-shadow: var(--shadow);
@@ -108,14 +108,6 @@
 		display: flex;
 		align-items: center;
 		justify-content: flex-end;
-	}
-	.close {
-		display: grid;
-		place-items: center;
-		width: 40px;
-		height: 40px;
-		padding: 0;
-		border: 0;
 	}
 	nav {
 		display: flex;

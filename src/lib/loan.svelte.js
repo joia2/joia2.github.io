@@ -17,7 +17,7 @@ const empty = () => ({
 export const loan = $state({ data: null, sha: null, status: 'idle', error: '' });
 
 let timer;
-let saving = Promise.resolve();
+let queue = Promise.resolve(); // saves run one after another, each on top of the previous version
 
 export async function loadLoan() {
 	loan.status = 'loading';
@@ -40,30 +40,25 @@ export function unloadLoan() {
 // Call after changing loan.data
 export function changed() {
 	loan.status = 'pending';
-	clearTimeout(timer);
-	timer = setTimeout(save, SAVE_DELAY);
+	later();
 }
 
 // Call on every keystroke: while someone is still typing, a waiting save waits 3 seconds more
 export function typing() {
-	if (loan.status !== 'pending') return;
+	if (loan.status === 'pending') later();
+}
+
+function later() {
 	clearTimeout(timer);
 	timer = setTimeout(save, SAVE_DELAY);
 }
 
-// Saves now: after a failed save, or before locking so a pending or failed edit isn't lost
-export function retry() {
+// Saves now and resolves when done: for "not saved" (try again), and before locking or changing
+// the password so a waiting or failed edit isn't lost
+export function save() {
 	clearTimeout(timer);
-	return save();
-}
-
-export async function flush() {
-	if (loan.status === 'pending' || loan.status === 'error') {
-		clearTimeout(timer);
-		await save();
-	} else {
-		await saving;
-	}
+	queue = queue.then(saveNow);
+	return queue;
 }
 
 // The loan data as a plain object, months in order: exactly what is encrypted into loan.json
@@ -73,19 +68,16 @@ export function plain() {
 	return data;
 }
 
-async function save() {
-	await saving; // one save at a time, each building on the previous one's version
-	if (!loan.data) return; // nothing loaded, so nothing to save
-	const data = plain();
+async function saveNow() {
+	// Nothing loaded or nothing new (an earlier save in the queue already wrote this edit)
+	if (!loan.data || !['pending', 'error'].includes(loan.status)) return;
 	loan.status = 'saving';
-	saving = write(FILE, data, loan.sha);
 	try {
-		loan.sha = await saving;
-		if (loan.status === 'saving') loan.status = 'saved';
+		loan.sha = await write(FILE, plain(), loan.sha);
+		if (loan.status === 'saving') loan.status = 'saved'; // unless edited again meanwhile
 	} catch (e) {
 		loan.status = 'error';
 		loan.error = e.message;
-		saving = Promise.resolve();
 	}
 }
 

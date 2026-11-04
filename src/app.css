@@ -13,7 +13,7 @@
 	--button-text: #ffffff;
 	--error: #d70015;
 	--success: #248a3d;
-	--bar: rgb(245 245 247 / 0.45);
+	--bar: rgb(245 245 247 / 0.72);
 	--shadow: 0 2px 8px rgb(0 0 0 / 0.04), 0 16px 48px rgb(0 0 0 / 0.06);
 	--radius: 22px;
 	--cyan: #22d3ee;
@@ -36,7 +36,7 @@
 		--button-text: #1d1d1f;
 		--error: #ff6961;
 		--success: #30d158;
-		--bar: rgb(22 22 23 / 0.45);
+		--bar: rgb(22 22 23 / 0.72);
 		--shadow: none;
 		--minus: #fca5a5;
 		--plus: #4ade80;
@@ -232,39 +232,8 @@ form button.primary {
 	padding: 0.8rem 1.4rem;
 }
 
-/* Popups: a glass card over the dimmed page (<dialog class="sheet">) */
-
-dialog.sheet {
-	width: min(40rem, calc(100vw - 32px));
-	max-height: min(42rem, calc(100vh - 64px));
-	box-sizing: border-box;
-	padding: 0;
-	border: 0;
-	border-radius: var(--radius);
-	background: color-mix(in srgb, var(--surface) 80%, transparent);
-	backdrop-filter: saturate(180%) blur(20px);
-	-webkit-backdrop-filter: saturate(180%) blur(20px);
-	box-shadow: var(--shadow);
-	color: var(--text);
-}
-dialog.sheet[open] {
-	display: flex;
-	flex-direction: column;
-}
-dialog.sheet::backdrop {
-	background: rgb(0 0 0 / 0.3);
-}
-.sheet-top {
-	display: flex;
-	align-items: center;
-	gap: 0.25rem;
-	padding: 0.75rem 0.75rem 0.5rem 1.5rem;
-}
-.sheet-top h1 {
-	flex: 1;
-	font-size: 1.1rem;
-}
-.sheet-top button {
+/* A borderless round button around a single icon */
+button.icon-button {
 	display: grid;
 	place-items: center;
 	width: 40px;

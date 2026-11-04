@@ -3,7 +3,7 @@
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import { session, changePassword } from '#lib/session.svelte.js';
 	import { UserError, WrongPasswordError } from '#lib/errors.js';
-	import { flush, loadLoan } from '#lib/loan.svelte.js';
+	import { save, loadLoan, hasUnsavedChanges } from '#lib/loan.svelte.js';
 
 	let { onclose } = $props();
 
@@ -32,7 +32,8 @@
 		error = '';
 		busy = true;
 		try {
-			await flush(); // a pending loan edit is saved first, so it gets re-encrypted too
+			await save(); // a waiting loan edit is saved first, so it gets re-encrypted too
+			if (hasUnsavedChanges()) throw new UserError('Your last change could not be saved. Try again first.');
 			await changePassword(current, next);
 			await loadLoan(); // re-encrypting gave loan.json a new version to save on top of
 			done = true;

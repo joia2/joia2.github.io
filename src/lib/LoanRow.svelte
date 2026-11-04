@@ -33,7 +33,7 @@
 	};
 </script>
 
-<div class="row" class:now={row.month === today} class:debt={!row.loan}>
+<div class="row" class:now={row.month === today}>
 	{#each PEOPLE as p, i (p)}
 		{#if i === 1}
 			<div class="mid">
@@ -106,7 +106,10 @@
 				{#if s.uncovered}
 					<p class="warn"><TriangleAlert size={14} />{formatKr(s.uncovered)} kr unpaid</p>
 				{/if}
-				{#if s.typed && s.extra > 0}
+				{#if s.surplus}
+					<p class="warn"><TriangleAlert size={14} />{formatKr(s.surplus)} kr more than owed</p>
+				{/if}
+				{#if s.typed && s.extra > s.surplus}
 					<!-- What the extra paid does: lower the next payments, or keep them and finish sooner -->
 					<button
 						class="toggle"
@@ -134,6 +137,9 @@
 					<dd>+{formatKr(row.debtInterest)}</dd>
 				</dl>
 				<p class="minus">−{formatKr(Math.abs(row.debt))} kr</p>
+				{#if row.surplus}
+					<p class="warn"><TriangleAlert size={14} />{formatKr(row.surplus)} kr more than owed</p>
+				{/if}
 			{:else}
 				<p class="plus">+{formatKr(Math.abs(row.debt))} kr</p>
 			{/if}
@@ -222,9 +228,9 @@
 	.suffix {
 		right: 0.45rem;
 	}
-	/* The minimum checkbox, inside the paid field on the left */
-	/* Centered with margins, not a transform: the shared button press style changes transforms, which
-	   made the box jump down under the pointer and lose the click */
+	/* The minimum checkbox, inside the paid field on the left. Centered with margins, not a
+	   transform: the shared button press style changes transforms, which made the box jump down
+	   under the pointer and lose the click. While pressed it grows in place instead. */
 	.minimum {
 		position: absolute;
 		left: 0.5rem;
@@ -240,14 +246,11 @@
 		border-radius: 5px;
 		background: transparent;
 		color: #0b2a2e;
+		transition: transform 0.15s ease-out;
 	}
 	.minimum:hover:not(:disabled) {
 		border-color: var(--muted);
 		background: transparent;
-	}
-	/* While pressed it grows in place, and shrinks back on release */
-	.minimum {
-		transition: transform 0.15s ease-out;
 	}
 	.minimum:active:not(:disabled) {
 		transform: scale(1.35);
@@ -318,9 +321,6 @@
 		gap: 0.25rem;
 		color: var(--warn);
 	}
-	.side.mint .warn {
-		justify-content: flex-end;
-	}
 	.toggle {
 		display: flex;
 		align-items: center;
@@ -330,7 +330,7 @@
 		font-size: 0.72rem;
 		color: var(--muted);
 	}
-	.side.mint .toggle {
+	.side.mint :is(.warn, .toggle) {
 		justify-content: flex-end;
 	}
 	.toggle:hover:not(:disabled) {

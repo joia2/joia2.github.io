@@ -5,7 +5,9 @@
 // Each person has their own internal part of the loan: their half of the apartment minus their
 // egenkapital. Like the bank's, each person's monthly payment stays fixed; interest for the actual
 // days of the month only changes how much of it is principal. The payment is worked out again only
-// when the rate changes or a month's payment differs from it (extra, or short and not covered). When one pays less than their minimum and the other covers it, the covered amount moves
+// when the rate changes or a month's payment differs from it (extra, or short and not covered).
+//
+// When one pays less than their minimum and the other covers it, the covered amount moves
 // ownership to the one who covered: first as the unpaid principal, then (for covered interest
 // and fees) from the paid-in equity of the one who fell short. Once that equity is used up, the
 // rest becomes a personal debt with the bank's interest, repaid from the debtor's later principal.
@@ -22,6 +24,8 @@ const amountFormat = new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 2, 
 export const formatKr = (ore) => amountFormat.format(ore / 100);
 // The same for an amount in kroner as the data file holds it; empty stays empty
 export const formatAmount = (kr) => (kr === undefined || kr === null || kr === '' ? '' : amountFormat.format(Number(kr)));
+// A percentage the same way: 43,87
+export const formatPercent = (value) => amountFormat.format(value);
 
 export function addMonths(month, n) {
 	const [y, m] = month.split('-').map(Number);
@@ -130,7 +134,7 @@ export function compute(data, today = currentMonth()) {
 				principal: 0,
 				interest: 0,
 				uncovered: 0,
-				surplus: 0,
+				surplus: 0, // paid beyond everything this person owed: not applied anywhere
 				time: Boolean(entry.time?.[p])
 			};
 		}
@@ -232,8 +236,6 @@ export function compute(data, today = currentMonth()) {
 			month,
 			rate,
 			fee,
-			rateSet: isEntered(entry.interest),
-			feeSet: isEntered(entry.fee),
 			loan,
 			debtInterest,
 			...(loan ? loanMonth(k, month, entry, days) : debtMonth(entry))

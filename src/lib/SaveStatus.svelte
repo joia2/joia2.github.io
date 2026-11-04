@@ -3,7 +3,7 @@
 	import CloudUpload from '@lucide/svelte/icons/cloud-upload';
 	import CloudAlert from '@lucide/svelte/icons/cloud-exclamation-point';
 	import CloudDownload from '@lucide/svelte/icons/cloud-download';
-	import { loan, retry } from '#lib/loan.svelte.js';
+	import { loan, save } from '#lib/loan.svelte.js';
 </script>
 
 <!-- Whether the loan data is saved to joia2data; always shown in the top bar while unlocked -->
@@ -11,7 +11,7 @@
 	{#if loan.status === 'pending' || loan.status === 'saving'}
 		<CloudUpload size={18} />saving…
 	{:else if loan.status === 'error' && loan.data}
-		<button class="error" onclick={retry} title="{loan.error} Click to try saving again.">
+		<button class="error" onclick={save} title="{loan.error} Click to try saving again.">
 			<CloudAlert size={18} />not saved
 		</button>
 	{:else if loan.data}
