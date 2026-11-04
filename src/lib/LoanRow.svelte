@@ -330,7 +330,7 @@
 		gap: 0.35rem;
 		padding: 0.05rem 0.6rem;
 		border: 0;
-		font-size: 0.72rem;
+		font-size: 0.66rem;
 		color: var(--muted);
 	}
 	.side.mint :is(.warn, .toggle) {
