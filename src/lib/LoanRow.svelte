@@ -120,7 +120,7 @@
 						aria-label="extra shortens the time instead of lowering the payment"
 						onclick={() => onedit('time', !s.time, p)}
 					>
-						<span class:on={!s.time}>−payment</span>
+						<span class:on={!s.time}>−pay</span>
 						<span class="track"><span class="knob"></span></span>
 						<span class:on={s.time}>−time</span>
 					</button>
