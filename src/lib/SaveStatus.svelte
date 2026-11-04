@@ -4,11 +4,14 @@
 	import CloudAlert from '@lucide/svelte/icons/cloud-exclamation-point';
 	import CloudDownload from '@lucide/svelte/icons/cloud-download';
 	import { loan, save } from '#lib/loan.svelte.js';
+	import { session } from '#lib/session.svelte.js';
 </script>
 
 <!-- Whether the loan data is saved to joia2data; always shown in the top bar while unlocked -->
 <span class="status" aria-live="polite">
-	{#if loan.status === 'pending' || loan.status === 'saving'}
+	{#if session.demo}
+		demo · not saved
+	{:else if loan.status === 'pending' || loan.status === 'saving'}
 		<CloudUpload size={18} />saving…
 	{:else if loan.status === 'error' && loan.data}
 		<button class="error" onclick={save} title="{loan.error} Click to try saving again.">
@@ -26,7 +29,6 @@
 		display: flex;
 		align-items: center;
 		gap: 0.35rem;
-		margin-left: auto;
 		margin-right: 0.5rem;
 		font-size: 0.78rem;
 		color: var(--muted);

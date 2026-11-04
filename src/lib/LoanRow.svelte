@@ -7,8 +7,9 @@
 	// row: one month from compute(); entry: what the data file holds for that month
 	let { row, entry, first, today, names, onedit } = $props();
 
+	// "2026 dec": the payment made on 1 December 2026
 	const label = $derived(
-		new Date(`${row.month}-01T12:00:00`).toLocaleDateString('en', { month: 'short', year: 'numeric' }).toLowerCase()
+		`${row.month.slice(0, 4)} ${new Date(`${row.month}-01T12:00:00`).toLocaleDateString('en', { month: 'short' }).toLowerCase()}`
 	);
 
 	// Saves a field when it loses focus. Text that isn't an amount puts the field back as it was.
@@ -18,22 +19,23 @@
 		const value = parseAmount(input.value);
 		const keepsRate = key === 'interest' && first && value === null; // the first month must have a rate
 		if (value === undefined || keepsRate) {
-			input.value = key === 'interest' ? (entry.interest ?? '') : formatAmount(entry[key]);
+			input.value = key === 'interest' ? (entry.interest ?? '') : shown(key);
 			return;
 		}
 		onedit(key, value);
 	};
 
 	// The checkbox inside a paid field marks the month as paid: checked when at least the minimum is
-	// entered, typed or ticked. Ticking it enters exactly the minimum; unticking clears the field.
+	// entered, typed or ticked. Ticking stores "min" rather than today's amount, so the month keeps
+	// matching the minimum when earlier months change it. Unticking clears the field.
 	const paidMinimum = (s) => s.typed && s.paid >= s.min;
-	const toggleMinimum = (p) => {
-		const s = row.people[p];
-		onedit(p, paidMinimum(s) ? null : s.min / 100);
-	};
+	const toggleMinimum = (p) => onedit(p, paidMinimum(row.people[p]) ? null : 'min');
+
+	// What a paid field shows: the amount typed, or the current minimum when ticked
+	const shown = (key) => (entry[key] === 'min' ? formatKr(row.people[key].min) : formatAmount(entry[key]));
 </script>
 
-<div class="row" class:now={row.month === today}>
+<div class="row" class:now={row.month === today} data-month={row.month}>
 	{#each PEOPLE as p, i (p)}
 		{#if i === 1}
 			<div class="mid">
@@ -85,7 +87,7 @@
 					<input
 						class="checkable"
 						inputmode="decimal"
-						value={formatAmount(entry[p])}
+						value={shown(p)}
 						placeholder={formatKr(s.min)}
 						aria-label="paid by {names[p]}"
 						oninput={typing}
@@ -156,6 +158,7 @@
 		grid-template-columns: 1fr 5.75rem 1fr;
 		gap: 0.75rem max(0.75rem, var(--space));
 		padding: 0.9rem var(--space);
+		scroll-margin-top: 56px; /* lands below the top bar when jumped to */
 		border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 	}
 	.row.now {

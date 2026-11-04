@@ -11,6 +11,9 @@
 // ownership to the one who covered: first as the unpaid principal, then (for covered interest
 // and fees) from the paid-in equity of the one who fell short. Once that equity is used up, the
 // rest becomes a personal debt with the bank's interest, repaid from the debtor's later principal.
+//
+// Maintenance and improvement costs (data.costs) raise the apartment's value: from their month on,
+// what each person paid for them is added to what that person owns.
 
 export const PEOPLE = ['cyan', 'mint'];
 export const TERM = 360; // 30 years
@@ -84,6 +87,19 @@ export function compute(data, today = currentMonth()) {
 	let fee = 0;
 
 	const balance = (p) => Math.max(0, own[p] - equity[p]);
+
+	// Costs paid in cash count as owned, from their month on (earlier ones from the first month)
+	const costs = [...(data.costs ?? [])].sort((a, b) => (a.month < b.month ? -1 : 1));
+	let costsApplied = 0;
+	function applyCosts(month) {
+		for (; costsApplied < costs.length && !(costs[costsApplied].month > month); costsApplied++) {
+			for (const p of PEOPLE) {
+				const paid = toOre(costs[costsApplied][p] || 0);
+				own[p] += paid;
+				equity[p] += paid;
+			}
+		}
+	}
 	const lastEntered = months.filter((m) => PEOPLE.some((p) => isEntered(payments[m][p]))).pop();
 	const until = lastEntered > today ? lastEntered : today;
 	const snapshot = () => ({
@@ -118,8 +134,9 @@ export function compute(data, today = currentMonth()) {
 			// The last payment settles whatever is left, so the part ends at exactly 0
 			const due = !b ? 0 : monthsLeft === 1 ? b + interest : Math.min(payment[p], b + interest);
 			const min = due + feeShare;
+			// "min": ticked as paid at the minimum, so it follows the minimum when earlier months change
 			const typed = isEntered(entry[p]);
-			const paid = typed ? toOre(entry[p]) : min;
+			const paid = typed && entry[p] !== 'min' ? toOre(entry[p]) : min;
 			people[p] = {
 				min,
 				paid,
@@ -208,7 +225,7 @@ export function compute(data, today = currentMonth()) {
 
 	function debtMonth(entry) {
 		const debtor = debt > 0 ? 'cyan' : 'mint';
-		const typed = isEntered(entry[debtor]);
+		const typed = isEntered(entry[debtor]) && entry[debtor] !== 'min'; // there is no minimum after the loan
 		const paid = typed ? toOre(entry[debtor]) : 0;
 		const repaid = Math.min(paid, Math.abs(debt));
 		debt -= Math.sign(debt) * repaid;
@@ -219,6 +236,7 @@ export function compute(data, today = currentMonth()) {
 	let state = snapshot();
 	for (let k = 0, month = months[0]; k < LIMIT; k++, month = addMonths(month, 1)) {
 		const entry = payments[month] ?? {};
+		applyCosts(month);
 		if (isEntered(entry.interest) && Number(entry.interest) !== rate) {
 			rate = Number(entry.interest);
 			payment.cyan = payment.mint = null; // a new rate means new payments, same end
@@ -243,6 +261,12 @@ export function compute(data, today = currentMonth()) {
 		row.debt = debt;
 		rows.push(row);
 		if (month <= until) state = snapshot();
+	}
+
+	// Costs dated after the last row still count once their month has come
+	if (costsApplied < costs.length) {
+		applyCosts(until);
+		state = snapshot();
 	}
 
 	return { half, rows, state, interestPaid };

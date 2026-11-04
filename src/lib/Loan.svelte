@@ -46,7 +46,11 @@
 		{#each PEOPLE as p (p)}
 			<div class="person {p}">
 				<Face person={p} size={64} />
-				<span class="name">{names[p]}</span>
+				<span class="who">
+					<span class="name">{names[p]}</span>
+					<!-- What this person owns of the apartment so far: egenkapital, principal paid, costs -->
+					<span class="owned">{formatKr(Math.max(0, result.state.equity[p]))} kr</span>
+				</span>
 			</div>
 		{/each}
 	</section>
@@ -130,6 +134,19 @@
 	}
 	.person.mint {
 		flex-direction: row-reverse;
+	}
+	.who {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+	.person.mint .who {
+		align-items: flex-end;
+	}
+	.owned {
+		font-size: 0.82rem;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
 	}
 	.name {
 		overflow: hidden;

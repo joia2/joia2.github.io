@@ -5,8 +5,9 @@
 	import Menu from '#lib/Menu.svelte';
 	import SaveStatus from '#lib/SaveStatus.svelte';
 	import RawData from '#lib/RawData.svelte';
+	import YearJump from '#lib/YearJump.svelte';
 	import { ui } from '#lib/ui.svelte.js';
-	import { isUnlocked } from '#lib/session.svelte.js';
+	import { isUnlocked, startDemo } from '#lib/session.svelte.js';
 
 	let { children } = $props();
 
@@ -18,10 +19,16 @@
 	<nav>
 		<a href="/"><img src="/favicon.svg" alt="" width="22" height="22" />joia2</a>
 		{#if isUnlocked()}
-			<SaveStatus />
-			<button id="menu-button" class="icon-button menu" onclick={() => (ui.menuOpen = true)} aria-label="Open menu" aria-expanded={ui.menuOpen}>
-				<MenuIcon size={22} />
-			</button>
+			{#if ui.view === 'home'}<YearJump />{/if}
+			<span class="end">
+				<SaveStatus />
+				<button id="menu-button" class="icon-button menu" onclick={() => (ui.menuOpen = true)} aria-label="Open menu" aria-expanded={ui.menuOpen}>
+					<MenuIcon size={22} />
+				</button>
+			</span>
+		{:else}
+			<!-- Opens example data without a token; nothing is saved -->
+			<button class="demo" onclick={startDemo}>demo</button>
 		{/if}
 	</nav>
 </header>
@@ -67,6 +74,16 @@
 		font-size: 0.94rem;
 		font-weight: 600;
 		letter-spacing: -0.015em;
+	}
+	.demo {
+		padding: 0.25rem 0.8rem;
+		border: 0;
+		font-size: 0.85rem;
+		color: var(--muted);
+	}
+	.end {
+		display: flex;
+		align-items: center;
 	}
 	.menu {
 		margin-right: -8px;

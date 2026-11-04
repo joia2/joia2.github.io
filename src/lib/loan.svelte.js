@@ -1,6 +1,6 @@
 // The loan data file (loan.json in joia2data): loaded after login, saved shortly after each edit,
 // and dropped from memory when the app locks
-import { read, write } from '#lib/session.svelte.js';
+import { read, write, session } from '#lib/session.svelte.js';
 
 const FILE = 'loan.json';
 const SAVE_DELAY = 3000; // ms after the last edit or keystroke, so a burst of edits saves once
@@ -13,6 +13,14 @@ const empty = () => ({
 	payments: {}
 });
 
+// The demo: 10 M kr, 1 M kr egenkapital each, first payment December 2026. Nothing is saved.
+const demo = () => ({
+	...empty(),
+	total: 10_000_000,
+	egenkapital: { cyan: 1_000_000, mint: 1_000_000 },
+	payments: { '2026-12': { interest: 4.78 } }
+});
+
 // status: 'idle' | 'loading' | 'pending' (edited, not saved yet) | 'saving' | 'saved' | 'error'
 export const loan = $state({ data: null, sha: null, status: 'idle', error: '' });
 
@@ -20,6 +28,10 @@ let timer;
 let queue = Promise.resolve(); // saves run one after another, each on top of the previous version
 
 export async function loadLoan() {
+	if (session.demo) {
+		Object.assign(loan, { data: demo(), sha: null, status: 'idle', error: '' });
+		return;
+	}
 	loan.status = 'loading';
 	try {
 		const file = await read(FILE);
@@ -71,6 +83,7 @@ export function plain() {
 async function saveNow() {
 	// Nothing loaded or nothing new (an earlier save in the queue already wrote this edit)
 	if (!loan.data || !['pending', 'error'].includes(loan.status)) return;
+	if (session.demo) return void (loan.status = 'saved'); // the demo stays in memory
 	loan.status = 'saving';
 	try {
 		loan.sha = await write(FILE, plain(), loan.sha);
@@ -81,4 +94,4 @@ async function saveNow() {
 	}
 }
 
-export const hasUnsavedChanges = () => ['pending', 'saving', 'error'].includes(loan.status);
+export const hasUnsavedChanges = () => !session.demo && ['pending', 'saving', 'error'].includes(loan.status);

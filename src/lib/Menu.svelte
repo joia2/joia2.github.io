@@ -8,7 +8,7 @@
 	import PiggyBank from '@lucide/svelte/icons/piggy-bank';
 	import FileBraces from '@lucide/svelte/icons/file-braces';
 	import { ui } from '#lib/ui.svelte.js';
-	import { lock } from '#lib/session.svelte.js';
+	import { lock, session } from '#lib/session.svelte.js';
 	import { save, hasUnsavedChanges } from '#lib/loan.svelte.js';
 
 	let first = $state();
@@ -63,7 +63,9 @@
 		<button onclick={choose(show('egenkapital'))}><PiggyBank size={20} />egenkapital</button>
 		<button onclick={choose(() => (ui.rawOpen = true))}><FileBraces size={20} />raw data</button>
 		<hr />
-		<button onclick={choose(show('password'))}><KeyRound size={20} />change password</button>
+		{#if !session.demo}
+			<button onclick={choose(show('password'))}><KeyRound size={20} />change password</button>
+		{/if}
 		<button onclick={choose(lockApp)}><Lock size={20} />lock</button>
 	</nav>
 </aside>

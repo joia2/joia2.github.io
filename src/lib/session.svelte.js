@@ -4,7 +4,8 @@ import { readJSON, writeJSON, changePassword as changeVaultPassword } from '#lib
 // The token and the encryption key only live in memory, and only while unlocked: locking, closing
 // or reloading the page drops both. Nothing is stored on the device, and the password itself is
 // never kept, only the key made from it.
-export const session = $state({ token: '', key: null });
+// demo: example data kept only in memory, opened from the login screen without a token
+export const session = $state({ token: '', key: null, demo: false });
 
 if (browser) {
 	// Earlier versions could remember the token on the device; remove any copy left behind
@@ -17,7 +18,11 @@ if (browser) {
 }
 
 export function isUnlocked() {
-	return session.token !== '' && session.key !== null;
+	return session.demo || (session.token !== '' && session.key !== null);
+}
+
+export function startDemo() {
+	session.demo = true;
 }
 
 export function unlock(token, key) {
@@ -27,6 +32,7 @@ export function unlock(token, key) {
 export function lock() {
 	session.token = '';
 	session.key = null;
+	session.demo = false;
 }
 
 // Encrypted files in joia2data, using this session's token and key
