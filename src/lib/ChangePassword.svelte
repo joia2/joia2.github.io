@@ -42,7 +42,7 @@
 </script>
 
 <form onsubmit={submit}>
-	<h2>Change encryption password</h2>
+	<h1>Change password</h1>
 
 	{#if done}
 		<p class="success" role="status">Password changed. All data is now encrypted with the new one.</p>
@@ -82,13 +82,7 @@
 		display: flex;
 		gap: 0.75rem;
 	}
-	.actions button:not(.primary) {
-		font: inherit;
-		padding: 0.6rem 1rem;
-		border: 1px solid currentColor;
-		border-radius: 0.5rem;
-		background: transparent;
-		color: inherit;
-		cursor: pointer;
+	.actions .primary {
+		flex: 1;
 	}
 </style>

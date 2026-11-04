@@ -1,14 +1,29 @@
 <script>
 	import '../app.css';
+	import Menu from '#lib/Menu.svelte';
+	import { ui } from '#lib/ui.svelte.js';
+	import { isUnlocked } from '#lib/session.svelte.js';
 
 	let { children } = $props();
 </script>
 
 <header>
 	<nav>
-		<a href="/">joia2</a>
+		<a href="/"><img src="/favicon.svg" alt="" width="22" height="22" />joia2</a>
+		{#if isUnlocked()}
+			<button id="menu-button" class="menu" onclick={() => (ui.menuOpen = true)} aria-label="Open menu" aria-expanded={ui.menuOpen}>
+				<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+					<path d="M4 9h16M4 15h16" />
+				</svg>
+			</button>
+		{/if}
 	</nav>
 </header>
+
+<!-- Outside the header: its blur would otherwise trap the fixed-position menu inside the bar -->
+{#if isUnlocked()}
+	<Menu />
+{/if}
 
 <main>
 	{@render children()}
@@ -17,37 +32,65 @@
 <footer>© all rights reserved</footer>
 
 <style>
-	:global(body) {
-		margin: 0;
-		font-family: system-ui, sans-serif;
-		line-height: 1.6;
-		color: #1a1a1a;
-		background: #fafafa;
-	}
-	@media (prefers-color-scheme: dark) {
-		:global(body) {
-			color: #eaeaea;
-			background: #141414;
-		}
-	}
-	header,
-	main,
-	footer {
-		max-width: 44rem;
-		margin: 0 auto;
-		padding: 1rem;
+	header {
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		background: var(--bar);
+		backdrop-filter: saturate(180%) blur(20px);
+		-webkit-backdrop-filter: saturate(180%) blur(20px);
+		border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
 	}
 	nav {
+		max-width: 980px;
+		height: 48px;
+		margin: 0 auto;
+		padding: 0 16px;
+		box-sizing: border-box;
 		display: flex;
-		gap: 1.5rem;
+		align-items: center;
+		justify-content: space-between;
 	}
 	nav a {
-		color: inherit;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: var(--text);
 		text-decoration: none;
+		font-size: 0.94rem;
 		font-weight: 600;
+		letter-spacing: -0.015em;
+	}
+	.menu {
+		display: grid;
+		place-items: center;
+		width: 40px;
+		height: 40px;
+		margin-right: -8px;
+		padding: 0;
+		border: 0;
+	}
+	.menu path {
+		stroke: currentColor;
+		stroke-width: 1.6;
+		stroke-linecap: round;
+	}
+	main {
+		max-width: 980px;
+		min-height: calc(100vh - 48px - 4.5rem);
+		margin: 0 auto;
+		padding: 4rem 16px;
+		box-sizing: border-box;
 	}
 	footer {
-		font-size: 0.85rem;
-		opacity: 0.6;
+		padding: 1.5rem 16px 3rem;
+		font-size: 0.75rem;
+		color: var(--muted);
+		text-align: center;
+	}
+	@media (max-width: 480px) {
+		main {
+			padding-top: 2rem;
+		}
 	}
 </style>

@@ -1,9 +1,8 @@
 <script>
 	import Unlock from '#lib/Unlock.svelte';
 	import ChangePassword from '#lib/ChangePassword.svelte';
-	import { isUnlocked, lock, forget } from '#lib/session.svelte.js';
-
-	let changing = $state(false);
+	import { isUnlocked } from '#lib/session.svelte.js';
+	import { ui } from '#lib/ui.svelte.js';
 </script>
 
 <svelte:head>
@@ -12,30 +11,27 @@
 
 {#if !isUnlocked()}
 	<Unlock />
-{:else if changing}
-	<ChangePassword onclose={() => (changing = false)} />
+{:else if ui.changingPassword}
+	<ChangePassword onclose={() => (ui.changingPassword = false)} />
 {:else}
-	<h1>Hello</h1>
-	<p class="actions">
-		<button onclick={lock}>Lock</button>
-		<button onclick={forget}>Forget token</button>
-		<button onclick={() => (changing = true)}>Change password</button>
-	</p>
+	<section>
+		<h1>Hello</h1>
+	</section>
 {/if}
 
 <style>
-	.actions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.75rem;
+	section {
+		text-align: center;
+		padding-top: 2rem;
 	}
-	button {
-		font: inherit;
-		padding: 0.4rem 0.9rem;
-		border: 1px solid currentColor;
-		border-radius: 0.5rem;
-		background: transparent;
-		color: inherit;
-		cursor: pointer;
+	h1 {
+		font-size: clamp(3.5rem, 12vw, 6rem);
+		font-weight: 700;
+		letter-spacing: -0.045em;
+		line-height: 1.05;
+		background: var(--gradient);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
 	}
 </style>

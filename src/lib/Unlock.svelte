@@ -62,8 +62,6 @@
 </script>
 
 <form onsubmit={submit}>
-	<h1>Login</h1>
-
 	<label>
 		joia2data token
 		<!-- A text field marked as the username, so password managers fill it together with the password.
