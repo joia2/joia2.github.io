@@ -2,6 +2,7 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-exclamation-point';
 	import Check from '@lucide/svelte/icons/check';
 	import { formatAmount, formatKr, parseAmount, PEOPLE } from '#lib/loan.js';
+	import { typing } from '#lib/loan.svelte.js';
 
 	// row: one month from compute(); entry: what the data file holds for that month
 	let { row, entry, first, today, names, onedit } = $props();
@@ -23,9 +24,9 @@
 		onedit(key, value);
 	};
 
-	// The checkbox inside a paid field: checked when exactly the minimum is entered. Checking it
-	// enters the minimum; unchecking clears the field again.
-	const paidMinimum = (s) => s.typed && s.paid === s.min;
+	// The checkbox inside a paid field marks the month as paid: checked when at least the minimum is
+	// entered, typed or ticked. Ticking it enters exactly the minimum; unticking clears the field.
+	const paidMinimum = (s) => s.typed && s.paid >= s.min;
 	const toggleMinimum = (p) => {
 		const s = row.people[p];
 		onedit(p, paidMinimum(s) ? null : s.min / 100);
@@ -44,6 +45,7 @@
 						value={entry.interest ?? ''}
 						placeholder={String(row.rate)}
 						aria-label="interest in percent"
+						oninput={typing}
 						onchange={edited('interest')}
 					/>
 					<span class="suffix" aria-hidden="true">%</span>
@@ -57,6 +59,7 @@
 							value={formatAmount(entry.fee)}
 							placeholder={formatKr(row.fee)}
 							aria-label="fee in kroner"
+							oninput={typing}
 							onchange={edited('fee')}
 						/>
 						<span class="suffix" aria-hidden="true">kr</span>
@@ -73,7 +76,7 @@
 						class="minimum {p}"
 						role="checkbox"
 						aria-checked={paidMinimum(s)}
-						aria-label="{names[p]} paid exactly the minimum"
+						aria-label="{names[p]} paid at least the minimum"
 						disabled={!s.min}
 						onclick={() => toggleMinimum(p)}
 					>
@@ -85,6 +88,7 @@
 						value={formatAmount(entry[p])}
 						placeholder={formatKr(s.min)}
 						aria-label="paid by {names[p]}"
+						oninput={typing}
 						onchange={edited(p)}
 					/>
 				</span>
@@ -117,7 +121,14 @@
 					</button>
 				{/if}
 			{:else if row.debtor === p}
-				<input inputmode="decimal" value={formatAmount(entry[p])} placeholder="0,00" aria-label="paid by {names[p]}" onchange={edited(p)} />
+				<input
+					inputmode="decimal"
+					value={formatAmount(entry[p])}
+					placeholder="0,00"
+					aria-label="paid by {names[p]}"
+					oninput={typing}
+					onchange={edited(p)}
+				/>
 				<dl>
 					<dt>interest</dt>
 					<dd>+{formatKr(row.debtInterest)}</dd>
@@ -133,9 +144,12 @@
 <style>
 	.row {
 		display: grid;
+		/* The same space at both outer edges and between the columns keeps the fields narrow on
+		   wide screens; it shrinks with the screen */
+		--space: clamp(0.25rem, 4vw - 0.5rem, 2.5rem);
 		grid-template-columns: 1fr 5.75rem 1fr;
-		gap: 0.75rem;
-		padding: 0.9rem 0.25rem;
+		gap: 0.75rem max(0.75rem, var(--space));
+		padding: 0.9rem var(--space);
 		border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 	}
 	.row.now {
@@ -209,11 +223,14 @@
 		right: 0.45rem;
 	}
 	/* The minimum checkbox, inside the paid field on the left */
+	/* Centered with margins, not a transform: the shared button press style changes transforms, which
+	   made the box jump down under the pointer and lose the click */
 	.minimum {
 		position: absolute;
 		left: 0.5rem;
-		top: 50%;
-		transform: translateY(-50%);
+		top: 0;
+		bottom: 0;
+		margin: auto 0;
 		display: grid;
 		place-items: center;
 		width: 1.05rem;
@@ -227,6 +244,18 @@
 	.minimum:hover:not(:disabled) {
 		border-color: var(--muted);
 		background: transparent;
+	}
+	/* While pressed it grows in place, and shrinks back on release */
+	.minimum {
+		transition: transform 0.15s ease-out;
+	}
+	.minimum:active:not(:disabled) {
+		transform: scale(1.35);
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.minimum {
+			transition: none;
+		}
 	}
 	.minimum[aria-checked='true'].cyan {
 		border-color: var(--cyan);
@@ -260,6 +289,7 @@
 	dt {
 		color: var(--muted);
 		white-space: nowrap;
+		text-align: left; /* also on mint's side, where the rest is right-aligned */
 	}
 	dd {
 		margin: 0;

@@ -6,11 +6,14 @@ import { readJSON, writeJSON, changePassword as changeVaultPassword } from '#lib
 // never kept, only the key made from it.
 export const session = $state({ token: '', key: null });
 
-// Earlier versions could remember the token on the device; remove any copy left behind
 if (browser) {
+	// Earlier versions could remember the token on the device; remove any copy left behind
 	try {
 		localStorage.removeItem('joia2.token');
 	} catch {}
+	// Closing, reloading or leaving the page locks it, so a page the browser keeps in memory to
+	// restore later (back/forward cache, reopened tabs) comes back locked
+	window.addEventListener('pagehide', () => lock());
 }
 
 export function isUnlocked() {

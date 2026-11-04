@@ -75,6 +75,7 @@ export function compute(data, today = currentMonth()) {
 	const end = { cyan: TERM - 1, mint: TERM - 1 }; // index of each person's last scheduled month
 	const payment = { cyan: null, mint: null }; // each person's fixed monthly payment; null: work it out
 	let debt = 0; // between the two: above 0, cyan owes mint; below 0, mint owes cyan
+	const interestPaid = {}; // per year: the bank interest each person paid, for the tax return
 	let rate = 0;
 	let fee = 0;
 
@@ -163,7 +164,8 @@ export function compute(data, today = currentMonth()) {
 			transfer(p, repaid, false);
 			equity[p] += s.principal - repaid;
 
-			let costLeft = s.feeDue - feePaid + (s.interestDue - s.interest);
+			const feeLeft = s.feeDue - feePaid;
+			let costLeft = feeLeft + (s.interestDue - s.interest);
 			if (s.covered < 0) {
 				let covered = -s.covered;
 				// First as this month's unpaid principal...
@@ -172,6 +174,7 @@ export function compute(data, today = currentMonth()) {
 				covered -= asPrincipal;
 				// ...then the covered interest and fee are taken from paid-in equity, and beyond that owed
 				const asCost = Math.min(covered, costLeft);
+				people[other(p)].interestCovered = Math.max(0, asCost - feeLeft); // the coverer paid that interest
 				const fromEquity = Math.min(asCost, Math.max(0, equity[p]));
 				transfer(p, fromEquity, true);
 				debt += (p === 'cyan' ? 1 : -1) * (asCost - fromEquity);
@@ -186,6 +189,14 @@ export function compute(data, today = currentMonth()) {
 				if (s.extra > 0 && s.time) end[p] = k + monthsFor(balance(p), rate, payment[p]);
 				else payment[p] = null;
 			}
+		}
+
+		const year = month.slice(0, 4);
+		const paid = (interestPaid[year] ??= { cyan: 0, mint: 0, estimate: false });
+		for (const p of PEOPLE) {
+			paid[p] += people[p].interest + (people[p].interestCovered ?? 0);
+			// Not entered yet, so counted at the minimum: the year's numbers are an estimate
+			if (!people[p].typed && people[p].min > 0) paid.estimate = true;
 		}
 
 		return { people };
@@ -232,7 +243,21 @@ export function compute(data, today = currentMonth()) {
 		if (month <= until) state = snapshot();
 	}
 
-	return { half, rows, state };
+	return { half, rows, state, interestPaid };
+}
+
+// Each person's share of the bank interest paid in a year, in percent: what to enter in the
+// skattemelding when splitting the joint loan's interest (rentefradrag). The year shown is the last
+// finished one with payments, which is the one filed in spring; before that, the current year.
+export function taxShares(result, today = currentMonth()) {
+	const thisYear = Number(today.slice(0, 4));
+	const years = Object.keys(result.interestPaid).map(Number);
+	const year = years.includes(thisYear - 1) ? thisYear - 1 : years.includes(thisYear) ? thisYear : null;
+	if (year === null) return null;
+	const paid = result.interestPaid[year];
+	const sum = paid.cyan + paid.mint;
+	if (!sum) return null;
+	return { year, cyan: (paid.cyan / sum) * 100, mint: (paid.mint / sum) * 100 };
 }
 
 // Changes one value in the data file. Empty values are removed, so the file only holds what was

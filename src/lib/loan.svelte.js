@@ -3,7 +3,7 @@
 import { read, write } from '#lib/session.svelte.js';
 
 const FILE = 'loan.json';
-const SAVE_DELAY = 800; // ms after the last edit, so typing in several fields saves once
+const SAVE_DELAY = 5000; // ms after the last edit or keystroke, so a burst of edits saves once
 
 const empty = () => ({
 	v: 1,
@@ -40,6 +40,13 @@ export function unloadLoan() {
 // Call after changing loan.data
 export function changed() {
 	loan.status = 'pending';
+	clearTimeout(timer);
+	timer = setTimeout(save, SAVE_DELAY);
+}
+
+// Call on every keystroke: while someone is still typing, a waiting save waits 5 seconds more
+export function typing() {
+	if (loan.status !== 'pending') return;
 	clearTimeout(timer);
 	timer = setTimeout(save, SAVE_DELAY);
 }

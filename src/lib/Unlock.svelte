@@ -21,7 +21,13 @@
 	// Until the app has loaded, a submit would be a plain HTML form submission that puts the
 	// token and password into the page address. A disabled button blocks that, Enter included.
 	let ready = $state(false);
-	onMount(() => (ready = true));
+	let form = $state();
+	onMount(() => {
+		// Browsers refill text fields after a reload or a reopened tab; the token must not come back
+		form.reset();
+		token = key = repeat = '';
+		ready = true;
+	});
 
 	async function submit(event) {
 		event.preventDefault();
@@ -66,7 +72,7 @@
 	}
 </script>
 
-<form onsubmit={submit}>
+<form bind:this={form} onsubmit={submit}>
 	<label>
 		joia2data token
 		<!-- A text field marked as the username, so password managers fill it together with the password.
@@ -102,6 +108,7 @@
 				type="password"
 				name="password"
 				bind:value={key}
+				placeholder="•••••"
 				autocomplete={mode === 'setup' ? 'new-password' : 'current-password'}
 			/>
 		</span>
@@ -112,7 +119,7 @@
 			repeat encryption password
 			<span class="field">
 				<KeyRound size={20} />
-				<input type="password" name="repeat" bind:value={repeat} autocomplete="new-password" />
+				<input type="password" name="repeat" bind:value={repeat} autocomplete="new-password" placeholder="•••••" />
 			</span>
 		</label>
 	{/if}

@@ -231,3 +231,44 @@ form button.primary {
 	width: 100%;
 	padding: 0.8rem 1.4rem;
 }
+
+/* Popups: a glass card over the dimmed page (<dialog class="sheet">) */
+
+dialog.sheet {
+	width: min(40rem, calc(100vw - 32px));
+	max-height: min(42rem, calc(100vh - 64px));
+	box-sizing: border-box;
+	padding: 0;
+	border: 0;
+	border-radius: var(--radius);
+	background: color-mix(in srgb, var(--surface) 80%, transparent);
+	backdrop-filter: saturate(180%) blur(20px);
+	-webkit-backdrop-filter: saturate(180%) blur(20px);
+	box-shadow: var(--shadow);
+	color: var(--text);
+}
+dialog.sheet[open] {
+	display: flex;
+	flex-direction: column;
+}
+dialog.sheet::backdrop {
+	background: rgb(0 0 0 / 0.3);
+}
+.sheet-top {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 0.75rem 0.75rem 0.5rem 1.5rem;
+}
+.sheet-top h1 {
+	flex: 1;
+	font-size: 1.1rem;
+}
+.sheet-top button {
+	display: grid;
+	place-items: center;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	border: 0;
+}

@@ -2,16 +2,21 @@
 	import { onMount, tick } from 'svelte';
 	import CircleAlert from '@lucide/svelte/icons/circle-alert';
 	import House from '@lucide/svelte/icons/house';
+	import Info from '@lucide/svelte/icons/info';
 	import Face from '#lib/Face.svelte';
 	import LoanRow from '#lib/LoanRow.svelte';
+	import InterestYears from '#lib/InterestYears.svelte';
 	import { loan, changed } from '#lib/loan.svelte.js';
-	import { compute, currentMonth, formatKr, other, setValue, PEOPLE } from '#lib/loan.js';
+	import { compute, currentMonth, formatKr, other, setValue, taxShares, PEOPLE } from '#lib/loan.js';
 	import { ui } from '#lib/ui.svelte.js';
 
 	const today = currentMonth();
 	const result = $derived(compute(loan.data, today));
 	const names = $derived(loan.data.names);
 	const first = $derived(Object.keys(loan.data.payments).sort()[0]);
+	const tax = $derived(result && taxShares(result, today));
+	let yearsOpen = $state(false);
+	const percent = new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 	const debtor = $derived(result && (result.state.debt > 0 ? 'cyan' : result.state.debt < 0 ? 'mint' : null));
 
 	// How far each half of the bar is filled: what that person has paid in, of their share
@@ -52,7 +57,22 @@
 		<span class="cyan" style:width="{fill('cyan') * 50}%"></span>
 		<span class="mint" style:width="{fill('mint') * 50}%"></span>
 	</div>
-	<p class="shares">{formatKr(result.state.own.cyan)} / {formatKr(result.state.own.mint)}</p>
+	<div class="shares">
+		<!-- Each person's share of the year's interest, to enter in the skattemelding (rentefradrag) -->
+		{#if tax}
+			{#each PEOPLE as p, i (p)}
+				{#if i === 1}<span>{formatKr(result.state.own.cyan)} / {formatKr(result.state.own.mint)}</span>{/if}
+				<span class="tax {p}">
+					<span title="{names[p]}'s share of the {tax.year} interest, for the tax return">{percent.format(tax[p])} %</span>
+					<button class="info" onclick={() => (yearsOpen = true)} aria-label="interest paid per year">
+						<Info size={16} />
+					</button>
+				</span>
+			{/each}
+		{:else}
+			<span>{formatKr(result.state.own.cyan)} / {formatKr(result.state.own.mint)}</span>
+		{/if}
+	</div>
 
 	{#if debtor}
 		<div class="banner" role="alert">
@@ -63,6 +83,8 @@
 			</span>
 		</div>
 	{/if}
+
+	<InterestYears interestPaid={result.interestPaid} {names} highlight={tax?.year} bind:open={yearsOpen} />
 
 	<div class="rows">
 		{#each result.rows as row (row.month)}
@@ -150,7 +172,11 @@
 		background: var(--bg);
 	}
 	.shares {
-		margin: 0.5rem 0 0;
+		display: flex;
+		justify-content: space-between;
+		gap: 0.75rem;
+		max-width: 44rem;
+		margin: 0.5rem auto 0;
 		text-align: center;
 		font-size: 0.85rem;
 		color: var(--muted);
@@ -173,5 +199,27 @@
 	.rows {
 		max-width: 44rem;
 		margin: 1.5rem auto 0;
+	}
+	/* Without percentages the shares stay centered */
+	.shares > span:only-child {
+		flex: 1;
+	}
+	.tax {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+	}
+	/* The info icon sits on the inner side: after cyan's percentage, before mint's */
+	.tax.mint {
+		flex-direction: row-reverse;
+	}
+	.info {
+		display: grid;
+		place-items: center;
+		width: 26px;
+		height: 26px;
+		padding: 0;
+		border: 0;
+		color: var(--muted);
 	}
 </style>
