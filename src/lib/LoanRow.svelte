@@ -1,7 +1,7 @@
 <script>
 	import TriangleAlert from '@lucide/svelte/icons/triangle-exclamation-point';
 	import Check from '@lucide/svelte/icons/check';
-	import { formatAmount, formatKr, parseAmount, PEOPLE, TAX_RATE } from '#lib/loan.js';
+	import { formatAmount, formatKr, parseAmount, PEOPLE } from '#lib/loan.js';
 	import { typing } from '#lib/loan.svelte.js';
 
 	// row: one month from compute(); entry: what the data file holds for that month
@@ -30,9 +30,6 @@
 	// matching the minimum when earlier months change it. Unticking clears the field.
 	const paidMinimum = (s) => s.typed && s.paid >= s.min;
 	const toggleMinimum = (p) => onedit(p, paidMinimum(row.people[p]) ? null : 'min');
-
-	// What a payment really costs: the paid amount minus what the tax deduction gives back of its interest
-	const real = (s) => s.paid - Math.round((s.interest + (s.interestCovered ?? 0)) * TAX_RATE);
 
 	// What a paid field shows: the amount typed, or the current minimum when ticked
 	const shown = (key) => (entry[key] === 'min' ? formatKr(row.people[key].min) : formatAmount(entry[key]));
@@ -98,8 +95,6 @@
 					/>
 				</span>
 				<dl>
-					<dt>in reality</dt>
-					<dd>{formatKr(real(s))}</dd>
 					<dt>as principal</dt>
 					<dd>{formatKr(s.principal)}</dd>
 					<dt>as interest</dt>
