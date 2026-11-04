@@ -44,6 +44,16 @@ self.addEventListener('fetch', (event) => {
 		(async () => {
 			const cache = await caches.open(CACHE);
 
+			// Pages: always ask GitHub for the latest deploy, so a refresh shows it; the cache is
+			// only for offline. no-cache skips the browser's own copy, which Pages lets live 10 minutes.
+			if (event.request.mode === 'navigate') {
+				try {
+					return await fetch(event.request, { cache: 'no-cache' });
+				} catch {
+					return (await cache.match(url.pathname)) ?? (await cache.match('/')) ?? Response.error();
+				}
+			}
+
 			// App shell files never change within a deploy, so serve them from the cache
 			if (SHELL.has(url.pathname)) {
 				const cached = await cache.match(url.pathname);
