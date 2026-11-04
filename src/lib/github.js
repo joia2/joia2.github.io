@@ -75,3 +75,39 @@ export async function deleteFile(token, path, sha, message) {
 	throwIfConflict(response, path);
 	if (!response.ok) throw await httpError(response, `Deleting ${path}`);
 }
+
+// The lower-level Git API below changes many files in one commit, so a change is all or nothing
+
+async function gitJSON(token, method, path, body) {
+	const response = await request(token, method, path, body);
+	if (!response.ok) throw await httpError(response, `${method} ${path}`);
+	return response.json();
+}
+
+// Returns the current state of the default branch: { branch, head, tree, files: [{ path, sha }] }
+export async function listFiles(token) {
+	const { default_branch: branch } = await gitJSON(token, 'GET', '');
+	const { object } = await gitJSON(token, 'GET', `/git/ref/heads/${branch}`);
+	const tree = await gitJSON(token, 'GET', `/git/trees/${object.sha}?recursive=1`);
+	if (tree.truncated) throw new Error('joia2data has too many files to list at once.');
+	const files = tree.tree.filter((entry) => entry.type === 'blob').map(({ path, sha }) => ({ path, sha }));
+	return { branch, head: object.sha, tree: tree.sha, files };
+}
+
+export async function getBlob(token, sha) {
+	const { content } = await gitJSON(token, 'GET', `/git/blobs/${sha}`);
+	return new TextDecoder().decode(Uint8Array.fromBase64(content));
+}
+
+// Writes { path: text } as one commit on top of state.head. Throws ConflictError if the branch
+// moved since listFiles, instead of overwriting what changed meanwhile.
+export async function commitFiles(token, { branch, head, tree: baseTree }, files, message) {
+	const tree = await gitJSON(token, 'POST', '/git/trees', {
+		base_tree: baseTree,
+		tree: Object.entries(files).map(([path, content]) => ({ path, mode: '100644', type: 'blob', content }))
+	});
+	const commit = await gitJSON(token, 'POST', '/git/commits', { message, tree: tree.sha, parents: [head] });
+	const response = await request(token, 'PATCH', `/git/refs/heads/${branch}`, { sha: commit.sha });
+	if (response.status === 422) throw new ConflictError('joia2data');
+	if (!response.ok) throw await httpError(response, 'Saving the commit');
+}

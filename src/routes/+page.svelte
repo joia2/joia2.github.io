@@ -1,25 +1,32 @@
 <script>
 	import Unlock from '#lib/Unlock.svelte';
+	import ChangePassword from '#lib/ChangePassword.svelte';
 	import { isUnlocked, lock, forget } from '#lib/session.svelte.js';
+
+	let changing = $state(false);
 </script>
 
 <svelte:head>
 	<title>joia2</title>
 </svelte:head>
 
-{#if isUnlocked()}
+{#if !isUnlocked()}
+	<Unlock />
+{:else if changing}
+	<ChangePassword onclose={() => (changing = false)} />
+{:else}
 	<h1>Hello</h1>
 	<p class="actions">
 		<button onclick={lock}>Lock</button>
 		<button onclick={forget}>Forget token</button>
+		<button onclick={() => (changing = true)}>Change password</button>
 	</p>
-{:else}
-	<Unlock />
 {/if}
 
 <style>
 	.actions {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 0.75rem;
 	}
 	button {

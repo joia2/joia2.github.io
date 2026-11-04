@@ -1,5 +1,5 @@
 import { browser } from '$app/env';
-import { readJSON, writeJSON } from '#lib/vault.js';
+import { readJSON, writeJSON, changePassword as changeVaultPassword } from '#lib/vault.js';
 
 const TOKEN_STORAGE = 'joia2.token';
 
@@ -51,4 +51,9 @@ export function read(path) {
 
 export function write(path, value, sha) {
 	return writeJSON(session.token, session.key, path, value, sha);
+}
+
+// Re-encrypts all data with a new password; this session then continues with the new key
+export async function changePassword(current, next) {
+	session.key = await changeVaultPassword(session.token, current, next);
 }

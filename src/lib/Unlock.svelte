@@ -114,71 +114,13 @@
 		<p class="error" role="alert">{error}</p>
 	{/if}
 
-	<button type="submit" disabled={busy || !ready}>
+	<button class="primary" type="submit" disabled={busy || !ready}>
 		{busy ? 'Checking…' : mode === 'setup' ? 'Set password' : 'Unlock'}
 	</button>
 </form>
 
 <style>
-	form {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-		max-width: 24rem;
-	}
-	h1 {
-		margin: 0;
-	}
-	label {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-		font-weight: 600;
-	}
-	label.check {
-		flex-direction: row;
-		align-items: center;
-		gap: 0.5rem;
-		font-weight: normal;
-	}
-	input:not([type='checkbox']) {
-		font: inherit;
-		padding: 0.6rem 0.75rem;
-		border: 1px solid #c4c4c4;
-		border-radius: 0.5rem;
-		background: transparent;
-		color: inherit;
-	}
 	.masked {
 		-webkit-text-security: disc;
-	}
-	.note {
-		margin: 0;
-	}
-	.error {
-		margin: 0;
-		color: #c62828;
-	}
-	button {
-		font: inherit;
-		font-weight: 600;
-		padding: 0.6rem 1rem;
-		border: 0;
-		border-radius: 0.5rem;
-		background: #22d3ee;
-		color: #0b2a2e;
-		cursor: pointer;
-	}
-	button:disabled {
-		opacity: 0.6;
-		cursor: wait;
-	}
-	@media (prefers-color-scheme: dark) {
-		input:not([type='checkbox']) {
-			border-color: #444;
-		}
-		.error {
-			color: #ef9a9a;
-		}
 	}
 </style>

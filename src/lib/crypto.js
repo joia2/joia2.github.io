@@ -61,6 +61,16 @@ export async function openVault(vault, password) {
 	return key;
 }
 
+// Whether text is an encrypted file written by this app, whatever key it was made with
+export function isEncryptedFile(text) {
+	try {
+		const { v, iv, data } = JSON.parse(text);
+		return v === 1 && typeof iv === 'string' && typeof data === 'string';
+	} catch {
+		return false;
+	}
+}
+
 // Returns the text of an encrypted file
 export async function encryptJSON(key, value) {
 	return JSON.stringify(await encrypt(key, JSON.stringify(value))) + '\n';
