@@ -17,6 +17,7 @@
 
 export const PEOPLE = ['cyan', 'mint'];
 export const TERM = 360; // 30 years
+export const TAX_RATE = 0.22; // what the rentefradrag gives back of interest paid (alminnelig inntekt)
 const LIMIT = TERM + 1200; // stops a debt that is never repaid from producing rows forever
 
 export const other = (person) => (person === 'cyan' ? 'mint' : 'cyan');
