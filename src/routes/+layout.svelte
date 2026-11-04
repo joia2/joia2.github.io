@@ -1,20 +1,25 @@
 <script>
 	import '../app.css';
+	import { setLucideProps } from '@lucide/svelte';
+	import MenuIcon from '@lucide/svelte/icons/menu';
 	import Menu from '#lib/Menu.svelte';
+	import SaveStatus from '#lib/SaveStatus.svelte';
 	import { ui } from '#lib/ui.svelte.js';
 	import { isUnlocked } from '#lib/session.svelte.js';
 
 	let { children } = $props();
+
+	// One slim line weight for every Lucide icon in the app
+	setLucideProps({ strokeWidth: 1.25 });
 </script>
 
 <header>
 	<nav>
 		<a href="/"><img src="/favicon.svg" alt="" width="22" height="22" />joia2</a>
 		{#if isUnlocked()}
+			<SaveStatus />
 			<button id="menu-button" class="menu" onclick={() => (ui.menuOpen = true)} aria-label="Open menu" aria-expanded={ui.menuOpen}>
-				<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-					<path d="M4 9h16M4 15h16" />
-				</svg>
+				<MenuIcon size={22} />
 			</button>
 		{/if}
 	</nav>
@@ -69,11 +74,6 @@
 		margin-right: -8px;
 		padding: 0;
 		border: 0;
-	}
-	.menu path {
-		stroke: currentColor;
-		stroke-width: 1.6;
-		stroke-linecap: round;
 	}
 	main {
 		max-width: 980px;

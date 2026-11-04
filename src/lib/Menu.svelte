@@ -1,7 +1,14 @@
 <script>
 	import { tick } from 'svelte';
+	import X from '@lucide/svelte/icons/x';
+	import KeyRound from '@lucide/svelte/icons/key-round';
+	import Lock from '@lucide/svelte/icons/lock';
+	import Users from '@lucide/svelte/icons/users';
+	import House from '@lucide/svelte/icons/house';
+	import PiggyBank from '@lucide/svelte/icons/piggy-bank';
 	import { ui } from '#lib/ui.svelte.js';
-	import { lock, forget } from '#lib/session.svelte.js';
+	import { lock } from '#lib/session.svelte.js';
+	import { flush } from '#lib/loan.svelte.js';
 
 	let first = $state();
 
@@ -16,9 +23,12 @@
 		action();
 	};
 
-	// Locking also leaves any open screen, so the next login starts at home
-	const leave = (action) => () => {
-		ui.changingPassword = false;
+	const show = (view) => () => (ui.view = view);
+
+	// Locking saves any pending edit first, and the next login starts at home
+	const leave = (action) => async () => {
+		ui.view = 'home';
+		await flush();
 		action();
 	};
 
@@ -40,15 +50,16 @@
 <aside class:open={ui.menuOpen} inert={!ui.menuOpen} aria-label="Menu">
 	<div class="top">
 		<button class="close" onclick={close} aria-label="Close menu">
-			<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-				<path d="M6 6l12 12M18 6L6 18" />
-			</svg>
+			<X size={22} />
 		</button>
 	</div>
 	<nav>
-		<button bind:this={first} onclick={choose(() => (ui.changingPassword = true))}>Change password</button>
-		<button onclick={choose(leave(lock))}>Lock</button>
-		<button onclick={choose(leave(forget))}>Forget token</button>
+		<button bind:this={first} onclick={choose(show('names'))}><Users size={20} />names</button>
+		<button onclick={choose(show('apartment'))}><House size={20} />apartment</button>
+		<button onclick={choose(show('egenkapital'))}><PiggyBank size={20} />egenkapital</button>
+		<hr />
+		<button onclick={choose(show('password'))}><KeyRound size={20} />change password</button>
+		<button onclick={choose(leave(lock))}><Lock size={20} />lock</button>
 	</nav>
 </aside>
 
@@ -75,7 +86,7 @@
 		width: min(22rem, 85vw);
 		box-sizing: border-box;
 		padding: 0 2rem 2rem;
-		background: color-mix(in srgb, var(--surface) 88%, transparent);
+		background: color-mix(in srgb, var(--surface) 60%, transparent);
 		backdrop-filter: saturate(180%) blur(20px);
 		-webkit-backdrop-filter: saturate(180%) blur(20px);
 		box-shadow: var(--shadow);
@@ -101,24 +112,28 @@
 		padding: 0;
 		border: 0;
 	}
-	.close path {
-		stroke: currentColor;
-		stroke-width: 1.6;
-		stroke-linecap: round;
-	}
 	nav {
 		display: flex;
 		flex-direction: column;
 		margin-top: 1.5rem;
 	}
+	hr {
+		width: 100%;
+		margin: 0.75rem 0;
+		border: 0;
+		border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+	}
 	nav button {
-		padding: 0.55rem 0;
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		padding: 0.5rem 0;
 		border: 0;
 		border-radius: 0;
 		text-align: left;
-		font-size: 1.6rem;
-		font-weight: 600;
-		letter-spacing: -0.025em;
+		font-size: 1.2rem;
+		font-weight: 500;
+		letter-spacing: -0.015em;
 	}
 	nav button:hover:not(:disabled) {
 		background: transparent;

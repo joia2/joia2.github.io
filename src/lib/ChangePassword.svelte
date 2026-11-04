@@ -1,6 +1,9 @@
 <script>
+	import CircleAlert from '@lucide/svelte/icons/circle-alert';
+	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import { session, changePassword } from '#lib/session.svelte.js';
 	import { UserError, WrongPasswordError } from '#lib/errors.js';
+	import { flush, loadLoan } from '#lib/loan.svelte.js';
 
 	let { onclose } = $props();
 
@@ -29,7 +32,9 @@
 		error = '';
 		busy = true;
 		try {
+			await flush(); // a pending loan edit is saved first, so it gets re-encrypted too
 			await changePassword(current, next);
+			await loadLoan(); // re-encrypting gave loan.json a new version to save on top of
 			done = true;
 			current = next = repeat = '';
 		} catch (e) {
@@ -42,11 +47,11 @@
 </script>
 
 <form onsubmit={submit}>
-	<h1>Change password</h1>
+	<h1>change password</h1>
 
 	{#if done}
-		<p class="success" role="status">Password changed. All data is now encrypted with the new one.</p>
-		<button class="primary" type="button" onclick={onclose}>Done</button>
+		<p class="success" role="status"><CircleCheck size={18} />Password changed. All data is now encrypted with the new one.</p>
+		<button class="primary" type="button" onclick={onclose}>done</button>
 	{:else}
 		<!-- Hidden, so password managers know which entry to update -->
 		<input type="text" name="username" autocomplete="username" value={session.token} hidden />
@@ -65,24 +70,14 @@
 		</label>
 
 		{#if error}
-			<p class="error" role="alert">{error}</p>
+			<p class="error" role="alert"><CircleAlert size={18} />{error}</p>
 		{/if}
 
 		<p class="actions">
 			<button class="primary" type="submit" disabled={busy}>
-				{busy ? 'Re-encrypting…' : 'Change password'}
+				{busy ? 're-encrypting…' : 'change password'}
 			</button>
-			<button type="button" onclick={onclose} disabled={busy}>Cancel</button>
+			<button type="button" onclick={onclose} disabled={busy}>cancel</button>
 		</p>
 	{/if}
 </form>
-
-<style>
-	.actions {
-		display: flex;
-		gap: 0.75rem;
-	}
-	.actions .primary {
-		flex: 1;
-	}
-</style>

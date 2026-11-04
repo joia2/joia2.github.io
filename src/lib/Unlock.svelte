@@ -1,13 +1,18 @@
 <script>
 	import { onMount } from 'svelte';
-	import { session, unlock } from '#lib/session.svelte.js';
+	import CircleAlert from '@lucide/svelte/icons/circle-alert';
+	import TicketCheck from '@lucide/svelte/icons/ticket-check';
+	import KeyRound from '@lucide/svelte/icons/key-round';
+	import LockKeyholeOpen from '@lucide/svelte/icons/lock-keyhole-open';
+	import ShieldCheck from '@lucide/svelte/icons/shield-check';
+	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
+	import { unlock } from '#lib/session.svelte.js';
 	import { login, setup } from '#lib/vault.js';
 	import { UserError, NeedsSetupError, WrongPasswordError } from '#lib/errors.js';
 
-	let token = $state(session.token);
+	let token = $state('');
 	let key = $state('');
 	let repeat = $state('');
-	let remember = $state(session.remember);
 	let error = $state('');
 	let busy = $state(false);
 	// 'setup' when joia2data has no salt.json yet: the password is then chosen, and typed twice
@@ -40,7 +45,7 @@
 		busy = true;
 		try {
 			const cryptoKey = mode === 'setup' ? await setup(t, key) : await login(t, key);
-			unlock(t, cryptoKey, remember);
+			unlock(t, cryptoKey);
 		} catch (e) {
 			if (e instanceof NeedsSetupError) {
 				mode = 'setup';
@@ -66,22 +71,20 @@
 		joia2data token
 		<!-- A text field marked as the username, so password managers fill it together with the password.
 		     It stays masked like a password where the browser supports -webkit-text-security. -->
-		<input
-			class="masked"
-			type="text"
-			name="username"
-			bind:value={token}
-			oninput={tokenChanged}
-			autocomplete="username"
-			autocapitalize="off"
-			spellcheck="false"
-			placeholder="github_…"
-		/>
-	</label>
-
-	<label class="check">
-		<input type="checkbox" bind:checked={remember} />
-		Remember token on this device
+		<span class="field">
+			<TicketCheck size={20} />
+			<input
+				class="masked"
+				type="text"
+				name="username"
+				bind:value={token}
+				oninput={tokenChanged}
+				autocomplete="username"
+				autocapitalize="off"
+				spellcheck="false"
+				placeholder="github_…"
+			/>
+		</span>
 	</label>
 
 	{#if mode === 'setup'}
@@ -93,27 +96,39 @@
 
 	<label>
 		encryption password
-		<input
-			type="password"
-			name="password"
-			bind:value={key}
-			autocomplete={mode === 'setup' ? 'new-password' : 'current-password'}
-		/>
+		<span class="field">
+			<KeyRound size={20} />
+			<input
+				type="password"
+				name="password"
+				bind:value={key}
+				autocomplete={mode === 'setup' ? 'new-password' : 'current-password'}
+			/>
+		</span>
 	</label>
 
 	{#if mode === 'setup'}
 		<label>
 			repeat encryption password
-			<input type="password" name="repeat" bind:value={repeat} autocomplete="new-password" />
+			<span class="field">
+				<KeyRound size={20} />
+				<input type="password" name="repeat" bind:value={repeat} autocomplete="new-password" />
+			</span>
 		</label>
 	{/if}
 
 	{#if error}
-		<p class="error" role="alert">{error}</p>
+		<p class="error" role="alert"><CircleAlert size={18} />{error}</p>
 	{/if}
 
 	<button class="primary" type="submit" disabled={busy || !ready}>
-		{busy ? 'Checking…' : mode === 'setup' ? 'Set password' : 'Unlock'}
+		{#if busy}
+			<LoaderCircle size={20} class="spin" />checking…
+		{:else if mode === 'setup'}
+			<ShieldCheck size={20} />set password
+		{:else}
+			<LockKeyholeOpen size={20} />unlock
+		{/if}
 	</button>
 </form>
 
