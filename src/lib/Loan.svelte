@@ -22,6 +22,12 @@
 	// How far each half of the bar is filled: what that person has paid in, of their share
 	const fill = (p) => Math.min(1, Math.max(0, result.state.equity[p] / result.state.own[p] || 0));
 
+	// Months before the last two with a paid amount start collapsed
+	let expanded = $state(false);
+	const rows = $derived(result?.rows ?? []);
+	const filled = $derived(rows.filter((r) => PEOPLE.some((p) => loan.data.payments[r.month]?.[p] != null)));
+	const hidden = $derived(expanded || filled.length < 2 ? 0 : rows.indexOf(filled.at(-2)));
+
 	const edit = (month) => (key, value, person) => {
 		setValue(loan.data, month, key, value, person);
 		changed();
@@ -93,7 +99,10 @@
 	<InterestYears interestPaid={result.interestPaid} {names} highlight={tax?.year} bind:open={yearsOpen} />
 
 	<div class="rows">
-		{#each result.rows as row (row.month)}
+		{#if hidden}
+			<button class="more" onclick={() => (expanded = true)}>show {hidden} earlier months</button>
+		{/if}
+		{#each rows.slice(hidden) as row (row.month)}
 			<LoanRow
 				{row}
 				{today}
@@ -219,6 +228,12 @@
 	.rows {
 		max-width: 44rem;
 		margin: 1.5rem auto 0;
+	}
+	.more {
+		display: block;
+		margin: 0 auto 1rem;
+		font-size: 0.85rem;
+		color: var(--muted);
 	}
 	.tax {
 		display: inline-flex;
