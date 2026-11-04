@@ -97,7 +97,7 @@
 						onchange={edited(p)}
 					/>
 				</span>
-				<dl class:projected={!s.typed}>
+				<dl>
 					<dt>in reality</dt>
 					<dd>{formatKr(real(s))}</dd>
 					<dt>as principal</dt>
@@ -174,7 +174,7 @@
 	.mid {
 		display: flex;
 		flex-direction: column;
-		gap: 0.3rem;
+		gap: 0.2rem;
 		min-width: 0;
 	}
 	.side.mint {
@@ -292,10 +292,11 @@
 		display: grid;
 		grid-template-columns: auto auto;
 		justify-content: space-between;
-		gap: 0.1rem 0.5rem;
+		gap: 0 0.5rem;
 		margin: 0;
 		padding: 0 0.6rem;
 		font-size: 0.78rem;
+		line-height: 1.3;
 	}
 	dt {
 		color: var(--muted);
@@ -304,11 +305,9 @@
 	}
 	dd {
 		margin: 0;
+		color: var(--muted);
 		text-align: right;
 		font-variant-numeric: tabular-nums;
-	}
-	dl.projected dd {
-		color: var(--muted);
 	}
 	p {
 		margin: 0;
@@ -333,7 +332,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.35rem;
-		padding: 0.15rem 0.6rem;
+		padding: 0.05rem 0.6rem;
 		border: 0;
 		font-size: 0.72rem;
 		color: var(--muted);
