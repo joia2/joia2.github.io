@@ -22,12 +22,13 @@
 	// How far each half of the bar is filled: what that person has paid in, of their share
 	const fill = (p) => Math.min(1, Math.max(0, result.state.equity[p] / result.state.own[p] || 0));
 
-	// Months before the last two with a paid amount start collapsed
-	let expanded = $state(false);
+	// Only the last two months with a paid amount and the 10 after them show; the rest is collapsed
 	const rows = $derived(result?.rows ?? []);
 	const filled = $derived(rows.filter((r) => PEOPLE.some((p) => loan.data.payments[r.month]?.[p] != null)));
 	const earlier = $derived(filled.length < 2 ? 0 : rows.indexOf(filled.at(-2)));
-	const hidden = $derived(expanded ? 0 : earlier);
+	const until = $derived(Math.min(rows.length, rows.indexOf(filled.at(-1)) + 11));
+	const later = $derived(rows.length - until);
+	const visible = $derived(rows.slice(ui.earlier ? 0 : earlier, ui.later ? rows.length : until));
 
 	const edit = (month) => (key, value, person) => {
 		setValue(loan.data, month, key, value, person);
@@ -101,11 +102,11 @@
 
 	<div class="rows">
 		{#if earlier}
-			<button class="more" onclick={() => (expanded = !expanded)}>
-				{expanded ? 'hide' : 'show'} {earlier} earlier months
+			<button class="more" onclick={() => (ui.earlier = !ui.earlier)}>
+				{ui.earlier ? 'hide' : 'show'} {earlier} earlier months
 			</button>
 		{/if}
-		{#each rows.slice(hidden) as row (row.month)}
+		{#each visible as row (row.month)}
 			<LoanRow
 				{row}
 				{today}
@@ -115,6 +116,11 @@
 				onedit={edit(row.month)}
 			/>
 		{/each}
+		{#if later}
+			<button class="more after" onclick={() => (ui.later = !ui.later)}>
+				{ui.later ? 'hide' : 'show'} {later} later months
+			</button>
+		{/if}
 	</div>
 {/if}
 
@@ -237,6 +243,9 @@
 		margin: 0 auto 1rem;
 		font-size: 0.85rem;
 		color: var(--muted);
+	}
+	.more.after {
+		margin: 1rem auto 0;
 	}
 	.tax {
 		display: inline-flex;

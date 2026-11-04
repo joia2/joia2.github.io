@@ -1,5 +1,7 @@
 <script>
+	import { tick } from 'svelte';
 	import { loan } from '#lib/loan.svelte.js';
+	import { ui } from '#lib/ui.svelte.js';
 	import { TERM } from '#lib/loan.js';
 
 	// Shortcuts to every 6th year of the loan, from the first payment; a dropdown on narrow screens
@@ -10,7 +12,10 @@
 		return Array.from({ length: Math.floor(TERM / 12 / 6) + 1 }, (_, i) => start + i * 6);
 	});
 
-	function jump(year) {
+	// Shows every month first, since the year may be among the collapsed ones
+	async function jump(year) {
+		ui.earlier = ui.later = true;
+		await tick();
 		document.querySelector(`.row[data-month^="${year}"]`)?.scrollIntoView({ block: 'start' });
 	}
 </script>
