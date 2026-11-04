@@ -122,7 +122,7 @@
 					>
 						<span class:on={!s.time}>−pay</span>
 						<span class="track"><span class="knob"></span></span>
-						<span class:on={s.time}>−time</span>
+						<span class:on={s.time}>−time{#if s.monthsSaved}<span class="saved"> ({s.monthsSaved}m)</span>{/if}</span>
 					</button>
 				{/if}
 			{:else if row.debtor === p}
@@ -338,6 +338,9 @@
 	}
 	.toggle:hover:not(:disabled) {
 		background: transparent;
+	}
+	.saved {
+		font-variant-caps: small-caps;
 	}
 	.toggle .on {
 		color: var(--text);

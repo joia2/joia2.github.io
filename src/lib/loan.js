@@ -152,6 +152,7 @@ export function compute(data, today = currentMonth()) {
 				interest: 0,
 				uncovered: 0,
 				surplus: 0, // paid beyond everything this person owed: not applied anywhere
+				monthsSaved: 0, // months an extra takes off the end when the payments are kept
 				time: Boolean(entry.time?.[p])
 			};
 		}
@@ -207,7 +208,10 @@ export function compute(data, today = currentMonth()) {
 			// Off schedule: an extra either lowers the next payments (the default) or keeps them and ends
 			// sooner; anything else (short and not covered) works the payment out again
 			if (balance(p) > 0 && balance(p) !== expected) {
-				if (s.extra > 0 && s.time) end[p] = k + monthsFor(balance(p), rate, payment[p]);
+				// How many months the extra takes off the end if the payments are kept: shown either way
+				const sooner = k + monthsFor(balance(p), rate, payment[p]);
+				if (s.extra > 0) s.monthsSaved = Math.max(0, end[p] - sooner);
+				if (s.extra > 0 && s.time) end[p] = sooner;
 				else payment[p] = null;
 			}
 		}
