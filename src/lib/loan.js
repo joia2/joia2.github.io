@@ -91,6 +91,7 @@ export function compute(data, today = currentMonth()) {
 	// Costs paid in cash count as owned, from their month on (earlier ones from the first month)
 	const costs = [...(data.costs ?? [])].sort((a, b) => (a.month < b.month ? -1 : 1));
 	let costsApplied = 0;
+	const covered = { cyan: 0, mint: 0 }; // paid-in money moved between the two by covering
 	const costsPaid = { cyan: { maintenance: 0, improvement: 0 }, mint: { maintenance: 0, improvement: 0 } };
 	function applyCosts(month) {
 		for (; costsApplied < costs.length && !(costs[costsApplied].month > month); costsApplied++) {
@@ -109,6 +110,7 @@ export function compute(data, today = currentMonth()) {
 		equity: { ...equity },
 		balance: { cyan: balance('cyan'), mint: balance('mint') },
 		costs: { cyan: { ...costsPaid.cyan }, mint: { ...costsPaid.mint } },
+		covered: { ...covered },
 		debt
 	});
 
@@ -119,8 +121,10 @@ export function compute(data, today = currentMonth()) {
 		if (amount <= 0) return;
 		own[from] -= amount;
 		if (fromEquity) equity[from] -= amount;
+		if (fromEquity) covered[from] -= amount;
 		own[other(from)] += amount;
 		equity[other(from)] += amount;
+		covered[other(from)] += amount;
 	}
 
 	function loanMonth(k, month, entry, days) {
@@ -185,8 +189,8 @@ export function compute(data, today = currentMonth()) {
 			const debtor = debt > 0 ? 'cyan' : debt < 0 ? 'mint' : null;
 			const repaid = p === debtor ? Math.min(s.principal, Math.abs(debt)) : 0;
 			debt -= Math.sign(debt) * repaid;
-			transfer(p, repaid, false);
-			equity[p] += s.principal - repaid;
+			equity[p] += s.principal;
+			transfer(p, repaid, true); // paid by the debtor, owned by the other
 
 			const feeLeft = s.feeDue - feePaid;
 			let costLeft = feeLeft + (s.interestDue - s.interest);

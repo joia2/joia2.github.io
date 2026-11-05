@@ -9,10 +9,12 @@
 
 	const value = $derived(state.own.cyan + state.own.mint); // the price plus the costs paid so far
 	const owned = (p) => Math.max(0, state.equity[p]);
+	const signed = (ore) => (ore > 0 ? '+' : ore < 0 ? '−' : '') + formatKr(Math.abs(ore));
 	const lines = $derived([
 		['owns', (p) => `${formatPercent(owned(p) / value * 100)} %`],
 		['egenkapital', (p) => formatKr(toOre(egenkapital?.[p] ?? 0))],
-		['principal paid', (p) => formatKr(owned(p) - toOre(egenkapital?.[p] ?? 0) - state.costs[p].maintenance - state.costs[p].improvement)],
+		['principal paid', (p) => formatKr(owned(p) - toOre(egenkapital?.[p] ?? 0) - state.costs[p].maintenance - state.costs[p].improvement - state.covered[p])],
+		['covered', (p) => signed(state.covered[p])],
 		['maintenance paid', (p) => formatKr(state.costs[p].maintenance)],
 		['improvement paid', (p) => formatKr(state.costs[p].improvement)],
 		['owned in total', (p) => formatKr(owned(p))],
@@ -42,7 +44,8 @@
 		</table>
 		<p class="note">
 			In kroner, as of this month. "Owns" is the share of the apartment's value: the price plus the
-			maintenance and improvement costs. Principal paid includes what one of you covered for the other.
+			maintenance and improvement costs. Covered: + is what you paid for the other, which became yours;
+			− is what was taken from your paid-in money for interest and fees the other paid for you.
 		</p>
 	</div>
 </Sheet>
