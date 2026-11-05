@@ -149,7 +149,7 @@
 			{/if}
 		</p>
 
-		<!-- Costs that raise the apartment's value; what each paid counts as owned -->
+		<!-- Costs that raise the apartment's value; what each paid counts as paid in -->
 		{#each costs as c, i (i)}
 			<fieldset>
 				<legend>

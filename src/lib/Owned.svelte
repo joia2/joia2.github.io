@@ -3,7 +3,7 @@
 	import Sheet from '#lib/Sheet.svelte';
 	import { formatKr, formatPercent, toOre, PEOPLE } from '#lib/loan.js';
 
-	// What each person owns of the apartment and where it comes from.
+	// What each person has paid of the apartment's cost and where it comes from.
 	// state: result.state from compute(); open: bindable, whether the popup shows
 	let { state, egenkapital, names, open = $bindable(false) } = $props();
 
@@ -22,7 +22,7 @@
 	]);
 </script>
 
-<Sheet title="owned" bind:open>
+<Sheet title="paid" bind:open>
 	<div class="scroll">
 		<table>
 			<thead>
@@ -43,8 +43,8 @@
 			</tbody>
 		</table>
 		<p class="note">
-			In kroner, as of this month. "Owns" is the share of the apartment's value: the price plus the
-			maintenance and improvement costs. Covered: what one of you paid for the other, + for the one who paid
+			In kroner, as of this month. "Paid in %" is how much of the apartment's cost each of you has paid:
+			the price plus the maintenance and improvement costs. The rest is still owed to the bank. Covered: what one of you paid for the other, + for the one who paid
 			and − for the one it was paid for. Principal the other paid on your part counts in your principal
 			paid, and then in covered as −.
 		</p>

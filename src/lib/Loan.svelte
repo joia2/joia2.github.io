@@ -73,11 +73,11 @@
 				<Face person={p} size={64} />
 				<span class="who">
 					<span class="name">{names[p]}</span>
-					<!-- What this person owns of the apartment so far: egenkapital, principal paid, costs -->
+					<!-- What this person has paid of the apartment so far: egenkapital, principal, costs -->
 					<span class="owned">{formatKr(Math.max(0, result.state.equity[p]))} kr</span>
 					<span class="owned share">
 						{formatPercent(ownedShare(p))} %
-						<button class="icon-button info small" onclick={() => (ownedOpen = true)} aria-label="what each owns">
+						<button class="icon-button info small" onclick={() => (ownedOpen = true)} aria-label="what each has paid">
 							<Info size={14} />
 						</button>
 					</span>
