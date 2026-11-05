@@ -15,8 +15,8 @@
 		['egenkapital', (p) => formatKr(toOre(egenkapital?.[p] ?? 0))],
 		['principal paid', (p) => formatKr(owned(p) - toOre(egenkapital?.[p] ?? 0) - state.costs[p].maintenance - state.costs[p].improvement - state.covered[p])],
 		['covered', (p) => signed(state.covered[p])],
-		['maintenance paid', (p) => formatKr(state.costs[p].maintenance)],
-		['improvement paid', (p) => formatKr(state.costs[p].improvement)],
+		['maintenances', (p) => formatKr(state.costs[p].maintenance)],
+		['improvements', (p) => formatKr(state.costs[p].improvement)],
 		['owned in total', (p) => formatKr(owned(p))],
 		['principal left', (p) => formatKr(state.balance[p])]
 	]);
