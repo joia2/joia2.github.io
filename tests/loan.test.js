@@ -50,11 +50,23 @@ test('no entries: 360 months, ends at 0, table = interest due', () => {
 	assert.ok(Object.values(r.interestPaid).every((y) => y.estimate));
 });
 
+test('last payment close to the others (yearly recalculation)', () => {
+	const r = compute(base(), '2056-12');
+	const rows = loanRows(r);
+	for (const p of PEOPLE) {
+		const last = rows.at(-1).people[p].min;
+		const before = rows.at(-2).people[p].min;
+		assert.ok(Math.abs(last - before) < 10000, `${p}: ${before} → ${last}`); // under 100 kr
+	}
+});
+
 test('payment stays fixed; interest uses real days of the previous month', () => {
 	const r = run();
 	const [dec, jan, feb, mar] = loanRows(r);
-	assert.equal(dec.people.cyan.due, jan.people.cyan.due);
+	assert.equal(jan.people.cyan.due, feb.people.cyan.due);
 	assert.equal(jan.people.cyan.due, mar.people.cyan.due);
+	// Worked out again in January: only a few kroner from December
+	assert.ok(Math.abs(jan.people.cyan.due - dec.people.cyan.due) < 1000);
 	// Mar 1 pays February (28 days), Feb 1 pays January (31): less interest, more principal
 	assert.ok(mar.people.cyan.interestDue < feb.people.cyan.interestDue);
 	// Dec 1 2026 pays November: 30 days

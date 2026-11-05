@@ -4,8 +4,9 @@
 //
 // Each person has their own internal part of the loan: their half of the apartment minus their
 // egenkapital. Like the bank's, each person's monthly payment stays fixed; interest for the actual
-// days of the month only changes how much of it is principal. The payment is worked out again only
-// when the rate changes or a month's payment differs from it (extra, or short and not covered).
+// days of the month only changes how much of it is principal. The payment is worked out again every
+// January, when the rate changes, or when a month's payment differs from it (extra, or short and not
+// covered).
 //
 // When one pays less than their minimum and the other covers it, the covered amount moves
 // ownership to the one who covered: first as the unpaid principal, then (for covered interest
@@ -252,6 +253,9 @@ export function compute(data, today = currentMonth()) {
 			payment.cyan = payment.mint = null; // a new rate means new payments, same end
 		}
 		if (isEntered(entry.fee)) fee = toOre(entry.fee);
+		// Like the bank, the payments are worked out again every January (same end), so the small
+		// differences from months of uneven length don't pile up on the last payment
+		if (k > 0 && month.endsWith('-01')) payment.cyan = payment.mint = null;
 		const days = interestDays(month);
 		const loan = balance('cyan') + balance('mint') > 0;
 		if (!loan && (debt === 0 || month > until)) break;
