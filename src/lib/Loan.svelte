@@ -7,7 +7,7 @@
 	import LoanRow from '#lib/LoanRow.svelte';
 	import InterestYears from '#lib/InterestYears.svelte';
 	import { loan, changed } from '#lib/loan.svelte.js';
-	import { compute, currentMonth, formatKr, formatPercent, other, setValue, taxShares, PEOPLE } from '#lib/loan.js';
+	import { compute, currentMonth, dropStaleTime, formatKr, formatPercent, other, setValue, taxShares, PEOPLE } from '#lib/loan.js';
 	import { ui } from '#lib/ui.svelte.js';
 
 	// The current month, refreshed when the page is shown again (the app may stay open past the 1st)
@@ -32,6 +32,7 @@
 
 	const edit = (month) => (key, value, person) => {
 		setValue(loan.data, month, key, value, person);
+		dropStaleTime(loan.data);
 		changed();
 	};
 

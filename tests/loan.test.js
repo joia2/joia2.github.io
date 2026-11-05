@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compute, dropMin, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
+import { compute, dropMin, dropStaleTime, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
 
 const START = '2026-12';
 const base = (payments = {}, extra = {}) => ({
@@ -186,6 +186,21 @@ test('tax shares: last finished year, split by interest actually paid', () => {
 	assert.ok(t.cyan < 50);
 	assert.equal(taxShares(r, '2028-03').year, 2027);
 	assert.equal(taxShares(r, '2026-11').year, 2026); // before the first payment: the coming year, as an estimate
+});
+
+test('dropStaleTime: "time" kept only while the toggle shows', () => {
+	const d = base({
+		'2027-01': { cyan: 200000, time: { cyan: true } }, // extra: kept
+		'2027-02': { cyan: 1000, time: { cyan: true } }, // short, no extra: dropped with the month's time
+		'2027-03': { time: { mint: true } }, // nothing typed: month removed
+		'2027-04': { cyan: 200000, interest: 5, time: { cyan: true, mint: true } } // mint has no extra
+	});
+	assert.equal(dropStaleTime(d), true);
+	assert.deepEqual(d.payments['2027-01'], { cyan: 200000, time: { cyan: true } });
+	assert.deepEqual(d.payments['2027-02'], { cyan: 1000 });
+	assert.equal(d.payments['2027-03'], undefined);
+	assert.deepEqual(d.payments['2027-04'], { cyan: 200000, interest: 5, time: { cyan: true } });
+	assert.equal(dropStaleTime(d), false);
 });
 
 test('setValue: empty values removed, first month kept', () => {

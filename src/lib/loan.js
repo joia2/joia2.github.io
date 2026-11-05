@@ -329,6 +329,22 @@ export function dropMin(data) {
 	return dropped;
 }
 
+// A "time" choice only means something while that month shows the −pay/−time toggle: a typed
+// payment with an extra that goes into the loan. Removes the others. Returns whether anything changed.
+export function dropStaleTime(data, result = compute(data)) {
+	const rows = new Map((result?.rows ?? []).map((r) => [r.month, r]));
+	let dropped = false;
+	for (const [month, entry] of Object.entries(data?.payments ?? {})) {
+		for (const p of Object.keys(entry.time ?? {})) {
+			const s = rows.get(month)?.people?.[p];
+			if (s && s.typed && s.extra > s.surplus) continue;
+			setValue(data, month, 'time', false, p);
+			dropped = true;
+		}
+	}
+	return dropped;
+}
+
 // "12 345,50", "12.345,50" or "12345.5" → 12345.5; an empty field → null; anything else → undefined
 export function parseAmount(text) {
 	let clean = String(text).replace(/[\s\u00a0\u202f]/g, '');
