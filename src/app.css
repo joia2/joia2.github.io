@@ -166,20 +166,6 @@ form input {
 		border-color 0.2s,
 		box-shadow 0.2s;
 }
-/* iPhone draws month fields its own way: taller than text fields, wider than their column and
-   centered. Plain styling makes them match the other fields. */
-form input[type='month'] {
-	-webkit-appearance: none;
-	appearance: none;
-	display: block;
-	min-width: 0;
-	max-width: 100%;
-	height: calc(1.47em + 1.6rem + 2px); /* one line of text, the padding and the border */
-}
-form input[type='month']::-webkit-date-and-time-value {
-	margin: 0;
-	text-align: left;
-}
 form input:focus {
 	outline: none;
 	border-color: var(--accent);

@@ -7,6 +7,7 @@
 	import Paintbrush from '@lucide/svelte/icons/paintbrush';
 	import Trash from '@lucide/svelte/icons/trash';
 	import Face from '#lib/Face.svelte';
+	import MonthInput from '#lib/MonthInput.svelte';
 	import { loan, changed } from '#lib/loan.svelte.js';
 	import { addMonths, currentMonth, formatAmount, parseAmount, toOre, PEOPLE } from '#lib/loan.js';
 
@@ -126,10 +127,7 @@
 		</label>
 		<label>
 			first payment
-			<span class="field">
-				<Calendar size={20} />
-				<input type="month" bind:value={start} disabled={startLocked} placeholder="2026-12" />
-			</span>
+			<MonthInput bind:value={start} disabled={startLocked} label="first payment"><Calendar size={20} /></MonthInput>
 		</label>
 		{#if startLocked}
 			<p class="note">The first month can't change once payments are entered.</p>
@@ -148,7 +146,7 @@
 				<div class="pair">
 					<label>
 						month
-						<input type="month" bind:value={c.month} placeholder="2027-05" />
+						<MonthInput bind:value={c.month} label="{c.kind} cost" />
 					</label>
 					<label>
 						total (kr)
