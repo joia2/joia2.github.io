@@ -81,6 +81,7 @@
 							<Info size={14} />
 						</button>
 					</span>
+					<span class="label">owns</span>
 				</span>
 			</div>
 		{/each}
@@ -98,10 +99,13 @@
 	{#snippet taxShare(p)}
 		<span class="tax {p}">
 			{#if tax}
-				<span title="{names[p]}'s share of the {tax.year} interest, for the tax return">{formatPercent(tax[p])} %</span>
-				<button class="icon-button info" onclick={() => (yearsOpen = true)} aria-label="interest paid per year">
-					<Info size={16} />
-				</button>
+				<span class="tax-value">
+					<span title="{names[p]}'s share of the {tax.year} interest, for the tax return">{formatPercent(tax[p])} %</span>
+					<button class="icon-button info" onclick={() => (yearsOpen = true)} aria-label="interest paid per year">
+						<Info size={16} />
+					</button>
+				</span>
+				<span class="label">tax return</span>
 			{/if}
 		</span>
 	{/snippet}
@@ -300,11 +304,24 @@
 	.more.after {
 		margin: 1rem auto 0;
 	}
+	/* The percentage with its info icon, and a small label below */
 	.tax {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		white-space: nowrap;
+	}
+	.tax-value {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
-		white-space: nowrap;
+	}
+	.label {
+		font-size: 0.68rem;
+		line-height: 1;
+		margin-top: -0.3rem; /* sit close to the percentage; the info icon makes its line taller */
+		color: var(--muted);
+		opacity: 0.8;
 	}
 	@media (max-width: 480px) {
 		.shares,
@@ -317,8 +334,11 @@
 	}
 	/* The info icon sits on the inner side: after cyan's percentage, before mint's */
 	.tax.mint {
-		flex-direction: row-reverse;
+		align-items: flex-end;
 		justify-self: end;
+	}
+	.tax.mint .tax-value {
+		flex-direction: row-reverse;
 	}
 	.info {
 		width: 26px;
