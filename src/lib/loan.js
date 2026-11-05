@@ -11,7 +11,8 @@
 // When one pays less than their minimum and the other covers it, the covered amount moves
 // ownership to the one who covered: first as the unpaid principal, then (for covered interest
 // and fees) from the paid-in equity of the one who fell short. Once that equity is used up, the
-// rest becomes a personal debt with the bank's interest, repaid from the debtor's later principal.
+// rest becomes a personal debt with the bank's interest, repaid from the debtor's later principal
+// or in money (`debt` in a month's entry).
 //
 // Maintenance and improvement costs (data.costs) raise the apartment's value: from their month on,
 // what each person paid for them is added to what that person owns.
@@ -269,12 +270,22 @@ export function compute(data, today = currentMonth()) {
 		const debtInterest = interestFor(Math.abs(debt), rate, days);
 		debt += Math.sign(debt) * debtInterest;
 
+		// The debtor may also repay the debt in money, outside the loan (samboerkontrakt 3.4.5): it
+		// lowers the debt only, and moves no ownership
+		const owing = debt > 0 ? 'cyan' : debt < 0 ? 'mint' : null;
+		const cash = isEntered(entry.debt) ? toOre(entry.debt) : 0;
+		const debtRepaid = owing ? Math.min(cash, Math.abs(debt)) : 0;
+		debt -= Math.sign(debt) * debtRepaid;
+
 		const row = {
 			month,
 			rate,
 			fee,
 			loan,
 			debtInterest,
+			owing, // who owes the other at the start of the month, if anyone
+			debtRepaid, // repaid in money this month
+			debtSurplus: cash - debtRepaid, // paid beyond the debt: not applied anywhere
 			...(loan ? loanMonth(k, month, entry, days) : debtMonth(entry))
 		};
 		row.debt = debt;

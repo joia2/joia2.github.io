@@ -13,7 +13,7 @@
 	);
 
 	// Saves a field when it loses focus. Text that isn't an amount puts the field back as it was.
-	// key: a person ('cyan', 'mint'), 'interest' or 'fee'
+	// key: a person ('cyan', 'mint'), 'interest', 'fee' or 'debt' (repaid in money)
 	const edited = (key) => (event) => {
 		const input = event.currentTarget;
 		const value = parseAmount(input.value);
@@ -103,6 +103,24 @@
 					<p class="minus">−{formatKr(-s.covered)} kr</p>
 				{:else if s.covered > 0}
 					<p class="plus">+{formatKr(s.covered)} kr</p>
+				{/if}
+				{#if row.owing === p}
+					<!-- While this person owes the other, the debt can also be repaid in money (3.4.5) -->
+					<span class="affix">
+						<span class="prefix" aria-hidden="true">debt</span>
+						<input
+							class="prefixed debt"
+							inputmode="decimal"
+							value={shown('debt')}
+							placeholder="0,00"
+							aria-label="debt repaid in money by {names[p]}"
+							oninput={typing}
+							onchange={edited('debt')}
+						/>
+					</span>
+					{#if row.debtSurplus}
+						<p class="warn"><TriangleAlert size={14} />{formatKr(row.debtSurplus)} kr more than the debt</p>
+					{/if}
 				{/if}
 				{#if s.uncovered}
 					<p class="warn"><TriangleAlert size={14} />{formatKr(s.uncovered)} kr unpaid</p>
@@ -286,6 +304,15 @@
 	}
 	.mid input.prefixed {
 		padding-left: 1.6rem;
+	}
+	/* The debt repaid in money: smaller than the payment field, like the middle ones */
+	input.debt {
+		padding: 0.1rem 0.5rem 0.1rem 2.2rem;
+		font-size: 0.8rem;
+		border-radius: 8px;
+	}
+	.side .prefix {
+		left: 0.6rem;
 	}
 	.mid input.suffixed {
 		padding-right: 1.25rem;
