@@ -22,6 +22,11 @@
 			shares, both of you, so they add up to 100 %. Do it for each finished year, in spring; it can be
 			corrected for up to three years.
 		</p>
+		<p class="note intro">
+			To get the deduction in every salary instead of after the year, enter your amount in kroner for
+			the coming year in the skattekort (<em>Skattekort → Endre skattekort</em>, under loans and
+			interest), early in the year. Less tax is then taken each month.
+		</p>
 		<table>
 			<thead>
 				<tr>
