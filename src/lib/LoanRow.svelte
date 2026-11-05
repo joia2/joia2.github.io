@@ -213,6 +213,9 @@
 		border-radius: 8px;
 		font-size: 0.75rem;
 	}
+	.mid input:focus {
+		border-color: var(--accent);
+	}
 	/* A unit or name shown inside a field, not editable: "fee [ 50 ] kr", "[ 4.78 ] %" */
 	.affix {
 		position: relative;
