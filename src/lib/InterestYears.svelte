@@ -16,6 +16,12 @@
 <!-- The bank interest each person paid per year: what the skattemelding splits (rentefradrag) -->
 <Sheet title="interest and fees" bind:open>
 	<div class="scroll">
+		<p class="note intro">
+			The percentages are each person's share of the year's interest and fees. In the skattemelding,
+			under <em>Bank, lån og forsikring → Lån og renter</em>, change the shared loan from 50/50 to these
+			shares, both of you, so they add up to 100 %. Do it for each finished year, in spring; it can be
+			corrected for up to three years.
+		</p>
 		<table>
 			<thead>
 				<tr>
@@ -101,6 +107,9 @@
 		display: block;
 		font-size: 0.68rem;
 		font-weight: 400;
+	}
+	.note.intro {
+		margin: 0 0 1rem;
 	}
 	.note {
 		margin: 1rem 0 0;
