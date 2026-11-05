@@ -14,7 +14,7 @@
 </script>
 
 <!-- The bank interest each person paid per year: what the skattemelding splits (rentefradrag) -->
-<Sheet title="interest paid" bind:open>
+<Sheet title="interest and fees" bind:open>
 	<div class="scroll">
 		<table>
 			<thead>
@@ -45,8 +45,9 @@
 			</tbody>
 		</table>
 		<p class="note">
-			In kroner. Interest one of you covered for the other counts for the one who paid it. Estimates
-			count months not entered yet at the minimum.
+			In kroner, interest and fees (both deductible), in the year they built up: the payment on
+			1 January is December's, so it counts in the year before. What one of you covered for the other
+			counts for the one who paid it. Estimates count months not entered yet at the minimum.
 		</p>
 	</div>
 </Sheet>

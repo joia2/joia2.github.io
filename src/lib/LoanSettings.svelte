@@ -21,7 +21,10 @@
 
 	let names = $state({ ...data.names });
 	let total = $state(data.total ? formatAmount(data.total) : '');
-	let start = $state(months[0] ?? addMonths(currentMonth(), 1));
+	// The take-over day: the loan is paid out then, and the first payment is on the 1st of the next
+	// month. Older data without one counts from the 1st of the month before the first payment.
+	let takeover = $state(data.takeover ?? `${months.length ? addMonths(months[0], -1) : currentMonth()}-01`);
+	const start = $derived(addMonths(takeover.slice(0, 7), 1));
 	let egenkapital = $state({ cyan: formatAmount(data.egenkapital.cyan || ''), mint: formatAmount(data.egenkapital.mint || '') });
 	let error = $state('');
 
@@ -74,13 +77,19 @@
 		if (section === 'apartment') {
 			const price = parseAmount(total);
 			if (!price) return (error = 'Enter the apartment price.');
-			if (!MONTH.test(start)) return (error = 'Enter the first payment month as YYYY-MM.');
+			if (!/^\d{4}-\d{2}-\d{2}$/.test(takeover)) return (error = 'Enter the take-over day.');
+			if (startLocked && start !== months[0]) {
+				const before = addMonths(months[0], -1);
+				const name = new Date(`${before}-01T12:00:00`).toLocaleDateString('en', { month: 'short' }).toLowerCase();
+				return (error = `Payments are entered, so the take-over day must stay in ${before.slice(0, 4)} ${name}.`);
+			}
 			if (price / 2 < Math.max(data.egenkapital.cyan, data.egenkapital.mint)) {
 				return (error = "Egenkapital can't be more than half the price.");
 			}
 			const parsed = parseCosts();
 			if (typeof parsed === 'string') return (error = parsed);
 			data.total = price;
+			data.takeover = takeover;
 			data.costs = parsed; // always there, empty when there are none
 			if (!startLocked && start !== months[0]) moveStart();
 		}
@@ -126,12 +135,14 @@
 			</span>
 		</label>
 		<label>
-			first payment
-			<MonthInput bind:value={start} disabled={startLocked} label="first payment"><Calendar size={20} /></MonthInput>
+			take-over day
+			<MonthInput bind:value={takeover} label="take-over day"><Calendar size={20} /></MonthInput>
 		</label>
-		{#if startLocked}
-			<p class="note">The first month can't change once payments are entered.</p>
-		{/if}
+		<p class="note">
+			The loan is paid out on this day; the first payment is on {start.slice(0, 4)}
+			{new Date(`${start}-01T12:00:00`).toLocaleDateString('en', { month: 'short' }).toLowerCase()} 1.
+			{#if startLocked}Payments are entered, so the day can only change within the same month.{/if}
+		</p>
 
 		<!-- Costs that raise the apartment's value; what each paid counts as owned -->
 		{#each costs as c, i (i)}

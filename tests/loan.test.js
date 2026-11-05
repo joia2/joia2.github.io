@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compute, dropMin, dropStaleTime, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
+import { addMonths, compute, dropMin, dropStaleTime, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
 
 const START = '2026-12';
 const base = (payments = {}, extra = {}) => ({
@@ -23,8 +23,8 @@ function invariants(r, label) {
 	for (const p of PEOPLE) {
 		const fromRows = {};
 		for (const x of loanRows(r)) {
-			const y = x.month.slice(0, 4);
-			fromRows[y] = (fromRows[y] ?? 0) + x.people[p].interest + (x.people[p].interestCovered ?? 0);
+			const y = addMonths(x.month, -1).slice(0, 4); // the year the interest built up
+			fromRows[y] = (fromRows[y] ?? 0) + x.people[p].interest + x.people[p].feePaid + (x.people[p].costCovered ?? 0);
 		}
 		for (const [y, v] of Object.entries(r.interestPaid)) assert.equal(v[p], fromRows[y] ?? 0, `${label}: ${p} ${y}`);
 	}
@@ -43,7 +43,7 @@ test('no entries: 360 months, ends at 0, table = interest due', () => {
 	const rows = loanRows(r);
 	assert.equal(rows.length, TERM);
 	assert.equal(r.state.balance.cyan + r.state.balance.mint, 0);
-	const due = rows.reduce((s, x) => s + x.people.cyan.interestDue + x.people.mint.interestDue, 0);
+	const due = rows.reduce((s, x) => s + x.people.cyan.interestDue + x.people.mint.interestDue + x.people.cyan.feeDue + x.people.mint.feeDue, 0);
 	assert.equal(totalInterest(r), due);
 	assert.equal(owned(r), toOre(8700000));
 	// Every year is an estimate when nothing is typed
@@ -146,7 +146,7 @@ test('short covered by the other: ownership moves, interest counts for the cover
 	const x = row(r, '2027-01');
 	assert.equal(x.people.cyan.covered, -x.people.cyan.short);
 	assert.equal(x.people.cyan.uncovered, 0);
-	assert.equal(x.people.mint.interestCovered, x.people.cyan.interestDue);
+	assert.equal(x.people.mint.costCovered, x.people.cyan.interestDue + x.people.cyan.feeDue);
 	// Mint now owns more than half
 	assert.ok(r.state.own.mint > r.half.mint);
 	assert.equal(owned(r), toOre(8700000));
@@ -183,6 +183,7 @@ test('estimate flag: only years with untyped months', () => {
 	const pay = {};
 	for (let m = 1; m <= 12; m++) pay[`2027-${String(m).padStart(2, '0')}`] = { cyan: 20000, mint: 25000 };
 	pay[START] = { interest: 4.78, fee: 50, cyan: 20000, mint: 25000 };
+	pay['2028-01'] = { cyan: 20000, mint: 25000 }; // December 2027's interest, paid 1 January
 	const r = compute(base(pay), '2028-02');
 	assert.equal(r.interestPaid['2026'].estimate, false);
 	assert.equal(r.interestPaid['2027'].estimate, false);
@@ -213,6 +214,19 @@ test('dropStaleTime: "time" kept only while the toggle shows', () => {
 	assert.equal(d.payments['2027-03'], undefined);
 	assert.deepEqual(d.payments['2027-04'], { cyan: 200000, interest: 5, time: { cyan: true } });
 	assert.equal(dropStaleTime(d), false);
+});
+
+test('take-over day: first interest only from that day; January interest in the year before', () => {
+	const r = compute(base({}, { takeover: '2026-11-15' }), '2027-02');
+	const plain = compute(base(), '2027-02');
+	const first = (x) => x.rows[0].people.cyan.interestDue;
+	const b = toOre(8700000 / 2 - 500000);
+	assert.equal(first(r), Math.round((b * 4.78 * 16) / 36500)); // 15 Nov → 1 Dec: 16 days
+	assert.equal(first(plain), Math.round((b * 4.78 * 30) / 36500)); // no take-over day: all of November
+	// 2026: the payments of 1 Dec (November) and 1 Jan (December), with their fees
+	const [dec, jan] = r.rows;
+	const sum = (x) => x.people.cyan.interest + x.people.cyan.feePaid;
+	assert.equal(r.interestPaid['2026'].cyan, sum(dec) + sum(jan));
 });
 
 test('setValue: empty values removed, first month kept', () => {

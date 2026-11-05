@@ -41,10 +41,12 @@ export function currentMonth(date = new Date()) {
 	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-// A payment on the 1st settles the interest for every day of the month before
-function interestDays(month) {
+// A payment on the 1st settles the interest for every day of the month before; the first one only
+// from the take-over day ('YYYY-MM-DD'), when the loan was paid out
+function interestDays(month, from) {
 	const [y, m] = month.split('-').map(Number);
-	return new Date(Date.UTC(y, m - 1, 0)).getUTCDate();
+	const days = from ? Math.round((Date.UTC(y, m - 1, 1) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000) : 0;
+	return days > 0 ? days : new Date(Date.UTC(y, m - 1, 0)).getUTCDate();
 }
 
 // Interest on an amount for some days, at a yearly rate in percent
@@ -83,7 +85,7 @@ export function compute(data, today = currentMonth()) {
 	const end = { cyan: TERM - 1, mint: TERM - 1 }; // index of each person's last scheduled month
 	const payment = { cyan: null, mint: null }; // each person's fixed monthly payment; null: work it out
 	let debt = 0; // between the two: above 0, cyan owes mint; below 0, mint owes cyan
-	const interestPaid = {}; // per year: the bank interest each person paid, for the tax return
+	const interestPaid = {}; // per year: the interest and fees each person paid, for the tax return
 	let rate = 0;
 	let fee = 0;
 
@@ -180,6 +182,7 @@ export function compute(data, today = currentMonth()) {
 			const expected = balance(p) - s.principalDue; // where the part would be after the minimum
 			let rest = s.paid - Math.max(0, s.covered); // what this person paid for their own part
 			const feePaid = Math.min(rest, s.feeDue);
+			s.feePaid = feePaid;
 			rest -= feePaid;
 			s.interest = Math.min(rest, s.interestDue);
 			rest -= s.interest;
@@ -203,7 +206,7 @@ export function compute(data, today = currentMonth()) {
 				covered -= asPrincipal;
 				// ...then the covered interest and fee are taken from paid-in equity, and beyond that owed
 				const asCost = Math.min(covered, costLeft);
-				people[other(p)].interestCovered = Math.max(0, asCost - feeLeft); // the coverer paid that interest
+				people[other(p)].costCovered = asCost; // interest and fee the coverer paid for the other
 				const fromEquity = Math.min(asCost, Math.max(0, equity[p]));
 				transfer(p, fromEquity, true);
 				debt += (p === 'cyan' ? 1 : -1) * (asCost - fromEquity);
@@ -223,10 +226,12 @@ export function compute(data, today = currentMonth()) {
 			}
 		}
 
-		const year = month.slice(0, 4);
+		// Interest counts in the year it built up (påløpt), as the tax return wants: a payment on
+		// 1 January is December's, so it belongs to the year before. Fees are deductible as well.
+		const year = addMonths(month, -1).slice(0, 4);
 		const paid = (interestPaid[year] ??= { cyan: 0, mint: 0, estimate: false });
 		for (const p of PEOPLE) {
-			paid[p] += people[p].interest + (people[p].interestCovered ?? 0);
+			paid[p] += people[p].interest + people[p].feePaid + (people[p].costCovered ?? 0);
 			// Not entered yet, so counted at the minimum: the year's numbers are an estimate
 			if (!people[p].typed && people[p].min > 0) paid.estimate = true;
 		}
@@ -256,7 +261,7 @@ export function compute(data, today = currentMonth()) {
 		// Like the bank, the payments are worked out again every January (same end), so the small
 		// differences from months of uneven length don't pile up on the last payment
 		if (k > 0 && month.endsWith('-01')) payment.cyan = payment.mint = null;
-		const days = interestDays(month);
+		const days = interestDays(month, k === 0 && data.takeover);
 		const loan = balance('cyan') + balance('mint') > 0;
 		if (!loan && (debt === 0 || month > until)) break;
 
