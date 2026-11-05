@@ -182,16 +182,33 @@ test('debt repaid in money: lowers the debt only, moves no ownership', () => {
 
 	// Paid off in money in February, with a bit too much
 	const cash = owed / 100 + 1000;
-	const r = compute(base({ ...shortMonth, '2027-02': { debt: cash } }, noEquity), '2027-02');
+	const r = compute(base({ ...shortMonth, '2027-02': { debt: { cyan: cash } } }, noEquity), '2027-02');
 	invariants(r, 'debt in money');
 	const feb = row(r, '2027-02');
 	assert.equal(feb.debt, 0, 'debt settled');
-	assert.equal(feb.debtRepaid + feb.debtSurplus, toOre(cash));
-	assert.ok(feb.debtSurplus > 0, 'the extra is shown, not applied');
+	assert.equal(feb.debtRepaid + feb.debtSurplus.cyan, toOre(cash));
+	assert.ok(feb.debtSurplus.cyan > 0, 'the extra is shown, not applied');
 	// Ownership is the same as without the money payment: only principal moves ownership
 	assert.deepEqual(row(r, '2027-02').people.cyan.principal, row(before, '2027-02').people.cyan.principal);
 	assert.ok(r.state.equity.cyan >= before.state.equity.cyan, 'no later principal went to the other');
 	assert.equal(r.state.own.cyan + r.state.own.mint, before.state.own.cyan + before.state.own.mint);
+});
+
+test('debt typed without a debt: kept, shown as surplus, applied to nothing', () => {
+	const r = run({ '2027-01': { debt: { mint: 1000 } } }, {}, '2027-01');
+	const jan = row(r, '2027-01');
+	assert.equal(jan.owing, null);
+	assert.equal(jan.debtRepaid, 0);
+	assert.equal(jan.debtSurplus.mint, toOre(1000));
+	assert.equal(jan.debt, 0);
+});
+
+test('setValue: debt kept per person, removed when emptied', () => {
+	const data = base();
+	setValue(data, '2027-02', 'debt', 500, 'cyan');
+	assert.deepEqual(data.payments['2027-02'], { debt: { cyan: 500 } });
+	setValue(data, '2027-02', 'debt', null, 'cyan');
+	assert.equal(data.payments['2027-02'], undefined);
 });
 
 test('rate change: payment worked out again, same end', () => {

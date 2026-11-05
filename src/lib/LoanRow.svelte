@@ -13,7 +13,7 @@
 	);
 
 	// Saves a field when it loses focus. Text that isn't an amount puts the field back as it was.
-	// key: a person ('cyan', 'mint'), 'interest', 'fee' or 'debt' (repaid in money)
+	// key: a person ('cyan', 'mint'), 'interest' or 'fee'
 	const edited = (key) => (event) => {
 		const input = event.currentTarget;
 		const value = parseAmount(input.value);
@@ -23,6 +23,17 @@
 			return;
 		}
 		onedit(key, value);
+	};
+
+	// The debt one person repaid in money this month: kept per person, like `time`
+	const editedDebt = (p) => (event) => {
+		const input = event.currentTarget;
+		const value = parseAmount(input.value);
+		if (value === undefined) {
+			input.value = formatAmount(entry.debt?.[p]);
+			return;
+		}
+		onedit('debt', value, p);
 	};
 
 	// The checkbox inside a paid field: checked when any amount is entered. Ticking stores today's
@@ -104,22 +115,28 @@
 				{:else if s.covered > 0}
 					<p class="plus">+{formatKr(s.covered)} kr</p>
 				{/if}
-				{#if row.owing === p}
-					<!-- While this person owes the other, the debt can also be repaid in money (3.4.5) -->
+				{#if row.owing === p || entry.debt?.[p] != null}
+					<!-- While this person owes the other, the debt can also be repaid in money (3.4.5).
+					     An amount once typed always shows, so it can be seen and cleared. -->
 					<span class="affix">
 						<span class="prefix" aria-hidden="true">debt</span>
 						<input
 							class="prefixed debt"
 							inputmode="decimal"
-							value={shown('debt')}
+							value={formatAmount(entry.debt?.[p])}
 							placeholder="0,00"
 							aria-label="debt repaid in money by {names[p]}"
 							oninput={typing}
-							onchange={edited('debt')}
+							onchange={editedDebt(p)}
 						/>
 					</span>
-					{#if row.debtSurplus}
-						<p class="warn"><TriangleAlert size={14} />{formatKr(row.debtSurplus)} kr more than the debt</p>
+					{#if row.debtSurplus[p]}
+						<p class="warn">
+							<TriangleAlert size={14} />{formatKr(row.debtSurplus[p])} kr {row.owing === p ? 'more than the debt' : 'but no debt to repay'}
+						</p>
+					{/if}
+					{#if Math.sign(row.debt) === (p === 'cyan' ? 1 : -1)}
+						<p class="minus">still owes {formatKr(Math.abs(row.debt))} kr</p>
 					{/if}
 				{/if}
 				{#if s.uncovered}

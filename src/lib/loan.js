@@ -12,7 +12,7 @@
 // ownership to the one who covered: first as the unpaid principal, then (for covered interest
 // and fees) from the paid-in equity of the one who fell short. Once that equity is used up, the
 // rest becomes a personal debt with the bank's interest, repaid from the debtor's later principal
-// or in money (`debt` in a month's entry).
+// or in money (`debt: { cyan, mint }` in a month's entry).
 //
 // Maintenance and improvement costs (data.costs) raise the apartment's value: from their month on,
 // what each person paid for them is added to what that person owns.
@@ -273,9 +273,12 @@ export function compute(data, today = currentMonth()) {
 		// The debtor may also repay the debt in money, outside the loan (samboerkontrakt 3.4.5): it
 		// lowers the debt only, and moves no ownership
 		const owing = debt > 0 ? 'cyan' : debt < 0 ? 'mint' : null;
-		const cash = isEntered(entry.debt) ? toOre(entry.debt) : 0;
-		const debtRepaid = owing ? Math.min(cash, Math.abs(debt)) : 0;
+		const cash = (p) => (isEntered(entry.debt?.[p]) ? toOre(entry.debt[p]) : 0);
+		const debtRepaid = owing ? Math.min(cash(owing), Math.abs(debt)) : 0;
 		debt -= Math.sign(debt) * debtRepaid;
+		// What each typed beyond the debt they owed (all of it, for the one who owed nothing)
+		const debtSurplus = { cyan: cash('cyan'), mint: cash('mint') };
+		if (owing) debtSurplus[owing] -= debtRepaid;
 
 		const row = {
 			month,
@@ -285,7 +288,7 @@ export function compute(data, today = currentMonth()) {
 			debtInterest,
 			owing, // who owes the other at the start of the month, if anyone
 			debtRepaid, // repaid in money this month
-			debtSurplus: cash - debtRepaid, // paid beyond the debt: not applied anywhere
+			debtSurplus, // per person, typed beyond the debt they owed: not applied anywhere
 			...(loan ? loanMonth(k, month, entry, days) : debtMonth(entry))
 		};
 		row.debt = debt;
@@ -321,12 +324,13 @@ export function taxShares(result, today = currentMonth()) {
 export function setValue(data, month, key, value, person) {
 	const payments = (data.payments ??= {});
 	const entry = { ...payments[month] };
-	if (key === 'time') {
-		const time = { ...entry.time };
-		if (value) time[person] = true;
-		else delete time[person];
-		if (Object.keys(time).length) entry.time = time;
-		else delete entry.time;
+	if (key === 'time' || key === 'debt') {
+		// Kept per person: `time` as true, `debt` (repaid in money) as an amount
+		const values = { ...entry[key] };
+		if (key === 'time' ? value : value !== null) values[person] = key === 'time' ? true : value;
+		else delete values[person];
+		if (Object.keys(values).length) entry[key] = values;
+		else delete entry[key];
 	} else if (value === null) {
 		delete entry[key];
 	} else {
