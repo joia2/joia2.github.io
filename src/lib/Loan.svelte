@@ -1,5 +1,7 @@
 <script>
 	import { onMount, tick } from 'svelte';
+	import ArrowDown from '@lucide/svelte/icons/arrow-down';
+	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 	import CircleAlert from '@lucide/svelte/icons/circle-alert';
 	import House from '@lucide/svelte/icons/house';
 	import Info from '@lucide/svelte/icons/info';
@@ -30,6 +32,15 @@
 	const later = $derived(rows.length - until);
 	const visible = $derived(rows.slice(ui.earlier ? 0 : earlier, ui.later ? rows.length : until));
 
+	// The floating button: to the end of the page, or back to the top once within 100px of the end
+	let atEnd = $state(false);
+	const checkEnd = () => (atEnd = scrollY + innerHeight >= document.documentElement.scrollHeight - 100);
+	const scrollEnd = () => scrollTo({ top: atEnd ? 0 : document.documentElement.scrollHeight, behavior: 'smooth' });
+	$effect(() => {
+		void rows.length, ui.earlier, ui.later; // the page grows or shrinks with the rows shown
+		checkEnd();
+	});
+
 	const edit = (month) => (key, value, person) => {
 		setValue(loan.data, month, key, value, person);
 		dropStaleTime(loan.data);
@@ -43,6 +54,7 @@
 	});
 </script>
 
+<svelte:window onscroll={checkEnd} onresize={checkEnd} />
 <svelte:document onvisibilitychange={() => document.visibilityState === 'visible' && (today = currentMonth())} />
 
 {#if !result}
@@ -123,6 +135,10 @@
 			</button>
 		{/if}
 	</div>
+
+	<button class="icon-button jump" onclick={scrollEnd} aria-label={atEnd ? 'scroll to top' : 'scroll to bottom'}>
+		{#if atEnd}<ArrowUp size={22} />{:else}<ArrowDown size={22} />{/if}
+	</button>
 {/if}
 
 <style>
@@ -244,6 +260,20 @@
 		margin: 0 auto 1rem;
 		font-size: 0.85rem;
 		color: var(--muted);
+	}
+	.jump {
+		position: fixed;
+		right: calc(1rem + env(safe-area-inset-right));
+		bottom: calc(1rem + env(safe-area-inset-bottom));
+		z-index: 10;
+		width: 48px;
+		height: 48px;
+		border: 1px solid var(--border);
+		background: var(--surface);
+		box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+	}
+	.jump:hover:not(:disabled) {
+		background: var(--surface);
 	}
 	.more.after {
 		margin: 1rem auto 0;
