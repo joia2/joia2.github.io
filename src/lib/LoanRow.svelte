@@ -206,6 +206,8 @@
 		opacity: 0.8;
 	}
 	.mid input {
+		background: transparent;
+		border-color: color-mix(in srgb, var(--border) 50%, transparent);
 		text-align: right;
 		padding: 0.15rem 0.4rem;
 		border-radius: 8px;

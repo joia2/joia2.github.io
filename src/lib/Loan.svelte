@@ -8,6 +8,7 @@
 	import Face from '#lib/Face.svelte';
 	import LoanRow from '#lib/LoanRow.svelte';
 	import InterestYears from '#lib/InterestYears.svelte';
+	import Owned from '#lib/Owned.svelte';
 	import { loan, changed } from '#lib/loan.svelte.js';
 	import { compute, currentMonth, dropStaleTime, formatKr, formatPercent, other, setValue, taxShares, PEOPLE } from '#lib/loan.js';
 	import { ui } from '#lib/ui.svelte.js';
@@ -19,6 +20,9 @@
 	const first = $derived(Object.keys(loan.data.payments).sort()[0]);
 	const tax = $derived(result && taxShares(result, today));
 	let yearsOpen = $state(false);
+	let ownedOpen = $state(false);
+	// Each person's share of the apartment's value (the price plus costs paid), in percent
+	const ownedShare = (p) => (Math.max(0, result.state.equity[p]) / (result.state.own.cyan + result.state.own.mint)) * 100;
 	const debtor = $derived(result && (result.state.debt > 0 ? 'cyan' : result.state.debt < 0 ? 'mint' : null));
 
 	// How far each half of the bar is filled: what that person has paid in, of their share
@@ -71,6 +75,12 @@
 					<span class="name">{names[p]}</span>
 					<!-- What this person owns of the apartment so far: egenkapital, principal paid, costs -->
 					<span class="owned">{formatKr(Math.max(0, result.state.equity[p]))} kr</span>
+					<span class="owned share">
+						{formatPercent(ownedShare(p))} %
+						<button class="icon-button info small" onclick={() => (ownedOpen = true)} aria-label="what each owns">
+							<Info size={14} />
+						</button>
+					</span>
 				</span>
 			</div>
 		{/each}
@@ -111,6 +121,7 @@
 		</div>
 	{/if}
 
+	<Owned state={result.state} egenkapital={loan.data.egenkapital} {names} bind:open={ownedOpen} />
 	<InterestYears interestPaid={result.interestPaid} {names} highlight={tax?.year} bind:open={yearsOpen} />
 
 	<div class="rows">
@@ -182,6 +193,18 @@
 		font-size: 0.82rem;
 		color: var(--muted);
 		font-variant-numeric: tabular-nums;
+	}
+	.share {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.15rem;
+	}
+	.person.mint .share {
+		flex-direction: row-reverse;
+	}
+	.info.small {
+		width: 22px;
+		height: 22px;
 	}
 	.name {
 		overflow: hidden;

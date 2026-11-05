@@ -91,12 +91,14 @@ export function compute(data, today = currentMonth()) {
 	// Costs paid in cash count as owned, from their month on (earlier ones from the first month)
 	const costs = [...(data.costs ?? [])].sort((a, b) => (a.month < b.month ? -1 : 1));
 	let costsApplied = 0;
+	const costsPaid = { cyan: { maintenance: 0, improvement: 0 }, mint: { maintenance: 0, improvement: 0 } };
 	function applyCosts(month) {
 		for (; costsApplied < costs.length && !(costs[costsApplied].month > month); costsApplied++) {
 			for (const p of PEOPLE) {
 				const paid = toOre(costs[costsApplied][p] || 0);
 				own[p] += paid;
 				equity[p] += paid;
+				costsPaid[p][costs[costsApplied].kind] += paid;
 			}
 		}
 	}
@@ -106,6 +108,7 @@ export function compute(data, today = currentMonth()) {
 		own: { ...own },
 		equity: { ...equity },
 		balance: { cyan: balance('cyan'), mint: balance('mint') },
+		costs: { cyan: { ...costsPaid.cyan }, mint: { ...costsPaid.mint } },
 		debt
 	});
 
