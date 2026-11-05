@@ -51,8 +51,8 @@
 		top: 0;
 		z-index: 10;
 		background: var(--bar);
-		backdrop-filter: saturate(180%) blur(20px);
 		-webkit-backdrop-filter: saturate(180%) blur(20px);
+		backdrop-filter: saturate(180%) blur(20px);
 		border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
 	}
 	nav {

@@ -37,8 +37,8 @@
 		border: 0;
 		border-radius: var(--radius);
 		background: color-mix(in srgb, var(--surface) 80%, transparent);
-		backdrop-filter: saturate(180%) blur(20px);
 		-webkit-backdrop-filter: saturate(180%) blur(20px);
+		backdrop-filter: saturate(180%) blur(20px);
 		box-shadow: var(--shadow);
 		color: var(--text);
 	}
