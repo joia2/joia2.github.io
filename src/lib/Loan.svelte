@@ -219,7 +219,6 @@
 		height: 14px;
 		max-width: 44rem;
 		margin: 1.5rem auto 0;
-		border-radius: 14px;
 		background: color-mix(in srgb, var(--border) 60%, transparent);
 		overflow: hidden;
 	}
