@@ -173,8 +173,8 @@
 			</fieldset>
 		{/each}
 		<div class="add">
-			<button type="button" onclick={() => addCost('maintenance')}><Wrench size={18} />add maintenance cost</button>
-			<button type="button" onclick={() => addCost('improvement')}><Paintbrush size={18} />add improvement cost</button>
+			<button type="button" onclick={() => addCost('maintenance')}><Wrench size={18} />maintenance cost</button>
+			<button type="button" onclick={() => addCost('improvement')}><Paintbrush size={18} />improvement cost</button>
 		</div>
 	{:else}
 		{#each PEOPLE as p (p)}
