@@ -26,13 +26,12 @@
 	};
 
 	// The checkbox inside a paid field marks the month as paid: checked when at least the minimum is
-	// entered, typed or ticked. Ticking stores "min" rather than today's amount, so the month keeps
-	// matching the minimum when earlier months change it. Unticking clears the field.
+	// entered, typed or ticked. Ticking stores today's minimum as the amount paid; unticking clears it.
 	const paidMinimum = (s) => s.typed && s.paid >= s.min;
-	const toggleMinimum = (p) => onedit(p, paidMinimum(row.people[p]) ? null : 'min');
+	const toggleMinimum = (p) => onedit(p, paidMinimum(row.people[p]) ? null : row.people[p].min / 100);
 
-	// What a paid field shows: the amount typed, or the current minimum when ticked
-	const shown = (key) => (entry[key] === 'min' ? formatKr(row.people[key].min) : formatAmount(entry[key]));
+	// What a paid field shows: the amount typed
+	const shown = (key) => formatAmount(entry[key]);
 </script>
 
 <div class="row" class:now={row.month === today} data-month={row.month}>

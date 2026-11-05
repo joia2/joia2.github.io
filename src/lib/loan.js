@@ -64,7 +64,7 @@ function monthsFor(balance, rate, payment) {
 	return x <= 0 ? TERM : Math.max(1, Math.ceil(-Math.log(x) / Math.log(1 + r)));
 }
 
-const isEntered = (value) => value !== undefined && value !== null && value !== '';
+const isEntered = (value) => value !== undefined && value !== null && value !== '' && value !== 'min';
 
 // Works through every month from the first entry in data.payments until the loan, and any debt
 // between the two, is repaid. Months without an entered payment count as paid at the minimum.
@@ -134,9 +134,8 @@ export function compute(data, today = currentMonth()) {
 			// The last payment settles whatever is left, so the part ends at exactly 0
 			const due = !b ? 0 : monthsLeft === 1 ? b + interest : Math.min(payment[p], b + interest);
 			const min = due + feeShare;
-			// "min": ticked as paid at the minimum, so it follows the minimum when earlier months change
 			const typed = isEntered(entry[p]);
-			const paid = typed && entry[p] !== 'min' ? toOre(entry[p]) : min;
+			const paid = typed ? toOre(entry[p]) : min;
 			people[p] = {
 				min,
 				paid,
@@ -229,7 +228,7 @@ export function compute(data, today = currentMonth()) {
 
 	function debtMonth(entry) {
 		const debtor = debt > 0 ? 'cyan' : 'mint';
-		const typed = isEntered(entry[debtor]) && entry[debtor] !== 'min'; // there is no minimum after the loan
+		const typed = isEntered(entry[debtor]);
 		const paid = typed ? toOre(entry[debtor]) : 0;
 		const repaid = Math.min(paid, Math.abs(debt));
 		debt -= Math.sign(debt) * repaid;
@@ -309,6 +308,25 @@ export function setValue(data, month, key, value, person) {
 	const first = Object.keys(payments).sort()[0];
 	if (Object.keys(entry).length || month === first) payments[month] = entry;
 	else delete payments[month];
+}
+
+// Payments must be amounts: an old "min" (paid at the minimum, whatever it was) is not valid and is
+// removed, with the month itself when nothing else is left in it. Returns whether anything changed.
+export function dropMin(data) {
+	const payments = data?.payments ?? {};
+	const first = Object.keys(payments).sort()[0];
+	let dropped = false;
+	for (const [month, entry] of Object.entries(payments)) {
+		for (const p of PEOPLE) {
+			if (entry[p] !== 'min') continue;
+			delete entry[p];
+			if (entry.time) delete entry.time[p];
+			dropped = true;
+		}
+		if (entry.time && !Object.keys(entry.time).length) delete entry.time;
+		if (!Object.keys(entry).length && month !== first) delete payments[month];
+	}
+	return dropped;
 }
 
 // "12 345,50", "12.345,50" or "12345.5" → 12345.5; an empty field → null; anything else → undefined

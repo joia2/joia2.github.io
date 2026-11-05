@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compute, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
+import { compute, dropMin, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
 
 const START = '2026-12';
 const base = (payments = {}, extra = {}) => ({
@@ -112,12 +112,16 @@ test('extra larger than the part: part paid off, surplus kept, no more minimum',
 	assert.equal(row(r, '2027-02').people.mint.feeDue, 5000);
 });
 
-test('ticked "min" follows the minimum after an earlier extra', () => {
-	const r = compute(base({ '2027-01': { cyan: 200000 }, '2027-02': { cyan: 'min' } }), '2027-03');
-	const feb = row(r, '2027-02').people.cyan;
-	assert.equal(feb.paid, feb.min);
-	assert.equal(feb.extra, 0);
-	assert.equal(feb.short, 0);
+test('"min" is not a payment: ignored, and removed by dropMin', () => {
+	const r = compute(base({ '2027-02': { cyan: 'min', mint: 20000 } }), '2027-03');
+	assert.equal(row(r, '2027-02').people.cyan.typed, false);
+	const d = base({ '2027-02': { cyan: 'min', time: { cyan: true } }, '2027-03': { cyan: 'min', mint: 20000 } });
+	d.payments[START].cyan = 'min';
+	assert.equal(dropMin(d), true);
+	assert.equal(d.payments['2027-02'], undefined);
+	assert.deepEqual(d.payments['2027-03'], { mint: 20000 });
+	assert.deepEqual(d.payments[START], { interest: 4.78, fee: 50 });
+	assert.equal(dropMin(d), false);
 });
 
 test('short covered by the other: ownership moves, interest counts for the coverer', () => {
@@ -165,8 +169,8 @@ test('rate change: payment worked out again, same end', () => {
 
 test('estimate flag: only years with untyped months', () => {
 	const pay = {};
-	for (let m = 1; m <= 12; m++) pay[`2027-${String(m).padStart(2, '0')}`] = { cyan: 'min', mint: 'min' };
-	pay[START] = { interest: 4.78, fee: 50, cyan: 'min', mint: 'min' };
+	for (let m = 1; m <= 12; m++) pay[`2027-${String(m).padStart(2, '0')}`] = { cyan: 20000, mint: 25000 };
+	pay[START] = { interest: 4.78, fee: 50, cyan: 20000, mint: 25000 };
 	const r = compute(base(pay), '2028-02');
 	assert.equal(r.interestPaid['2026'].estimate, false);
 	assert.equal(r.interestPaid['2027'].estimate, false);
@@ -207,7 +211,7 @@ test('random months of extras, shorts and ticks (500 runs)', () => {
 			const e = {};
 			for (const p of PEOPLE) {
 				const x = rand();
-				e[p] = x < 0.3 ? 'min' : x < 0.5 ? Math.round(rand() * 60000) : x < 0.6 ? 0 : 25000 + Math.round(rand() * 200000);
+				e[p] = x < 0.3 ? 18000 + Math.round(rand() * 6000) : x < 0.5 ? Math.round(rand() * 60000) : x < 0.6 ? 0 : 25000 + Math.round(rand() * 200000);
 				if (rand() < 0.2) (e.time ??= {})[p] = true;
 			}
 			if (rand() < 0.05) e.interest = 3 + Math.round(rand() * 300) / 100;
