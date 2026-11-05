@@ -209,7 +209,8 @@
 		background: transparent;
 		border-color: color-mix(in srgb, var(--border) 50%, transparent);
 		text-align: right;
-		padding: 0.15rem 0.4rem;
+		padding: 0.05rem 0.4rem;
+		line-height: 1.25;
 		border-radius: 8px;
 		font-size: 0.75rem;
 	}
