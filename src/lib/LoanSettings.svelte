@@ -80,8 +80,7 @@
 			const parsed = parseCosts();
 			if (typeof parsed === 'string') return (error = parsed);
 			data.total = price;
-			if (parsed.length) data.costs = parsed;
-			else delete data.costs;
+			data.costs = parsed; // always there, empty when there are none
 			if (!startLocked && start !== months[0]) moveStart();
 		}
 		if (section === 'egenkapital') {

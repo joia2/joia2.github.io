@@ -11,6 +11,7 @@ const empty = () => ({
 	names: { cyan: 'Person A', mint: 'Person B' },
 	total: 0,
 	egenkapital: { cyan: 0, mint: 0 },
+	costs: [],
 	payments: {}
 });
 
