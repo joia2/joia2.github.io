@@ -17,7 +17,7 @@
 		['covered', (p) => signed(state.covered[p])],
 		['maintenances', (p) => formatKr(state.costs[p].maintenance)],
 		['improvements', (p) => formatKr(state.costs[p].improvement)],
-		['owned in total', (p) => formatKr(owned(p))],
+		['paid in total', (p) => formatKr(owned(p))],
 		['principal left', (p) => formatKr(state.balance[p])]
 	]);
 </script>
@@ -35,7 +35,7 @@
 			</thead>
 			<tbody>
 				{#each lines as [label, show], i (label)}
-					<tr class:total={i === 0 || label === 'owned in total'}>
+					<tr class:total={i === 0 || label === 'paid in total'}>
 						<td>{label}</td>
 						{#each PEOPLE as p (p)}<td class="num">{show(p)}</td>{/each}
 					</tr>
