@@ -81,7 +81,7 @@
 							<Info size={14} />
 						</button>
 					</span>
-					<span class="label">owns</span>
+					<span class="label">paid</span>
 				</span>
 			</div>
 		{/each}
