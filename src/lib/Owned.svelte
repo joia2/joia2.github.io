@@ -44,8 +44,9 @@
 		</table>
 		<p class="note">
 			In kroner, as of this month. "Owns" is the share of the apartment's value: the price plus the
-			maintenance and improvement costs. Covered: + is what you paid for the other, which became yours;
-			− is what was taken from your paid-in money for interest and fees the other paid for you.
+			maintenance and improvement costs. Covered: what one of you paid for the other, + for the one who paid
+			and − for the one it was paid for. Principal the other paid on your part counts in your principal
+			paid, and then in covered as −.
 		</p>
 	</div>
 </Sheet>
