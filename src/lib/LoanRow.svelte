@@ -25,9 +25,9 @@
 		onedit(key, value);
 	};
 
-	// The checkbox inside a paid field marks the month as paid: checked when at least the minimum is
-	// entered, typed or ticked. Ticking stores today's minimum as the amount paid; unticking clears it.
-	const paidMinimum = (s) => s.typed && s.paid >= s.min;
+	// The checkbox inside a paid field: checked when any amount is entered. Ticking stores today's
+	// minimum as the amount paid; unticking clears it.
+	const paidMinimum = (s) => s.typed;
 	const toggleMinimum = (p) => onedit(p, paidMinimum(row.people[p]) ? null : row.people[p].min / 100);
 
 	// What a paid field shows: the amount typed
@@ -77,7 +77,7 @@
 						class="minimum {p}"
 						role="checkbox"
 						aria-checked={paidMinimum(s)}
-						aria-label="{names[p]} paid at least the minimum"
+						aria-label="{names[p]} paid"
 						disabled={!s.min}
 						onclick={() => toggleMinimum(p)}
 					>
