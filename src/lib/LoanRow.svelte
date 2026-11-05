@@ -181,6 +181,7 @@
 		font-size: 0.82rem;
 		font-weight: 600;
 		line-height: 1;
+		margin-bottom: 0.2rem;
 		letter-spacing: -0.01em;
 	}
 	input {
