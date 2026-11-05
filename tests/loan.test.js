@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addMonths, compute, dropMin, dropStaleTime, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
+import { addMonths, compute, dropMin, dropStaleTime, saleSplit, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
 
 const START = '2026-12';
 const base = (payments = {}, extra = {}) => ({
@@ -16,6 +16,7 @@ const totalInterest = (r) => sumYears(r, 'cyan') + sumYears(r, 'mint');
 const loanRows = (r) => r.rows.filter((x) => x.loan);
 const row = (r, m) => r.rows.find((x) => x.month === m);
 const owned = (r) => r.state.own.cyan + r.state.own.mint;
+const sumPrincipal = (r, p, from, to) => loanRows(r).filter((x) => x.month >= from && x.month <= to).reduce((s, x) => s + x.people[p].principal, 0);
 
 // Checks that must hold for every scenario
 function invariants(r, label) {
@@ -209,6 +210,32 @@ test('setValue: debt kept per person, removed when emptied', () => {
 	assert.deepEqual(data.payments['2027-02'], { debt: { cyan: 500 } });
 	setValue(data, '2027-02', 'debt', null, 'cyan');
 	assert.equal(data.payments['2027-02'], undefined);
+});
+
+test('year end: loan left on 31 December, after the December payment', () => {
+	const r = run({}, {}, '2027-12');
+	const dec = row(r, '2027-12');
+	const jan = row(r, '2028-01');
+	for (const p of PEOPLE) {
+		// What is left after December is what January's principal then lowers
+		assert.ok(r.yearEnd['2027'].loan[p] > 0);
+		assert.equal(r.yearEnd['2027'].loan[p] - jan.people[p].principal, r.yearEnd['2028'] ? r.yearEnd['2028'].loan[p] + sumPrincipal(r, p, '2028-02', '2028-12') : r.yearEnd['2027'].loan[p] - jan.people[p].principal);
+	}
+	assert.equal(r.yearEnd['2027'].debt, dec.debt);
+});
+
+test('sale: gain by ownership share, loss by loan left, debt settled', () => {
+	const state = { balance: { cyan: 300, mint: 100 }, equity: { cyan: 75, mint: 25 }, debt: 10 };
+	// Gain: 1000 − 100 costs − 400 loan = 500, split 75/25; cyan owes mint 10
+	const gain = saleSplit(state, 1000, 100);
+	assert.equal(gain.net, 500);
+	assert.deepEqual(gain.proceeds, { cyan: 375, mint: 125 });
+	assert.deepEqual(gain.gets, { cyan: 365, mint: 135 });
+	// Loss: 300 − 0 − 400 = −100, borne 300/100 by loan left
+	const loss = saleSplit(state, 300, 0);
+	assert.deepEqual(loss.proceeds, { cyan: -75, mint: -25 });
+	// Each person's gets add up to the net proceeds
+	for (const x of [gain, loss]) assert.equal(x.gets.cyan + x.gets.mint, x.net);
 });
 
 test('rate change: payment worked out again, same end', () => {

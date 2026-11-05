@@ -87,6 +87,7 @@ export function compute(data, today = currentMonth()) {
 	const payment = { cyan: null, mint: null }; // each person's fixed monthly payment; null: work it out
 	let debt = 0; // between the two: above 0, cyan owes mint; below 0, mint owes cyan
 	const interestPaid = {}; // per year: the interest and fees each person paid, for the tax return
+	const yearEnd = {}; // per year: what each person owes on 31 December, for the tax return's wealth part
 	let rate = 0;
 	let fee = 0;
 
@@ -293,6 +294,10 @@ export function compute(data, today = currentMonth()) {
 		};
 		row.debt = debt;
 		rows.push(row);
+		// After the December payment the balances stand until 1 January: they are the debt on 31 December
+		if (month.endsWith('-12')) {
+			yearEnd[month.slice(0, 4)] = { loan: { cyan: balance('cyan'), mint: balance('mint') }, debt };
+		}
 		if (month <= until) state = snapshot();
 	}
 
@@ -302,7 +307,27 @@ export function compute(data, today = currentMonth()) {
 		state = snapshot();
 	}
 
-	return { half, rows, state, interestPaid };
+	return { half, rows, state, interestPaid, yearEnd };
+}
+
+// What each person gets if the apartment is sold (samboerkontrakt 7.8 and 7.9), from compute()'s
+// state, all in øre. The net proceeds (sale price less costs of sale and the loan left) are divided by
+// ownership share: what each has paid in, of what both have. A loss is borne in proportion to each
+// person's loan left. The debt between the two is then settled from the proceeds.
+export function saleSplit(state, price, costs) {
+	const loanLeft = state.balance.cyan + state.balance.mint;
+	const net = price - costs - loanLeft;
+	const paid = { cyan: Math.max(0, state.equity.cyan), mint: Math.max(0, state.equity.mint) };
+	const both = paid.cyan + paid.mint;
+	const share = both ? { cyan: paid.cyan / both, mint: paid.mint / both } : { cyan: 0.5, mint: 0.5 };
+	// A gain by ownership share; a loss by loan left
+	const weight = net >= 0 || !loanLeft ? share.cyan : state.balance.cyan / loanLeft;
+	const proceeds = { cyan: Math.round(net * weight) };
+	proceeds.mint = net - proceeds.cyan;
+	// Above 0, cyan owes mint
+	const settled = { cyan: -state.debt, mint: state.debt };
+	const gets = { cyan: proceeds.cyan + settled.cyan, mint: proceeds.mint + settled.mint };
+	return { loanLeft, net, share, proceeds, settled, gets };
 }
 
 // Each person's share of the bank interest paid in a year, in percent: what to enter in the

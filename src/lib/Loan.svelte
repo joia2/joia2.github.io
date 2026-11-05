@@ -9,6 +9,7 @@
 	import LoanRow from '#lib/LoanRow.svelte';
 	import InterestYears from '#lib/InterestYears.svelte';
 	import Owned from '#lib/Owned.svelte';
+	import SaleCalculator from '#lib/SaleCalculator.svelte';
 	import { loan, changed } from '#lib/loan.svelte.js';
 	import { compute, currentMonth, dropStaleTime, formatKr, formatPercent, other, setValue, taxShares, PEOPLE } from '#lib/loan.js';
 	import { ui } from '#lib/ui.svelte.js';
@@ -126,7 +127,8 @@
 	{/if}
 
 	<Owned state={result.state} egenkapital={loan.data.egenkapital} {names} bind:open={ownedOpen} />
-	<InterestYears interestPaid={result.interestPaid} {names} highlight={tax?.year} bind:open={yearsOpen} />
+	<SaleCalculator state={result.state} {names} bind:open={ui.saleOpen} />
+	<InterestYears interestPaid={result.interestPaid} yearEnd={result.yearEnd} {names} highlight={tax?.year} bind:open={yearsOpen} />
 
 	<div class="rows">
 		{#if earlier}
