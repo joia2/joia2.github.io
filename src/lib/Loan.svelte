@@ -190,7 +190,7 @@
 		align-items: flex-end;
 	}
 	.owned {
-		font-size: 0.82rem;
+		font-size: 0.85rem; /* the same as the text under the bar */
 		color: var(--muted);
 		font-variant-numeric: tabular-nums;
 	}
@@ -308,9 +308,12 @@
 		white-space: nowrap;
 	}
 	@media (max-width: 480px) {
+		.shares,
+		.owned {
+			font-size: 0.72rem;
+		}
 		.shares {
 			gap: 0.4rem;
-			font-size: 0.72rem;
 		}
 	}
 	/* The info icon sits on the inner side: after cyan's percentage, before mint's */
