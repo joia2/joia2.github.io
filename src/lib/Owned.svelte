@@ -11,13 +11,13 @@
 	const owned = (p) => Math.max(0, state.equity[p]);
 	const signed = (ore) => (ore > 0 ? '+' : ore < 0 ? '−' : '') + formatKr(Math.abs(ore));
 	const lines = $derived([
-		['owns', (p) => `${formatPercent(owned(p) / value * 100)} %`],
+		['paid in %', (p) => `${formatPercent(owned(p) / value * 100)} %`],
 		['egenkapital', (p) => formatKr(toOre(egenkapital?.[p] ?? 0))],
 		['principal paid', (p) => formatKr(owned(p) - toOre(egenkapital?.[p] ?? 0) - state.costs[p].maintenance - state.costs[p].improvement - state.covered[p])],
 		['covered', (p) => signed(state.covered[p])],
 		['maintenances', (p) => formatKr(state.costs[p].maintenance)],
 		['improvements', (p) => formatKr(state.costs[p].improvement)],
-		['paid in total', (p) => formatKr(owned(p))],
+		['paid in kr', (p) => formatKr(owned(p))],
 		['principal left', (p) => formatKr(state.balance[p])]
 	]);
 </script>
@@ -35,7 +35,7 @@
 			</thead>
 			<tbody>
 				{#each lines as [label, show], i (label)}
-					<tr class:total={i === 0 || label === 'paid in total'}>
+					<tr class:total={i === 0 || label === 'paid in kr'}>
 						<td>{label}</td>
 						{#each PEOPLE as p (p)}<td class="num">{show(p)}</td>{/each}
 					</tr>
