@@ -9,7 +9,9 @@
 
 	const value = $derived(state.own.cyan + state.own.mint); // the price plus the costs paid so far
 	const owned = (p) => Math.max(0, state.equity[p]);
-	const signed = (ore) => (ore > 0 ? '+' : ore < 0 ? '−' : '') + formatKr(Math.abs(ore));
+	// Samboerkontrakt 4.1: what each has paid in, of what both have paid in (50/50 before anything is paid)
+	const share = (p) => owned('cyan') + owned('mint') ? owned(p) / (owned('cyan') + owned('mint')) : 0.5;
+	const signed =(ore) => (ore > 0 ? '+' : ore < 0 ? '−' : '') + formatKr(Math.abs(ore));
 	const lines = $derived([
 		['paid in %', (p) => `${formatPercent(owned(p) / value * 100)} %`],
 		['egenkapital', (p) => formatKr(toOre(egenkapital?.[p] ?? 0))],
@@ -18,6 +20,7 @@
 		['maintenances', (p) => formatKr(state.costs[p].maintenance)],
 		['improvements', (p) => formatKr(state.costs[p].improvement)],
 		['paid in kr', (p) => formatKr(owned(p))],
+		['ownership share', (p) => `${formatPercent(share(p) * 100)} %`],
 		['principal left', (p) => formatKr(state.balance[p])]
 	]);
 </script>
@@ -44,7 +47,8 @@
 		</table>
 		<p class="note">
 			In kroner, as of this month. "Paid in %" is how much of the apartment's cost each of you has paid:
-			the price plus the maintenance and improvement costs. The rest is still owed to the bank. Covered: what one of you paid for the other, + for the one who paid
+			the price plus the maintenance and improvement costs. The rest is still owed to the bank. "Paid in kr" is each one's Contributions in the samboerkontrakt, and
+			"ownership share" is each one's Contributions of both (4.1): it divides the proceeds of a sale. Covered: what one of you paid for the other, + for the one who paid
 			and − for the one it was paid for. Principal the other paid on your part counts in your principal
 			paid, and then in covered as −.
 		</p>

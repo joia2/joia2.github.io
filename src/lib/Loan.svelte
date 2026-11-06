@@ -2,12 +2,14 @@
 	import { onMount, tick } from 'svelte';
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
+	import Calculator from '@lucide/svelte/icons/calculator';
 	import CircleAlert from '@lucide/svelte/icons/circle-alert';
 	import House from '@lucide/svelte/icons/house';
 	import Info from '@lucide/svelte/icons/info';
 	import Face from '#lib/Face.svelte';
 	import LoanRow from '#lib/LoanRow.svelte';
 	import InterestYears from '#lib/InterestYears.svelte';
+	import Instalment from '#lib/Instalment.svelte';
 	import Owned from '#lib/Owned.svelte';
 	import SaleCalculator from '#lib/SaleCalculator.svelte';
 	import { loan, changed } from '#lib/loan.svelte.js';
@@ -22,6 +24,9 @@
 	const tax = $derived(result && taxShares(result, today));
 	let yearsOpen = $state(false);
 	let ownedOpen = $state(false);
+	let instalmentOpen = $state(false);
+	// This month's row, or the first one with a loan payment after it (before the take-over)
+	const thisRow = $derived(result?.rows.find((r) => r.loan && r.month >= today));
 	// Each person's share of the apartment's value (the price plus costs paid), in percent
 	const ownedShare = (p) => (Math.max(0, result.state.equity[p]) / (result.state.own.cyan + result.state.own.mint)) * 100;
 	const debtor = $derived(result && (result.state.debt > 0 ? 'cyan' : result.state.debt < 0 ? 'mint' : null));
@@ -69,7 +74,12 @@
 	</div>
 {:else}
 	<section class="people">
-		{#each PEOPLE as p (p)}
+		{#each PEOPLE as p, i (p)}
+			{#if i === 1 && thisRow}
+				<button class="icon-button instalment" onclick={() => (instalmentOpen = true)} aria-label="this month's instalment">
+					<Calculator size={22} />
+				</button>
+			{/if}
 			<div class="person {p}">
 				<Face person={p} size={64} />
 				<span class="who">
@@ -128,6 +138,7 @@
 
 	<Owned state={result.state} egenkapital={loan.data.egenkapital} {names} bind:open={ownedOpen} />
 	<SaleCalculator state={result.state} {names} bind:open={ui.saleOpen} />
+	{#if thisRow}<Instalment row={thisRow} {names} bind:open={instalmentOpen} />{/if}
 	<InterestYears interestPaid={result.interestPaid} yearEnd={result.yearEnd} {names} highlight={tax?.year} bind:open={yearsOpen} />
 
 	<div class="rows">
@@ -207,6 +218,13 @@
 	}
 	.person.mint .share {
 		flex-direction: row-reverse;
+	}
+	.instalment {
+		align-self: center;
+		flex-shrink: 0;
+		width: 44px;
+		height: 44px;
+		color: var(--muted);
 	}
 	.info.small {
 		width: 22px;
