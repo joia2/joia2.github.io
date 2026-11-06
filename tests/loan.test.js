@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addMonths, compute, dropMin, dropStaleTime, saleSplit, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
+import { addMonths, compute, dropMin, dropStaleTime, instalmentFor, saleSplit, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
 
 const START = '2026-12';
 const base = (payments = {}, extra = {}) => ({
@@ -336,4 +336,17 @@ test('random months of extras, shorts and ticks (500 runs)', () => {
 		assert.equal(end.state.balance.cyan + end.state.balance.mint, 0, `run ${n}: loan left`);
 		assert.equal(end.state.debt, 0, `run ${n}: debt left`);
 	}
+});
+
+test('instalment calculator: unchanged gives the row, a paid-off part takes no fee', () => {
+	const r = compute(base(), '2027-03');
+	const mar = row(r, '2027-03');
+	const balance = { cyan: mar.people.cyan.balance, mint: mar.people.mint.balance };
+	const same = instalmentFor(mar, { balance, rate: mar.rate, fee: mar.fee });
+	for (const p of PEOPLE) assert.equal(same.people[p].total, mar.people[p].min);
+	const alone = instalmentFor(mar, { balance: { ...balance, mint: 0 }, rate: mar.rate, fee: 5000 });
+	assert.equal(alone.people.mint.total, 0);
+	assert.equal(alone.people.cyan.fee, 5000);
+	const higher = instalmentFor(mar, { balance, rate: mar.rate + 1, fee: mar.fee });
+	assert.ok(higher.total > same.total);
 });

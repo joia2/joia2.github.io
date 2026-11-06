@@ -138,7 +138,7 @@
 
 	<Owned state={result.state} egenkapital={loan.data.egenkapital} {names} bind:open={ownedOpen} />
 	<SaleCalculator state={result.state} {names} bind:open={ui.saleOpen} />
-	{#if thisRow}<Instalment row={thisRow} {names} bind:open={instalmentOpen} />{/if}
+	{#if thisRow}<Instalment rows={result.rows.filter((r) => r.loan)} start={thisRow.month} {names} bind:open={instalmentOpen} />{/if}
 	<InterestYears interestPaid={result.interestPaid} yearEnd={result.yearEnd} {names} highlight={tax?.year} bind:open={yearsOpen} />
 
 	<div class="rows">

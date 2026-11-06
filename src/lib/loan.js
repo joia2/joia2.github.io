@@ -149,6 +149,8 @@ export function compute(data, today = currentMonth()) {
 			const typed = isEntered(entry[p]);
 			const paid = typed ? toOre(entry[p]) : min;
 			people[p] = {
+				balance: b, // the part at the start of the month
+				monthsLeft,
 				min,
 				paid,
 				typed,
@@ -285,6 +287,7 @@ export function compute(data, today = currentMonth()) {
 			month,
 			rate,
 			fee,
+			days,
 			loan,
 			debtInterest,
 			owing, // who owes the other at the start of the month, if anyone
@@ -328,6 +331,25 @@ export function saleSplit(state, price, costs) {
 	const settled = { cyan: -state.debt, mint: state.debt };
 	const gets = { cyan: proceeds.cyan + settled.cyan, mint: proceeds.mint + settled.mint };
 	return { loanLeft, net, share, proceeds, settled, gets };
+}
+
+// A month's instalment per person (samboerkontrakt 3.2), with the rate, fee or parts changed: what
+// the calculator shows. Unchanged values give the row's own numbers. Amounts in øre.
+export function instalmentFor(row, { balance, rate, fee }) {
+	const active = PEOPLE.filter((p) => balance[p] > 0);
+	const people = {};
+	for (const p of PEOPLE) {
+		const s = row.people[p];
+		const b = balance[p];
+		const i = active.indexOf(p);
+		const feeShare = i < 0 ? 0 : i === 0 ? Math.ceil(fee / active.length) : Math.floor(fee / active.length);
+		const same = b === s.balance && rate === row.rate;
+		const interest = same ? s.interestDue : b ? interestFor(b, rate, row.days) : 0;
+		const payment = s.monthsLeft === 1 ? b + interest : Math.min(annuity(b, rate, s.monthsLeft), b + interest);
+		const due = same ? s.due : b ? payment : 0;
+		people[p] = { interest, principal: due - interest, fee: feeShare, total: due + feeShare };
+	}
+	return { people, total: people.cyan.total + people.mint.total };
 }
 
 // Each person's share of the bank interest paid in a year, in percent: what to enter in the
