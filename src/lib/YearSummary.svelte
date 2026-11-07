@@ -166,5 +166,10 @@
 		dd {
 			margin-bottom: 0.15rem;
 		}
+		/* One column: the name and the caption need no empty partner */
+		.who + dd,
+		.caption + dd {
+			display: none;
+		}
 	}
 </style>
