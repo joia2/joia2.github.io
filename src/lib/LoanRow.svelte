@@ -240,7 +240,7 @@
 		align-items: center;
 		justify-content: center;
 		gap: 0.15rem;
-		min-height: 2.1rem;
+		min-height: 1.6rem;
 		font-size: 0.78rem;
 		font-weight: 600;
 		font-variant-numeric: tabular-nums;
