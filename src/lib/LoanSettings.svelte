@@ -248,7 +248,7 @@
 				<ul class="changes">
 					{#each changes as c, i (c.month)}
 						<li>
-							<span>from {monthLabel(c.month)}: {lengthLabel(i ? changes[i - 1].months : TERM)} → {lengthLabel(c.months)}</span>
+							<span>{monthLabel(c.month)}: {lengthLabel(i ? changes[i - 1].months : TERM)} → {lengthLabel(c.months)}</span>
 							{#if i === changes.length - 1}
 								<button type="button" class="icon-button remove" onclick={removeLatest} aria-label="remove the latest change">
 									<Trash size={18} />
