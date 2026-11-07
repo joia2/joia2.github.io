@@ -5,7 +5,7 @@
 	import { formatKr, formatPercent, other, PEOPLE } from '#lib/loan.js';
 
 	// What the skattemelding needs, per year: the interest and fees each person paid (rentefradrag)
-	// and what each owed on Dec-31 (formue).
+	// and what each owed on dec 31 (formue).
 	// interestPaid, yearEnd: from compute(); open: bindable, whether the popup shows
 	let { interestPaid, yearEnd, names, highlight, open = $bindable(false) } = $props();
 
@@ -15,7 +15,7 @@
 	};
 	const years = $derived(Object.entries(interestPaid));
 	const ends = $derived(Object.entries(yearEnd ?? {}).filter(([, end]) => end.loan.cyan + end.loan.mint > 0));
-	// Who owed the other on Dec-31, if anyone: debt above 0 means cyan owes mint
+	// Who owed the other on dec 31, if anyone: debt above 0 means cyan owes mint
 	const owes = (debt) => (debt > 0 ? 'cyan' : debt < 0 ? 'mint' : null);
 	const anyDebt = $derived(ends.some(([, end]) => end.debt !== 0));
 </script>
@@ -68,9 +68,9 @@
 			counts for the one it was paid for: it is their instalment, and their debt to the other (3.4, 3.6). Estimates count months not entered yet at the minimum.
 		</p>
 
-		<h2>Debt on Dec-31 (<em>formue</em>)</h2>
+		<h2>Debt on dec 31 (<em>formue</em>)</h2>
 		<p class="note intro">
-			Each person's part of the shared loan on Dec-31, which reduces your wealth (<em>formue</em>).
+			Each person's part of the shared loan on dec 31, which reduces your wealth (<em>formue</em>).
 			If the skattemelding lets you split the loan and the interest separately, use these shares for
 			the loan; if it asks for one share for both, use the interest share above. The apartment's value
 			and its share of the housing cooperative's debt (<em>fellesgjeld</em>) are filled in by the
@@ -111,7 +111,7 @@
 		</table>
 		{#if anyDebt}
 			<p class="note">
-				A debt between the two of you on Dec-31 also counts for wealth: the one who owes enters it
+				A debt between the two of you on dec 31 also counts for wealth: the one who owes enters it
 				as debt to a private person (<em>gjeld til privatperson</em>), the one owed as a claim
 				(<em>utestående fordring</em>).
 			</p>

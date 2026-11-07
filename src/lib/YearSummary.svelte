@@ -33,12 +33,12 @@
 			<dd></dd>
 			{#if paid}
 				<!-- Skattemelding: interest and fees that built up in the year (rentefradrag) -->
-				<dt>interest + fees ({share(paid, p)}<Pct />)</dt>
+				<dt><span class="long">interest</span><span class="short">int.</span> + fees ({share(paid, p)}<Pct />)</dt>
 				<dd class="tax">{formatKr(paid[p])}</dd>
 			{/if}
 			{#if end}
-				<!-- Skattemelding: each person's part of the loan on Dec-31 (gjeld) -->
-				<dt>loan Dec-31 ({share(end.loan, p)}<Pct />)</dt>
+				<!-- Skattemelding: each person's part of the loan on dec 31 (gjeld) -->
+				<dt>loan dec 31 ({share(end.loan, p)}<Pct />)</dt>
 				<dd class="tax">{formatKr(end.loan[p])}</dd>
 				{#if owes === p}
 					<dt class="minus">owes {names[other(p)]}</dt>
@@ -51,7 +51,7 @@
 		</dl>
 	{/each}
 	<p class="note">
-		For the skattemelding: interest + fees as each one's <em>rentefradrag</em>, loan Dec-31 as each one's
+		For the skattemelding: interest + fees as each one's <em>rentefradrag</em>, loan dec 31 as each one's
 		<em>gjeld</em>{#if owes}, and the debt between you as a private debt and claim{/if}.
 		{#if estimate}An estimate: months not entered count at the minimum.{/if}
 	</p>
@@ -114,6 +114,9 @@
 		text-align: right;
 		font-variant-numeric: tabular-nums;
 	}
+	.short {
+		display: none;
+	}
 	.who {
 		display: flex;
 		align-items: center;
@@ -158,18 +161,15 @@
 			padding-inline: 0;
 		}
 		dl {
-			grid-template-columns: 1fr;
-			gap: 0;
+			gap: 0.1rem 0.3rem;
 			padding: 0 0.3rem;
 			font-size: 0.66rem;
 		}
-		dd {
-			margin-bottom: 0.15rem;
-		}
-		/* One column: the name and the caption need no empty partner */
-		.who + dd,
-		.caption + dd {
+		.long {
 			display: none;
+		}
+		.short {
+			display: inline;
 		}
 	}
 </style>
