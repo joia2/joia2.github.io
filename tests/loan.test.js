@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addMonths, compute, dropMin, dropTime, instalmentFor, saleSplit, taxShares, setTerm, setValue, termAt, toOre, PEOPLE, TERM } from '#lib/loan.js';
+import { addMonths, compute, dropMin, dropTime, instalmentFor, saleSplit, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
 
 const START = '2026-12';
 const base = (payments = {}, extra = {}) => ({
@@ -290,21 +290,15 @@ test('dropTime: "time" removed from older files, with months left empty', () => 
 test('mortgage length: shorter from a month on, payments rise, ends at the new length', () => {
 	const plain = compute(base(), '2056-12');
 	const d = base({ '2027-01': { cyan: 50000 } });
-	setTerm(d, '2028-01', 120);
-	assert.deepEqual(d.payments['2028-01'], { term: 120 });
-	assert.equal(termAt(d, '2027-12'), TERM);
-	assert.equal(termAt(d, '2030-01'), 120);
+	setValue(d, '2028-01', 'term', 120);
 	const r = compute(d, '2056-12');
 	invariants(r, 'term');
 	assert.equal(row(r, '2027-06').people.cyan.min, compute(base({ '2027-01': { cyan: 50000 } }), '2056-12').rows.find((x) => x.month === '2027-06').people.cyan.min);
 	assert.ok(row(r, '2028-01').people.mint.min > row(plain, '2028-01').people.mint.min);
 	assert.equal(loanRows(r).length, 120);
 	assert.equal(r.state.balance.cyan + r.state.balance.mint, 0);
-	// Back to what applied before: nothing stored
-	setTerm(d, '2028-01', TERM);
-	assert.equal(d.payments['2028-01'], undefined);
 	// Shorter than the months already gone: the rest is due at once
-	setTerm(d, '2028-01', 3);
+	setValue(d, '2028-01', 'term', 3);
 	const now = compute(d, '2056-12');
 	assert.equal(loanRows(now).at(-1).month, '2028-01');
 	assert.equal(now.state.balance.cyan + now.state.balance.mint, 0);

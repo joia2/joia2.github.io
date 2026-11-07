@@ -12,7 +12,7 @@
 	import { loan, changed } from '#lib/loan.svelte.js';
 	import Percent from '@lucide/svelte/icons/percent';
 	import Hourglass from '@lucide/svelte/icons/hourglass';
-	import { addMonths, currentMonth, formatAmount, parseAmount, setTerm, termAt, toOre, DEBT_RATE, PEOPLE, TERM } from '#lib/loan.js';
+	import { addMonths, currentMonth, formatAmount, parseAmount, setValue, toOre, DEBT_RATE, PEOPLE, TERM } from '#lib/loan.js';
 
 	// section: 'names' | 'apartment' | 'mortgage'
 	let { section, onclose } = $props();
@@ -37,10 +37,24 @@
 	let egenkapital = $state({ cyan: formatAmount(data.egenkapital.cyan || ''), mint: formatAmount(data.egenkapital.mint || '') });
 	// The mortgage's length, changed from this month on (from the first payment while before it)
 	const from = months.length && currentMonth() < months[0] ? months[0] : currentMonth();
-	const fromLabel = `${from.slice(0, 4)} ${new Date(`${from}-01T12:00:00`).toLocaleDateString('en', { month: 'short' }).toLowerCase()}`;
-	let term = $state(termAt(data, from));
+	const monthLabel = (m) => `${m.slice(0, 4)} ${new Date(`${m}-01T12:00:00`).toLocaleDateString('en', { month: 'short' }).toLowerCase()}`;
+	// Every length change so far ({ month, months }, in order), edited here and written on save
+	let changes = $state(months.filter((m) => data.payments[m].term != null).map((m) => ({ month: m, months: Number(data.payments[m].term) })));
+	const termOf = (list, month) => list.filter((c) => c.month <= month).at(-1)?.months ?? TERM;
+	let term = $state(termOf(changes, from));
+	// A new length replaces any change from this month on; picking what applied before adds none
+	function pick(n) {
+		const kept = changes.filter((c) => c.month < from);
+		if (n !== termOf(kept, from)) kept.push({ month: from, months: n });
+		changes = kept;
+		term = n;
+	}
+	function removeLatest() {
+		changes = changes.slice(0, -1);
+		term = termOf(changes, from);
+	}
 	const lengths = Array.from({ length: TERM }, (_, i) => i + 1);
-	const lengthLabel = (n) => `${n} m${n % 12 ? '' : ` (${n / 12} y)`}`;
+	const lengthLabel = (n) => `${n}\u00a0m${n % 12 ? '' : `\u00a0(${n / 12}\u00a0y)`}`; // kept on one line
 	let error = $state('');
 
 	// Maintenance and improvement costs, as text while editing. A total splits 50/50; changing one
@@ -117,7 +131,8 @@
 				return (error = "Egenkapital can't be more than half the price.");
 			}
 			data.egenkapital = { cyan: cyan ?? 0, mint: mint ?? 0 };
-			if (months.length) setTerm(data, from, term);
+			for (const m of Object.keys(data.payments)) setValue(data, m, 'term', null);
+			for (const c of changes) setValue(data, c.month, 'term', c.months);
 		}
 		changed();
 		onclose();
@@ -223,12 +238,26 @@
 				length
 				<span class="field">
 					<Hourglass size={20} />
-					<select bind:value={term}>
+					<select value={term} onchange={(e) => pick(Number(e.currentTarget.value))}>
 						{#each lengths as n (n)}<option value={n}>{lengthLabel(n)}</option>{/each}
 					</select>
 				</span>
 			</label>
-			<p class="note">From the first payment. A change counts from {fromLabel} on: the payments are worked out again.</p>
+			<p class="note">From the first payment. A change counts from {monthLabel(from)} on: the payments are worked out again.</p>
+			{#if changes.length}
+				<ul class="changes">
+					{#each changes as c, i (c.month)}
+						<li>
+							<span>from {monthLabel(c.month)}: {lengthLabel(i ? changes[i - 1].months : TERM)} → {lengthLabel(c.months)}</span>
+							{#if i === changes.length - 1}
+								<button type="button" class="icon-button remove" onclick={removeLatest} aria-label="remove the latest change">
+									<Trash size={18} />
+								</button>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+			{/if}
 		{/if}
 		{#each PEOPLE as p (p)}
 			<label>
@@ -274,6 +303,19 @@
 		width: 32px;
 		height: 32px;
 		color: var(--muted);
+	}
+	.changes {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		font-size: 0.875rem;
+	}
+	.changes li {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		min-height: 32px;
+		border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 	}
 	.pair {
 		display: grid;

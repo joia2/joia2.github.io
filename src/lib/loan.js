@@ -412,21 +412,6 @@ export function dropTime(data) {
 	return dropped;
 }
 
-// The mortgage's length in months that applies to a month: the last `term` entered up to it
-export function termAt(data, month) {
-	const set = Object.keys(data?.payments ?? {})
-		.sort()
-		.filter((m) => m <= month && isEntered(data.payments[m].term));
-	return set.length ? Number(data.payments[set.at(-1)].term) : TERM;
-}
-
-// Sets the mortgage's length from a month on: later lengths are replaced, and nothing is stored
-// when it is what already applies
-export function setTerm(data, month, months) {
-	for (const m of Object.keys(data.payments ?? {})) if (m >= month) setValue(data, m, 'term', null);
-	if (months !== termAt(data, month)) setValue(data, month, 'term', months);
-}
-
 // "12 345,50", "12.345,50" or "12345.5" → 12345.5; an empty field → null; anything else → undefined
 export function parseAmount(text) {
 	let clean = String(text).replace(/[\s\u00a0\u202f]/g, '');
