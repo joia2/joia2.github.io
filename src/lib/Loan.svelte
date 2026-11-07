@@ -23,6 +23,11 @@
 	const result = $derived(compute(loan.data, today));
 	// How long each still pays at the instalment they started with, whatever the mortgage's length is now
 	const monthsLeft = (p) => left(loan.data, result, today, p);
+	// That instalment with each one's half of this month's fee: what the bar shows as the minimum
+	const minimum = (p) => {
+		const fee = thisRow?.fee ?? 0;
+		return result.firstPayment[p] + (p === 'cyan' ? Math.ceil(fee / 2) : Math.floor(fee / 2));
+	};
 	// Each one's loan left at the start of this month (after the last row: what is left at the end)
 	const nowRow = $derived(result?.rows.find((r) => r.loan && r.month >= today));
 	const loanLeft = (p) => (nowRow ? nowRow.people[p].balance : result.state.balance[p]);
@@ -214,8 +219,8 @@
 				<span>
 					<strong>{names[p]}</strong>
 					<span>{monthsLeft(p) === null ? 'never at this payment' : monthsLeft(p) ? timeLabel(monthsLeft(p)) : 'paid off'}</span>
-					<!-- The instalment the time left is worked out from (without the fee) -->
-					<span class="muted">min. {formatKr(result.firstPayment[p])} kr</span>
+					<!-- The instalment the time left is worked out from, with half the fee -->
+					<span class="muted">min. {formatKr(minimum(p))} kr</span>
 					<span class="muted">{formatKr(loanLeft(p))} kr</span>
 				</span>
 			</div>
