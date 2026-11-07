@@ -193,7 +193,7 @@
 	<nav class="bottom" aria-label="time left" hidden={typing} bind:offsetHeight={barHeight}>
 		{#each PEOPLE as p (p)}
 			<div class="left-for {p}">
-				<Face person={p} size={32} />
+				<Face person={p} size={24} />
 				<span>
 					<strong>{names[p]}</strong>
 					<span>{monthsLeft(p) ? timeLabel(monthsLeft(p)) : 'paid off'}</span>
