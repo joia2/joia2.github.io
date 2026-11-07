@@ -25,6 +25,11 @@
 	const monthsLeft = (p) => result.rows.filter((r) => r.loan && r.month >= today && r.people[p].due > 0).length;
 	const timeLabel = (n) => `${n} m (${Math.round((n / 12) * 10) / 10} y)`;
 	let barHeight = $state(0);
+	// On touch screens a focused field brings up the keyboard, which the fixed bar would slide behind
+	// (iOS keeps it at the bottom of the page, under the keyboard): it hides meanwhile
+	let typing = $state(false);
+	const focusChanged = () =>
+		(typing = matchMedia('(pointer: coarse)').matches && Boolean(document.activeElement?.matches('input, select, textarea')));
 	// The page's footer keeps clear of the bar
 	$effect(() => {
 		document.documentElement.style.setProperty('--bottom-bar', `${barHeight}px`);
@@ -74,7 +79,7 @@
 	});
 </script>
 
-<svelte:window onscroll={checkEnd} onresize={checkEnd} />
+<svelte:window onscroll={checkEnd} onresize={checkEnd} onfocusin={focusChanged} onfocusout={() => setTimeout(focusChanged)} />
 <svelte:document onvisibilitychange={() => document.visibilityState === 'visible' && (today = currentMonth())} />
 
 {#if !result}
@@ -185,7 +190,7 @@
 	</div>
 
 	<!-- Each one's time left at their payment, and their loan left -->
-	<nav class="bottom" aria-label="time left" bind:offsetHeight={barHeight}>
+	<nav class="bottom" aria-label="time left" hidden={typing} bind:offsetHeight={barHeight}>
 		{#each PEOPLE as p (p)}
 			<div class="left-for {p}">
 				<Face person={p} size={32} />
@@ -350,6 +355,9 @@
 		border: 1px solid var(--border);
 		background: var(--surface);
 		box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+	}
+	.bottom[hidden] {
+		display: none;
 	}
 	.bottom {
 		position: fixed;
