@@ -15,19 +15,17 @@
 	import Owned from '#lib/Owned.svelte';
 	import SaleCalculator from '#lib/SaleCalculator.svelte';
 	import { loan, changed } from '#lib/loan.svelte.js';
-	import { compute, currentMonth, formatKr, monthsFor, formatPercent, other, setValue, taxShares, PEOPLE } from '#lib/loan.js';
+	import { compute, currentMonth, formatKr, monthsLeft as left, formatPercent, other, setValue, taxShares, PEOPLE } from '#lib/loan.js';
 	import { ui } from '#lib/ui.svelte.js';
 
 	// The current month, refreshed when the page is shown again (the app may stay open past the 1st)
 	let today = $state(currentMonth());
 	const result = $derived(compute(loan.data, today));
-	// How long each still pays at the instalment they started with, whatever the mortgage's length is now:
-	// their loan left, at this month's rate
-	const rateNow = $derived((result?.rows.find((r) => r.month >= today) ?? result?.rows.at(-1))?.rate ?? 0);
-	const monthsLeft = (p) => {
-		const left = result.state.balance[p];
-		return left > 0 && result.firstPayment[p] ? monthsFor(left, rateNow, result.firstPayment[p]) : 0;
-	};
+	// How long each still pays at the instalment they started with, whatever the mortgage's length is now
+	const monthsLeft = (p) => left(loan.data, result, today, p);
+	// Each one's loan left at the start of this month (after the last row: what is left at the end)
+	const nowRow = $derived(result?.rows.find((r) => r.loan && r.month >= today));
+	const loanLeft = (p) => (nowRow ? nowRow.people[p].balance : result.state.balance[p]);
 	const timeLabel = (n) => `${n} m (${Math.round((n / 12) * 10) / 10} y)`;
 	let barHeight = $state(0);
 	// On touch screens a focused field brings up the keyboard, which the fixed bar would slide behind
@@ -201,8 +199,8 @@
 				<Face person={p} size={24} />
 				<span>
 					<strong>{names[p]}</strong>
-					<span>{monthsLeft(p) ? timeLabel(monthsLeft(p)) : 'paid off'}</span>
-					<span class="muted">{formatKr(result.state.balance[p])} kr</span>
+					<span>{monthsLeft(p) === null ? 'never at this payment' : monthsLeft(p) ? timeLabel(monthsLeft(p)) : 'paid off'}</span>
+					<span class="muted">{formatKr(loanLeft(p))} kr</span>
 				</span>
 			</div>
 		{/each}

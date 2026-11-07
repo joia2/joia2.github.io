@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addMonths, compute, dropMin, dropTime, instalmentFor, saleSplit, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
+import { addMonths, compute, monthsLeft, dropMin, dropTime, instalmentFor, saleSplit, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
 
 const START = '2026-12';
 const base = (payments = {}, extra = {}) => ({
@@ -377,4 +377,17 @@ test("the bank's plan (LOFavør Førstehjemslån, 06.11.2026): instalments, inte
 	// The first payment: interest for 24 days only, principal as for a whole month
 	assert.ok(Math.abs(kr(row(r, '2027-01'), (s) => s.min) - 34666) <= 1);
 	assert.equal(r.rows.at(-1).month, '2056-12');
+});
+
+test("time left: at the first instalment; one's extra never changes the other's", () => {
+	const plain = base();
+	const r0 = compute(plain, '2026-11');
+	assert.ok(Math.abs(monthsLeft(plain, r0, '2026-11', 'cyan') - TERM) <= 1);
+	const d = base({ '2027-06': { cyan: 2000000 } });
+	const r = compute(d, '2026-11');
+	assert.ok(monthsLeft(d, r, '2026-11', 'cyan') < TERM - 12);
+	assert.equal(monthsLeft(d, r, '2026-11', 'mint'), monthsLeft(plain, r0, '2026-11', 'mint'));
+	// A shorter mortgage raises the minimum but not the time left at the first instalment
+	const short = base({ '2026-12': { interest: 4.78, fee: 50, term: 120 } });
+	assert.equal(monthsLeft(short, compute(short, '2026-11'), '2026-11', 'mint'), monthsLeft(plain, r0, '2026-11', 'mint'));
 });
