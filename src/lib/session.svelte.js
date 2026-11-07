@@ -11,6 +11,8 @@ import { saveKey, loadKey, deleteKey, deleteAllKeys } from '#lib/keystore.js';
 // restoring: true while a reload looks for this tab's saved login
 const ID = 'joia2.session';
 const TOKEN = 'joia2.token';
+const LAST = 'joia2.last'; // when the app was last used, in ms
+const IDLE = 5 * 60_000; // unused for longer than this, it locks
 const tab = (() => {
 	try {
 		return sessionStorage;
@@ -18,6 +20,10 @@ const tab = (() => {
 		return null; // storage blocked: every reload asks for the password again
 	}
 })();
+
+// When the app was last used; without storage it never counts as idle (nothing survives a reload)
+const used = () => tab?.setItem(LAST, String(Date.now()));
+const idle = () => Boolean(tab) && Date.now() - Number(tab.getItem(LAST) ?? 0) > IDLE;
 
 export const session = $state({ token: '', key: null, demo: false, restoring: Boolean(browser && tab?.getItem(ID)) });
 
@@ -27,6 +33,16 @@ if (browser) {
 		localStorage.removeItem('joia2.token');
 	} catch {}
 	restore();
+	// Using the app keeps it unlocked; coming back to it after 5 minutes without use locks it. Checked
+	// when the tab shows again and on the next touch or key, so no timer runs in the background.
+	const check = () => {
+		if (!session.token) return;
+		if (idle()) lock();
+		else used();
+	};
+	addEventListener('pointerdown', check, true);
+	addEventListener('keydown', check, true);
+	document.addEventListener('visibilitychange', () => (document.hidden ? session.token && used() : check()));
 }
 
 async function restore() {
@@ -34,6 +50,7 @@ async function restore() {
 	const token = tab?.getItem(TOKEN);
 	try {
 		if (!id || !token) await deleteAllKeys(); // left behind by closed tabs
+		else if (idle()) lock();
 		else {
 			const key = await loadKey(id);
 			if (key) Object.assign(session, { token, key });
@@ -58,6 +75,7 @@ export function unlock(token, key) {
 	const id = tab.getItem(ID) ?? crypto.randomUUID();
 	tab.setItem(ID, id);
 	tab.setItem(TOKEN, token);
+	used();
 	saveKey(id, key).catch(() => {});
 }
 
@@ -68,6 +86,7 @@ export function lock() {
 	const id = tab?.getItem(ID);
 	tab?.removeItem(ID);
 	tab?.removeItem(TOKEN);
+	tab?.removeItem(LAST);
 	if (id) deleteKey(id).catch(() => {});
 }
 
