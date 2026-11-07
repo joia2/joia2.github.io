@@ -13,6 +13,7 @@
 
 export const PEOPLE = ['cyan', 'mint'];
 export const TERM = 360; // 30 years
+export const TAX_DEDUCTION = 0.22; // rentefradrag: interest and fees lower the tax by 22 %
 export const DEBT_RATE = 12.25; // forsinkelsesrente from 1 July 2026, until data.debtRate says otherwise
 const LIMIT = TERM + 1200; // stops a debt that is never repaid from producing rows forever
 

@@ -4,7 +4,7 @@
 	import Check from '@lucide/svelte/icons/check';
 	import MoveLeft from '@lucide/svelte/icons/move-left';
 	import MoveRight from '@lucide/svelte/icons/move-right';
-	import { formatAmount, formatKr, formatPercent, parseAmount, PEOPLE } from '#lib/loan.js';
+	import { formatAmount, formatKr, formatPercent, parseAmount, PEOPLE, TAX_DEDUCTION } from '#lib/loan.js';
 	import { typing } from '#lib/loan.svelte.js';
 
 	// row: one month from compute(); entry: what the data file holds for that month
@@ -53,6 +53,8 @@
 	// interest, in percent: 56,25
 	const sum = (key) => row.people.cyan[key] + row.people.mint[key];
 	const bank = $derived(row.loan ? sum('min') : 0);
+	// What a payment really costs: less the tax it saves on its interest and fees (rentefradrag)
+	const actually = (s) => s.paid - Math.round(TAX_DEDUCTION * (s.interest + s.feePaid));
 	const part = (p, key) => formatPercent(sum(key) ? (row.people[p][key] / sum(key)) * 100 : 0);
 
 	// Swiping a row on a touch screen ticks or unticks a side: right for the left person, left for
@@ -162,6 +164,8 @@
 				<span class="share" title="{names[p]}'s part of what the bank charges">{part(p, 'min')}<Pct /></span>
 				</span>
 				<dl>
+					<dt title="paid, less the 22% tax saved on its interest and fees">actually</dt>
+					<dd>{formatKr(actually(s))}</dd>
 					<dt>principal</dt>
 					<dd>{formatKr(s.principal)}</dd>
 					<dt><span class="long">interest</span><span class="short">int.</span> ({part(p, 'interest')}<Pct />)</dt>
@@ -458,7 +462,9 @@
 	.minimum:disabled {
 		opacity: 0.3;
 	}
+	/* The paid field: a little less tall than the others */
 	input.checkable {
+		padding-block: 0.22rem;
 		padding-left: 2rem;
 	}
 	.mid input.prefixed {
@@ -541,6 +547,7 @@
 			font-size: 0.56rem;
 		}
 		input.checkable {
+			padding-block: 0.18rem;
 			padding-left: 1.55rem;
 			padding-right: 0.35rem;
 		}
