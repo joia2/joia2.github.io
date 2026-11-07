@@ -238,7 +238,7 @@
 		/* The same space at both outer edges and between the columns keeps the fields narrow on
 		   wide screens; it shrinks with the screen */
 		--space: clamp(0.25rem, 4vw - 0.5rem, 2.5rem);
-		grid-template-columns: 1fr 6.5rem 1fr;
+		grid-template-columns: 1fr 6.25rem 1fr;
 		gap: 0.75rem max(0.75rem, var(--space));
 		padding: 0.9rem var(--space);
 		scroll-margin-top: 56px; /* lands below the top bar when jumped to */
@@ -532,7 +532,7 @@
 	/* Phones: a narrower middle and smaller details keep each side on one line per value */
 	@media (max-width: 480px) {
 		.row {
-			grid-template-columns: 1fr 5.75rem 1fr;
+			grid-template-columns: 1fr 5.5rem 1fr;
 			gap: 0.4rem;
 			padding-inline: 0;
 		}
