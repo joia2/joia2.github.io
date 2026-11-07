@@ -603,7 +603,7 @@
 		}
 		.side > p,
 		.toggle {
-			padding-inline: 0;
+			padding-inline: 0.5rem;
 		}
 		input {
 			font-size: 0.8rem;
