@@ -122,9 +122,9 @@
 					/>
 				</span>
 				<dl>
-					<dt>principal ({part(p, 'principal')} %)</dt>
+					<dt><span class="long">principal</span><span class="short">pri.</span> ({part(p, 'principal')} %)</dt>
 					<dd>{formatKr(s.principal)}</dd>
-					<dt>interest ({part(p, 'interest')} %)</dt>
+					<dt><span class="long">interest</span><span class="short">int.</span> ({part(p, 'interest')} %)</dt>
 					<dd>{formatKr(s.interest)}</dd>
 				</dl>
 				{#if s.covered < 0}
@@ -386,6 +386,9 @@
 		white-space: nowrap;
 		text-align: left; /* also on mint's side, where the rest is right-aligned */
 	}
+	.short {
+		display: none;
+	}
 	dd {
 		margin: 0;
 		color: var(--muted);
@@ -461,15 +464,17 @@
 			gap: 0.5rem;
 			padding-inline: 0;
 		}
-		/* Each label above its amount: "principal (56 %)" leaves no room beside it */
 		dl {
-			grid-template-columns: 1fr;
-			gap: 0;
+			gap: 0.1rem 0.3rem;
 			padding: 0 0.5rem;
 			font-size: 0.7rem;
 		}
-		dd {
-			margin-bottom: 0.15rem;
+		/* "pri." and "int.": the whole words leave no room for the amount */
+		.long {
+			display: none;
+		}
+		.short {
+			display: inline;
 		}
 		.side > p,
 		.toggle {
