@@ -387,6 +387,11 @@ test("time left: at the first instalment; one's extra never changes the other's"
 	const r = compute(d, '2026-11');
 	assert.ok(monthsLeft(d, r, '2026-11', 'cyan') < TERM - 12);
 	assert.equal(monthsLeft(d, r, '2026-11', 'mint'), monthsLeft(plain, r0, '2026-11', 'mint'));
+	// Ticking the first month, shorter with a take-over day, changes nothing
+	const late = { takeover: '2026-11-15' };
+	const lateRun = compute(base({}, late), '2026-11');
+	const tick = base({ '2026-12': { interest: 4.78, fee: 50, mint: row(lateRun, '2026-12').people.mint.min / 100 } }, late);
+	assert.equal(monthsLeft(tick, compute(tick, '2026-11'), '2026-11', 'mint'), monthsLeft(base({}, late), lateRun, '2026-11', 'mint'));
 	// Paid off by the other, who then pays the whole fee: a ticked month counts the same for this one
 	const ticked = { '2027-01': { mint: row(r0, '2027-01').people.mint.min / 100 } };
 	const t0 = base(ticked);
