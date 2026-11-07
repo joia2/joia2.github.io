@@ -396,3 +396,26 @@ test("time left: at the first instalment; one's extra never changes the other's"
 	const short = base({ '2026-12': { interest: 4.78, fee: 50, term: 120 } });
 	assert.equal(monthsLeft(short, compute(short, '2026-11'), '2026-11', 'mint'), monthsLeft(plain, r0, '2026-11', 'mint'));
 });
+
+test("time left (200 runs): one's payments never change the other's", () => {
+	let seed = 7;
+	const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+	for (let n = 0; n < 200; n++) {
+		const mint = {}; // mint's own ticks and extras, kept
+		const cyan = {}; // cyan's, varied
+		for (let i = 0, m = START; i < 48; i++, m = addMonths(m, 1)) {
+			if (rand() < 0.4) mint[m] = 18000 + Math.round(rand() * 60000);
+			if (rand() < 0.4) cyan[m] = rand() < 0.1 ? 3000000 : Math.round(rand() * 80000);
+		}
+		const payments = (withCyan) => {
+			const p = {};
+			for (const m of new Set([...Object.keys(mint), ...Object.keys(cyan)]))
+				p[m] = { ...(m in mint && { mint: mint[m] }), ...(withCyan && m in cyan && { cyan: cyan[m] }) };
+			p[START] = { ...p[START], interest: 4.78, fee: 50 };
+			return p;
+		};
+		const a = { ...base(), payments: payments(false) };
+		const b = { ...base(), payments: payments(true) };
+		assert.equal(monthsLeft(b, compute(b, '2026-11'), '2026-11', 'mint'), monthsLeft(a, compute(a, '2026-11'), '2026-11', 'mint'), `run ${n}`);
+	}
+});
