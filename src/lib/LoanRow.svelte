@@ -54,9 +54,36 @@
 	const sum = (key) => row.people.cyan[key] + row.people.mint[key];
 	const bank = $derived(row.loan ? sum('min') : 0);
 	const part = (p, key) => formatPercent(sum(key) ? (row.people[p][key] / sum(key)) * 100 : 0);
+
+	// Swiping a row on a touch screen ticks or unticks a side: right for the left person, left for
+	// the right one. Vertical scrolling stays with the browser (touch-action), which cancels the swipe.
+	let startX = null;
+	let dx = $state(0);
+	const swipeStart = (e) => {
+		if (e.pointerType !== 'mouse' && row.loan && e.target !== document.activeElement) startX = e.clientX;
+	};
+	const swipeMove = (e) => {
+		if (startX !== null) dx = e.clientX - startX;
+	};
+	const swipeEnd = (e) => {
+		const p = PEOPLE[dx > 0 ? 0 : 1];
+		if (e.type === 'pointerup' && Math.abs(dx) > 60 && row.people[p].min) toggleMinimum(p);
+		startX = null;
+		dx = 0;
+	};
 </script>
 
-<div class="row" class:now={row.month === today} data-month={row.month}>
+<div
+	class="row"
+	class:now={row.month === today}
+	class:swiping={dx}
+	data-month={row.month}
+	style:transform={dx ? `translateX(${Math.max(-40, Math.min(40, dx / 3))}px)` : null}
+	onpointerdown={swipeStart}
+	onpointermove={swipeMove}
+	onpointerup={swipeEnd}
+	onpointercancel={swipeEnd}
+>
 	{#each PEOPLE as p, i (p)}
 		{#if i === 1}
 			<div class="mid">
@@ -216,6 +243,11 @@
 		padding: 0.9rem var(--space);
 		scroll-margin-top: 56px; /* lands below the top bar when jumped to */
 		border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+		touch-action: pan-y;
+		transition: transform 0.2s;
+	}
+	.row.swiping {
+		transition: none;
 	}
 	.row.now {
 		background: color-mix(in srgb, var(--accent) 7%, transparent);
