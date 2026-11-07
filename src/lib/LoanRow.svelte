@@ -80,7 +80,7 @@
 </script>
 
 <div class="swipe">
-<span class="reveal {side}" class:active={Math.abs(dx) > SWIPE} style:--fill="{Math.min(100, (Math.abs(dx) / SWIPE) * 100)}%"><Check size={22} /></span>
+<span class="reveal {side}" style:--fill="{Math.min(100, (Math.abs(dx) / SWIPE) * 100)}%"><Check size={22} /></span>
 <div
 	class="row"
 	class:now={row.month === today}
@@ -240,13 +240,10 @@
 		padding-inline: 1.5rem;
 		/* The side's color fills in with the swipe, full once far enough to count */
 		background: color-mix(in srgb, var(--cyan) var(--fill), var(--bg));
-		color: var(--muted);
+		color: var(--bg);
 	}
 	.reveal.mint {
 		background: color-mix(in srgb, var(--mint) var(--fill), var(--bg));
-	}
-	.reveal.active {
-		color: #0b2a2e;
 	}
 	.swipe:has(.now) {
 		border-radius: 14px;
