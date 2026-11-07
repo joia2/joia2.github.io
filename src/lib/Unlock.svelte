@@ -50,8 +50,8 @@
 		error = '';
 		busy = true;
 		try {
-			const cryptoKey = mode === 'setup' ? await setup(t, key) : await login(t, key);
-			unlock(t, cryptoKey);
+			const derived = mode === 'setup' ? await setup(t, key) : await login(t, key);
+			unlock(t, derived.key, derived.raw);
 		} catch (e) {
 			if (e instanceof NeedsSetupError) {
 				mode = 'setup';

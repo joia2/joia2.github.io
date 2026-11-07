@@ -34,8 +34,21 @@ self.addEventListener('activate', (event) => {
 	);
 });
 
+// The installed app's first start: it checks this worker answers /__handoff/ itself before loading it
+self.addEventListener('message', (event) => {
+	if (event.data === 'handoff?') event.ports[0]?.postMessage(true);
+});
+
 self.addEventListener('fetch', (event) => {
 	const url = new URL(event.request.url);
+
+	// The browser's login is in a cookie for this page only (session.svelte.js). Answered here, so the
+	// request, cookie included, never reaches the server; the page hands the cookie to the app.
+	if (url.origin === self.location.origin && url.pathname === '/__handoff/') {
+		const page = '<!doctype html><script>parent.postMessage(document.cookie, location.origin)</script>';
+		event.respondWith(new Response(page, { headers: { 'content-type': 'text/html' } }));
+		return;
+	}
 
 	// Only handle our own GET requests; GitHub API calls go straight to the network
 	if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
