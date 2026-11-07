@@ -76,7 +76,8 @@
 	<label>
 		joia2data token
 		<!-- A text field marked as the username, so password managers fill it together with the password.
-		     Not masked: Safari takes a masked field for a second password and offers no login autofill. -->
+		     Not masked: Safari takes a masked field for a second password and offers no login autofill.
+		     Instead its text is invisible, with a dot shown for each character on top. -->
 		<span class="field">
 			<TicketCheck size={20} />
 			<input
@@ -88,7 +89,9 @@
 				autocapitalize="off"
 				spellcheck="false"
 				placeholder="github_…"
+				class="hidden-text"
 			/>
+			<span class="dots" aria-hidden="true">{'•'.repeat(token.length)}</span>
 		</span>
 	</label>
 
@@ -137,3 +140,25 @@
 		{/if}
 	</button>
 </form>
+
+<style>
+	.hidden-text {
+		color: transparent;
+		caret-color: var(--text);
+	}
+	.hidden-text::selection {
+		color: transparent;
+	}
+	/* Where the text would be: past the icon, inside the field's padding */
+	.dots {
+		position: absolute;
+		inset: 0 1rem 0 2.75rem;
+		display: flex;
+		align-items: center;
+		overflow: hidden;
+		white-space: nowrap;
+		letter-spacing: 0.1em;
+		color: var(--text);
+		pointer-events: none;
+	}
+</style>
