@@ -142,9 +142,15 @@
 </form>
 
 <style>
-	.hidden-text {
+	/* -webkit-text-fill-color wins over the color Safari sets on autofilled text */
+	.hidden-text,
+	.hidden-text:-webkit-autofill {
 		color: transparent;
+		-webkit-text-fill-color: transparent;
 		caret-color: var(--text);
+	}
+	.hidden-text::placeholder {
+		-webkit-text-fill-color: var(--muted);
 	}
 	.hidden-text::selection {
 		color: transparent;
