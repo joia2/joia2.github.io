@@ -25,6 +25,11 @@
 	const monthsLeft = (p) => result.rows.filter((r) => r.loan && r.month >= today && r.people[p].due > 0).length;
 	const timeLabel = (n) => `${n} m (${Math.round((n / 12) * 10) / 10} y)`;
 	let barHeight = $state(0);
+	// The page's footer keeps clear of the bar
+	$effect(() => {
+		document.documentElement.style.setProperty('--bottom-bar', `${barHeight}px`);
+		return () => document.documentElement.style.removeProperty('--bottom-bar');
+	});
 	const names = $derived(loan.data.names);
 	const first = $derived(Object.keys(loan.data.payments).sort()[0]);
 	const tax = $derived(result && taxShares(result, today));
@@ -180,7 +185,6 @@
 	</div>
 
 	<!-- Each one's time left at their payment, and their loan left -->
-	<div class="bar-space" style:height="{barHeight}px"></div>
 	<nav class="bottom" aria-label="time left" bind:offsetHeight={barHeight}>
 		{#each PEOPLE as p (p)}
 			<div class="left-for {p}">

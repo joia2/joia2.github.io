@@ -93,14 +93,16 @@
 		margin-right: -8px;
 	}
 	main {
+		flex: 1 0 auto;
+		width: 100%;
 		max-width: 980px;
-		min-height: calc(100vh - 48px - 4.5rem);
 		margin: 0 auto;
 		padding: 4rem 16px;
 		box-sizing: border-box;
 	}
 	footer {
-		padding: 1.5rem 16px 3rem;
+		/* Above the home bar's own bar when it shows (--bottom-bar, set by Loan.svelte) */
+		padding: 1.5rem 16px max(calc(1rem + env(safe-area-inset-bottom)), calc(var(--bottom-bar, 0px) + 1rem));
 		font-size: 0.75rem;
 		color: var(--muted);
 		text-align: center;
