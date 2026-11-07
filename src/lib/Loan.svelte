@@ -30,7 +30,14 @@
 	};
 	// Each one's loan left at the start of this month (after the last row: what is left at the end)
 	const nowRow = $derived(result?.rows.find((r) => r.loan && r.month >= today));
-	const loanLeft = (p) => (nowRow ? nowRow.people[p].balance : result.state.balance[p]);
+	// Each one's part after the last payment they entered (the row after it starts there); before any
+	// is entered, at the start of this month
+	const loanLeft = (p) => {
+		const rows = result.rows.filter((r) => r.loan);
+		const i = rows.findLastIndex((r) => r.people[p].typed);
+		if (i < 0) return nowRow ? nowRow.people[p].balance : result.state.balance[p];
+		return rows[i + 1]?.people[p].balance ?? 0;
+	};
 	const timeLabel = (n) => `${n} m (${Math.round((n / 12) * 10) / 10} y)`;
 	let barHeight = $state(0);
 	// On touch screens a focused field brings up the keyboard, which the fixed bar would slide behind
