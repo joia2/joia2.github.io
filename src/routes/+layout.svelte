@@ -8,6 +8,7 @@
 	import YearJump from '#lib/YearJump.svelte';
 	import { ui } from '#lib/ui.svelte.js';
 	import { isUnlocked, session, startDemo } from '#lib/session.svelte.js';
+	import { version } from '$app/env';
 
 	let { children } = $props();
 
@@ -43,7 +44,10 @@
 	{@render children()}
 </main>
 
-<footer>© all rights reserved</footer>
+<footer>
+	© all rights reserved
+	{#if !isUnlocked()}<span class="version">v {version}</span>{/if}
+</footer>
 
 <style>
 	header {
@@ -100,6 +104,12 @@
 		font-size: 0.75rem;
 		color: var(--muted);
 		text-align: center;
+	}
+	.version {
+		display: block;
+		margin-top: 0.25rem;
+		font-size: 0.65rem;
+		opacity: 0.7;
 	}
 	@media (max-width: 480px) {
 		main {

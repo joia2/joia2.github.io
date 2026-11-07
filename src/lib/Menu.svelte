@@ -11,6 +11,7 @@
 	import { ui } from '#lib/ui.svelte.js';
 	import { lock, session } from '#lib/session.svelte.js';
 	import { save, hasUnsavedChanges } from '#lib/loan.svelte.js';
+	import { version } from '$app/env';
 
 	let first = $state();
 
@@ -70,6 +71,7 @@
 		{/if}
 		<button onclick={choose(lockApp)}><Lock size={20} />lock</button>
 	</nav>
+	<p class="version">v {version}</p>
 </aside>
 
 <style>
@@ -94,7 +96,9 @@
 		z-index: 30;
 		width: min(22rem, 85vw);
 		box-sizing: border-box;
-		padding: 0 2rem 2rem;
+		display: flex;
+		flex-direction: column;
+		padding: 0 2rem calc(1rem + env(safe-area-inset-bottom));
 		background: color-mix(in srgb, var(--surface) 88%, transparent);
 		-webkit-backdrop-filter: saturate(180%) blur(20px);
 		backdrop-filter: saturate(180%) blur(20px);
@@ -117,6 +121,13 @@
 		display: flex;
 		flex-direction: column;
 		margin-top: 1.5rem;
+	}
+	.version {
+		margin: auto 0 0;
+		padding-top: 2rem;
+		font-size: 0.65rem;
+		color: var(--muted);
+		opacity: 0.7;
 	}
 	hr {
 		width: 100%;
