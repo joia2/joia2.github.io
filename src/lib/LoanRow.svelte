@@ -269,6 +269,10 @@
 	.row.swiping {
 		transition: none;
 	}
+	/* No line between a row and a year's card after it */
+	.swipe:has(+ :global(.summary)) .row {
+		border-bottom: 0;
+	}
 	.row.now {
 		background: color-mix(in srgb, var(--accent) 7%, var(--bg)); /* opaque: hides the reveal */
 		border-radius: 14px;

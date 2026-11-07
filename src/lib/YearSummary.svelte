@@ -2,7 +2,7 @@
 	import Pct from '#lib/Pct.svelte';
 	import { formatKr, formatPercent, other, PEOPLE } from '#lib/loan.js';
 
-	// A year at a glance, after its December: what each paid, and the two numbers for the skattemelding.
+	// A year at a glance, after the next March, when the skattemelding opens: what each paid, and the two numbers for the skattemelding.
 	// rows: that year's months from compute(); paid: result.interestPaid[year]; end: result.yearEnd[year]
 	let { year, rows, paid, end, names } = $props();
 
@@ -57,21 +57,20 @@
 		isolation: isolate;
 		display: grid;
 		--space: clamp(0.25rem, 4vw - 0.5rem, 2.5rem);
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 0.5rem max(0.75rem, var(--space));
 		padding: 0.9rem var(--space);
-		margin: 0.4rem 0;
-	}
-	/* A soft cyan and mint wash, blurred at the edges */
-	.summary::before {
-		content: '';
-		position: absolute;
-		inset: 0.2rem;
-		z-index: -1;
+		margin: 0.75rem 0;
+		/* A rounded card of frosted glass, washed cyan to mint */
+		border: 1px solid color-mix(in srgb, var(--cyan) 30%, transparent);
 		border-radius: 18px;
-		background: linear-gradient(90deg, var(--cyan), var(--mint));
-		opacity: 0.2;
-		filter: blur(12px);
+		background: linear-gradient(
+			120deg,
+			color-mix(in srgb, var(--cyan) 18%, transparent),
+			color-mix(in srgb, var(--mint) 18%, transparent)
+		);
+		-webkit-backdrop-filter: saturate(160%) blur(16px);
+		backdrop-filter: saturate(160%) blur(16px);
 	}
 	.head {
 		grid-column: 1 / -1;
@@ -130,14 +129,16 @@
 		text-align: center;
 	}
 	@media (max-width: 480px) {
+		/* Inside the screen's edges, which the rows reach */
 		.summary {
-			gap: 0.4rem;
-			padding-inline: 0;
+			gap: 0.4rem 0.9rem;
+			margin-inline: 8px;
+			padding-inline: 0.6rem;
 		}
 		dl {
 			gap: 0.1rem 0.3rem;
-			padding: 0 0.3rem;
-			font-size: 0.66rem;
+			padding: 0;
+			font-size: 0.62rem;
 		}
 		.long {
 			display: none;

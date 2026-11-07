@@ -61,6 +61,21 @@
 	const later = $derived(rows.length - until);
 	const visible = $derived(rows.slice(ui.earlier ? 0 : earlier, ui.later ? rows.length : until));
 
+	// Each year's summary shows after the next March, when the skattemelding for it opens (or after
+	// the last month, if the rows end before then): month → years summed up after it
+	const summaries = $derived.by(() => {
+		const at = new Map();
+		const months = new Set(rows.map((r) => r.month));
+		for (const r of rows) {
+			if (!r.month.endsWith('-12')) continue;
+			const year = r.month.slice(0, 4);
+			const march = `${Number(year) + 1}-03`;
+			const anchor = months.has(march) ? march : rows.at(-1).month;
+			at.set(anchor, [...(at.get(anchor) ?? []), year]);
+		}
+		return at;
+	});
+
 	// The floating button: to the end of the page, or back to the top once within 100px of the end
 	let atEnd = $state(false);
 	const checkEnd = () => (atEnd = scrollY + innerHeight >= document.documentElement.scrollHeight - 100);
@@ -174,8 +189,7 @@
 				first={row.month === first}
 				onedit={edit(row.month)}
 			/>
-			{#if row.month.endsWith('-12')}
-				{@const year = row.month.slice(0, 4)}
+			{#each summaries.get(row.month) ?? [] as year (year)}
 				<YearSummary
 					{year}
 					{names}
@@ -183,7 +197,7 @@
 					paid={result.interestPaid[year]}
 					end={result.yearEnd[year]}
 				/>
-			{/if}
+			{/each}
 		{/each}
 		{#if later}
 			<button class="more after" onclick={() => (ui.later = !ui.later)}>
