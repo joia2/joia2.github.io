@@ -387,6 +387,11 @@ test("time left: at the first instalment; one's extra never changes the other's"
 	const r = compute(d, '2026-11');
 	assert.ok(monthsLeft(d, r, '2026-11', 'cyan') < TERM - 12);
 	assert.equal(monthsLeft(d, r, '2026-11', 'mint'), monthsLeft(plain, r0, '2026-11', 'mint'));
+	// Paid off by the other, who then pays the whole fee: a ticked month counts the same for this one
+	const ticked = { '2027-01': { mint: row(r0, '2027-01').people.mint.min / 100 } };
+	const t0 = base(ticked);
+	const t1 = base({ '2027-01': { ...ticked['2027-01'] }, '2026-12': { interest: 4.78, fee: 50, cyan: 9000000 } });
+	assert.equal(monthsLeft(t1, compute(t1, '2026-11'), '2026-11', 'mint'), monthsLeft(t0, compute(t0, '2026-11'), '2026-11', 'mint'));
 	// A shorter mortgage raises the minimum but not the time left at the first instalment
 	const short = base({ '2026-12': { interest: 4.78, fee: 50, term: 120 } });
 	assert.equal(monthsLeft(short, compute(short, '2026-11'), '2026-11', 'mint'), monthsLeft(plain, r0, '2026-11', 'mint'));

@@ -308,21 +308,24 @@ export function compute(data, today = currentMonth()) {
 
 // How many months one person still pays from `today`, at the instalment they started with
 // (result.firstPayment), counting only their own payments entered for coming months. From their part
-// at the start of this month; interest a twelfth of the yearly rate each month. null: never repaid.
+// at the start of this month; interest a twelfth of the yearly rate each month, and always half the
+// fee, so nothing the other pays changes it. null: never repaid.
 export function monthsLeft(data, result, today, p) {
 	const rows = new Map(result.rows.filter((r) => r.loan && r.month >= today).map((r) => [r.month, r]));
 	const first = rows.values().next().value;
 	if (!first) return 0;
 	let left = first.people[p].balance;
 	let rate = first.rate;
+	let fee = first.fee;
 	let n = 0;
 	for (let month = first.month; left > 0; month = addMonths(month, 1), n++) {
 		if (n >= LIMIT) return null;
 		const row = rows.get(month);
-		if (row) rate = row.rate;
+		if (row) ({ rate, fee } = row);
 		const typed = data.payments?.[month]?.[p];
 		const interest = Math.round((left * rate) / 1200);
-		const paid = isEntered(typed) ? toOre(typed) - (row?.people[p].feeDue ?? 0) : result.firstPayment[p];
+		const half = p === 'cyan' ? Math.ceil(fee / 2) : Math.floor(fee / 2);
+		const paid = isEntered(typed) ? toOre(typed) - half : result.firstPayment[p];
 		if (!isEntered(typed) && paid <= interest) return null;
 		left += interest - paid;
 	}
