@@ -75,17 +75,19 @@ test('payment stays fixed; interest uses real days of the previous month', () =>
 	assert.equal(dec.people.cyan.interestDue, Math.round((b * 4.78 * 30) / 36500));
 });
 
-test('an extra keeps the payment and ends sooner, with less interest', () => {
+test('an extra lowers the next minimums, same end, less interest', () => {
 	const plain = compute(base(), '2056-12');
 	const minJan = row(plain, '2027-01').people.cyan.min;
 	const r = compute(base({ '2027-01': { cyan: minJan / 100 + 500000 } }), '2056-12');
 	invariants(r, 'extra');
 	assert.equal(row(r, '2027-01').people.cyan.principal, row(plain, '2027-01').people.cyan.principalDue + toOre(500000));
 	assert.ok(sumYears(r, 'cyan') < sumYears(plain, 'cyan'));
-	assert.equal(row(r, '2027-02').people.cyan.min, row(plain, '2027-02').people.cyan.min);
-	const last = loanRows(r).filter((x) => x.people.cyan.due > 0).pop();
-	assert.ok(last.month < '2056-11', `cyan ends ${last.month}`);
+	assert.ok(row(r, '2027-02').people.cyan.min < row(plain, '2027-02').people.cyan.min);
+	assert.equal(row(r, '2027-02').people.mint.min, row(plain, '2027-02').people.mint.min);
+	assert.equal(loanRows(r).length, TERM);
 	assert.equal(r.state.balance.cyan, 0);
+	// The time left still counts the first instalment, so the extra shortens it
+	assert.ok(monthsLeft(base({ '2027-01': { cyan: minJan / 100 + 500000 } }), r, '2026-11', 'cyan') < TERM - 12);
 });
 
 test('several extras across years keep the table consistent', () => {
@@ -402,6 +404,8 @@ test("time left: at the first instalment; one's extra never changes the other's"
 	assert.equal(monthsLeft(short, compute(short, '2026-11'), '2026-11', 'mint'), monthsLeft(plain, r0, '2026-11', 'mint'));
 });
 
+// Except when one is short and the other's extra covers it: that counts as paid by the one short, as
+// their debt to the other (3.4), so neither is short here
 test("time left (200 runs): one's payments never change the other's", () => {
 	let seed = 7;
 	const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -409,8 +413,8 @@ test("time left (200 runs): one's payments never change the other's", () => {
 		const mint = {}; // mint's own ticks and extras, kept
 		const cyan = {}; // cyan's, varied
 		for (let i = 0, m = START; i < 48; i++, m = addMonths(m, 1)) {
-			if (rand() < 0.4) mint[m] = 18000 + Math.round(rand() * 60000);
-			if (rand() < 0.4) cyan[m] = rand() < 0.1 ? 3000000 : Math.round(rand() * 80000);
+			if (rand() < 0.4) mint[m] = 21000 + Math.round(rand() * 60000); // never short
+			if (rand() < 0.4) cyan[m] = rand() < 0.1 ? 3000000 : 25000 + Math.round(rand() * 80000);
 		}
 		const payments = (withCyan) => {
 			const p = {};

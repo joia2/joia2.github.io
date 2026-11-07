@@ -6,10 +6,10 @@
 // egenkapital. Like the bank's, each person's monthly payment stays fixed, rounded up to whole
 // kroner; interest for the actual days of the month only changes how much of it is principal, and the
 // last payment settles what is left. The payment is worked out again when the rate or the mortgage's
-// length changes, or when a month's payment is short and not covered.
+// length changes, or when a month's payment differs from it (extra, or short and not covered).
 //
 // The mortgage's length (`term` in a month's entry: months from the first payment, 360 until set)
-// carries forward like the rate. An extra keeps the payments as they are, so the loan ends sooner.
+// carries forward like the rate. An extra lowers the next payments; the end stays.
 
 export const PEOPLE = ['cyan', 'mint'];
 export const TERM = 360; // 30 years
@@ -67,14 +67,6 @@ function annuity(balance, rate, months) {
 	const r = rate / 1200;
 	if (r === 0) return Math.ceil(balance / months);
 	return Math.ceil((balance * r) / (1 - (1 + r) ** -months) / 100) * 100; // up to whole kroner, like the bank
-}
-
-// How many months a monthly payment needs to repay a balance
-function monthsFor(balance, rate, payment) {
-	const r = rate / 1200;
-	if (r === 0) return Math.ceil(balance / payment);
-	const x = 1 - (balance * r) / payment;
-	return x <= 0 ? TERM : Math.max(1, Math.ceil(-Math.log(x) / Math.log(1 + r)));
 }
 
 const isEntered = (value) => value !== undefined && value !== null && value !== '' && value !== 'min';
@@ -203,12 +195,8 @@ export function compute(data, today = currentMonth()) {
 			// Unpaid interest and fees are added to what this person owes the bank (3.5)
 			equity[p] -= s.feeDue - feePaid + (s.interestDue - s.interest);
 
-			// Off schedule: an extra keeps the payments and ends sooner; anything else (short and not
-			// covered) works the payment out again
-			if (balance(p) > 0 && balance(p) !== expected) {
-				if (s.extra > 0) end[p] = Math.min(end[p], k + monthsFor(balance(p), rate, payment[p]));
-				else payment[p] = null;
-			}
+			// Off schedule (extra, or short and not covered): the payment is worked out again, same end
+			if (balance(p) > 0 && balance(p) !== expected) payment[p] = null;
 		}
 
 		// Interest counts in the year it built up (påløpt), as the tax return wants: a payment on
@@ -308,10 +296,11 @@ export function compute(data, today = currentMonth()) {
 }
 
 // How many months one person still pays from `today`, at the instalment they started with
-// (result.firstPayment), counting only their own payments entered for coming months. From their part
-// at the start of this month. Interest for each month's real days, as in the rows (a twelfth of the
-// yearly rate past them); the first month, often shorter, takes less, as the bank's does. Always half
-// the fee, so nothing the other pays changes it. null: never repaid.
+// (result.firstPayment) plus whatever they pay above that month's minimum (less, below it): a ticked
+// month counts as the first instalment, an extra shortens the time. From their part at the start of
+// this month, with each month's real interest days, as in the rows (a twelfth of the yearly rate past
+// them); the first month, often shorter, takes less, as the bank's does. The other's payments never
+// change it. null: never repaid.
 export function monthsLeft(data, result, today, p) {
 	const rows = new Map(result.rows.filter((r) => r.loan && r.month >= today).map((r) => [r.month, r]));
 	const first = rows.values().next().value;
@@ -319,18 +308,19 @@ export function monthsLeft(data, result, today, p) {
 	const start = result.rows[0].month; // the loan's first payment
 	let left = first.people[p].balance;
 	let rate = first.rate;
-	let fee = first.fee;
 	let n = 0;
 	for (let month = first.month; left > 0; month = addMonths(month, 1), n++) {
 		if (n >= LIMIT) return null;
 		const row = rows.get(month);
-		if (row) ({ rate, fee } = row);
-		const typed = data.payments?.[month]?.[p];
+		if (row) rate = row.rate;
 		const interest = row ? interestFor(left, rate, row.days, row.yearDays) : Math.round((left * rate) / 1200);
 		const fewer = month === start ? interestFor(left, rate, monthDays(month), yearDays(month)) - interest : 0;
-		const half = p === 'cyan' ? Math.ceil(fee / 2) : Math.floor(fee / 2);
-		const paid = isEntered(typed) ? toOre(typed) - half : result.firstPayment[p] - Math.max(0, fewer);
-		if (!isEntered(typed) && paid <= interest) return null;
+		const typed = data.payments?.[month]?.[p];
+		// The minimum with half the fee: what it would be whatever the other has paid off
+		const half = row && (p === 'cyan' ? Math.ceil(row.fee / 2) : Math.floor(row.fee / 2));
+		const beyond = row && isEntered(typed) ? toOre(typed) - (row.people[p].due + half) : 0;
+		const paid = result.firstPayment[p] - Math.max(0, fewer) + beyond;
+		if (beyond <= 0 && paid <= interest) return null;
 		left += interest - paid;
 	}
 	return n;
@@ -423,7 +413,7 @@ export function dropMin(data) {
 	return dropped;
 }
 
-// "time" is no longer a choice (extras always keep the payments): removes it from older files. Returns whether anything
+// "time" is no longer a choice (extras always lower the next payments): removes it from older files. Returns whether anything
 // changed.
 export function dropTime(data) {
 	const payments = data?.payments ?? {};
