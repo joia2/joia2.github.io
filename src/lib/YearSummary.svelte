@@ -15,13 +15,11 @@
 </script>
 
 <div class="summary">
-	{#each PEOPLE as p, i (p)}
-		{#if i === 1}
-			<div class="mid">
-				<strong>{year}</strong>
-				<span class="tag">{estimate ? 'estimate' : 'summary'}</span>
-			</div>
-		{/if}
+	<div class="head">
+		<strong>{year}</strong>
+		{#if estimate}<span class="tag">estimate</span>{/if}
+	</div>
+	{#each PEOPLE as p (p)}
 		<dl class={p}>
 			<dt>paid</dt>
 			<dd>{formatKr(total(p, 'paid'))}</dd>
@@ -33,8 +31,8 @@
 				<dd>{formatKr(paid[p])}</dd>
 			{/if}
 			{#if end}
-				<!-- Skattemelding: each person's part of the loan on 31 December (gjeld) -->
-				<dt>loan 31.12 ({share(end.loan, p)}<Pct />)</dt>
+				<!-- Skattemelding: each person's part of the loan on Dec-31 (gjeld) -->
+				<dt>loan Dec-31 ({share(end.loan, p)}<Pct />)</dt>
 				<dd>{formatKr(end.loan[p])}</dd>
 				{#if owes === p}
 					<dt class="minus">owes {names[other(p)]}</dt>
@@ -47,7 +45,7 @@
 		</dl>
 	{/each}
 	<p class="note">
-		For the skattemelding: interest + fees as each one's <em>rentefradrag</em>, loan 31.12 as each one's
+		For the skattemelding: interest + fees as each one's <em>rentefradrag</em>, loan Dec-31 as each one's
 		<em>gjeld</em>{#if owes}, and the debt between you as a private debt and claim{/if}.
 		{#if estimate}An estimate: months not entered count at the minimum.{/if}
 	</p>
@@ -59,7 +57,7 @@
 		isolation: isolate;
 		display: grid;
 		--space: clamp(0.25rem, 4vw - 0.5rem, 2.5rem);
-		grid-template-columns: 1fr 5.75rem 1fr;
+		grid-template-columns: 1fr 1fr;
 		gap: 0.5rem max(0.75rem, var(--space));
 		padding: 0.9rem var(--space);
 		margin: 0.4rem 0;
@@ -75,12 +73,12 @@
 		opacity: 0.16;
 		filter: blur(10px);
 	}
-	.mid {
+	.head {
+		grid-column: 1 / -1;
 		display: flex;
-		flex-direction: column;
-		align-items: center;
+		align-items: baseline;
 		justify-content: center;
-		gap: 0.2rem;
+		gap: 0.4rem;
 	}
 	strong {
 		font-size: 0.95rem;
@@ -125,7 +123,6 @@
 	}
 	@media (max-width: 480px) {
 		.summary {
-			grid-template-columns: 1fr 3rem 1fr;
 			gap: 0.4rem;
 			padding-inline: 0;
 		}
