@@ -248,6 +248,9 @@ export function compute(data, today = currentMonth(), { time = false } = {}) {
 	for (let k = 0, month = months[0]; k < LIMIT; k++, month = addMonths(month, 1)) {
 		const entry = payments[month] ?? {};
 		applyCosts(month);
+		// Whether the rate or the fee differs from the month before (not in the first month)
+		const rateChanged = k > 0 && isEntered(entry.interest) && Number(entry.interest) !== rate;
+		const feeChanged = k > 0 && isEntered(entry.fee) && toOre(entry.fee) !== fee;
 		if (isEntered(entry.interest) && Number(entry.interest) !== rate) {
 			rate = Number(entry.interest);
 			payment.cyan = payment.mint = null; // a new rate means new payments, same end
@@ -281,6 +284,8 @@ export function compute(data, today = currentMonth(), { time = false } = {}) {
 		const row = {
 			month,
 			rate,
+			rateChanged,
+			feeChanged,
 			debtRate,
 			fee,
 			days,

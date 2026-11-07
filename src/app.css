@@ -8,6 +8,7 @@
 	--muted: #6e6e73;
 	--border: #d2d2d7;
 	--accent: #0891b2;
+	--on-accent: #ffffff; /* text on an accent background */
 	--gradient: linear-gradient(90deg, #0284c7, #0891b2 45%, #059669);
 	--button: #1d1d1f;
 	--button-text: #ffffff;
@@ -31,6 +32,7 @@
 		--muted: #a1a1a6;
 		--border: #424245;
 		--accent: #22d3ee;
+		--on-accent: #0b2a2e;
 		--gradient: linear-gradient(90deg, #38bdf8, #22d3ee 45%, #2dd4bf);
 		--button: #f5f5f7;
 		--button-text: #1d1d1f;

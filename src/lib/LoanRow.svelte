@@ -103,7 +103,7 @@
 				<span class="month">{label}</span>
 				<!-- The rate and the fee on one line: (5.03%) (60 kr) -->
 				<span class="rates">
-				<span class="affix">
+				<span class="affix" class:changed={row.rateChanged}>
 					<input
 						class="suffixed"
 						inputmode="decimal"
@@ -116,7 +116,7 @@
 					<span class="suffix" aria-hidden="true">%</span>
 				</span>
 				{#if row.loan}
-					<span class="affix">
+					<span class="affix" class:changed={row.feeChanged}>
 						<input
 							class="suffixed"
 							inputmode="decimal"
@@ -377,6 +377,15 @@
 	.mid .rates input.suffixed {
 		padding: 0.05rem 0.85rem 0.05rem 0.2rem;
 		font-size: 0.7rem;
+	}
+	/* A rate or fee that differs from the month before */
+	.rates .changed input {
+		background: var(--accent);
+		border-color: var(--accent);
+		color: var(--on-accent);
+	}
+	.rates .changed .suffix {
+		color: var(--on-accent);
 	}
 	.rates .suffix {
 		right: 0.3rem;
