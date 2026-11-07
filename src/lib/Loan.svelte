@@ -215,7 +215,7 @@
 					<strong>{names[p]}</strong>
 					<span>{monthsLeft(p) === null ? 'never at this payment' : monthsLeft(p) ? timeLabel(monthsLeft(p)) : 'paid off'}</span>
 					<!-- The instalment the time left is worked out from (without the fee) -->
-					<span class="muted">{formatKr(result.firstPayment[p])} kr / month</span>
+					<span class="muted">min. {formatKr(result.firstPayment[p])} kr</span>
 					<span class="muted">{formatKr(loanLeft(p))} kr</span>
 				</span>
 			</div>
