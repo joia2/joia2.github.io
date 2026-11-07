@@ -1,4 +1,5 @@
 <script>
+	import Face from '#lib/Face.svelte';
 	import Pct from '#lib/Pct.svelte';
 	import { formatKr, formatPercent, other, PEOPLE } from '#lib/loan.js';
 
@@ -21,19 +22,24 @@
 	</div>
 	{#each PEOPLE as p (p)}
 		<dl class={p}>
+			<dt class="who"><Face person={p} size={16} />{names[p]}</dt>
+			<dd></dd>
 			<dt>paid</dt>
 			<dd>{formatKr(total(p, 'paid'))}</dd>
 			<dt>principal</dt>
 			<dd>{formatKr(total(p, 'principal'))}</dd>
+			<!-- What to type in the skattemelding, set apart and in bold -->
+			<dt class="caption">skattemelding</dt>
+			<dd></dd>
 			{#if paid}
 				<!-- Skattemelding: interest and fees that built up in the year (rentefradrag) -->
 				<dt>interest + fees ({share(paid, p)}<Pct />)</dt>
-				<dd>{formatKr(paid[p])}</dd>
+				<dd class="tax">{formatKr(paid[p])}</dd>
 			{/if}
 			{#if end}
 				<!-- Skattemelding: each person's part of the loan on Dec-31 (gjeld) -->
 				<dt>loan Dec-31 ({share(end.loan, p)}<Pct />)</dt>
-				<dd>{formatKr(end.loan[p])}</dd>
+				<dd class="tax">{formatKr(end.loan[p])}</dd>
 				{#if owes === p}
 					<dt class="minus">owes {names[other(p)]}</dt>
 					<dd class="minus">{formatKr(Math.abs(end.debt))}</dd>
@@ -70,8 +76,8 @@
 		z-index: -1;
 		border-radius: 18px;
 		background: linear-gradient(90deg, var(--cyan), var(--mint));
-		opacity: 0.16;
-		filter: blur(10px);
+		opacity: 0.2;
+		filter: blur(12px);
 	}
 	.head {
 		grid-column: 1 / -1;
@@ -81,7 +87,8 @@
 		gap: 0.4rem;
 	}
 	strong {
-		font-size: 0.95rem;
+		font-size: 1rem;
+		letter-spacing: -0.01em;
 	}
 	.tag {
 		font-size: 0.66rem;
@@ -106,6 +113,30 @@
 		margin: 0;
 		text-align: right;
 		font-variant-numeric: tabular-nums;
+	}
+	.who {
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+		margin-bottom: 0.2rem;
+		color: var(--text);
+		font-weight: 600;
+	}
+	/* Above the two numbers for the tax return: a thin line and a small caption */
+	.caption {
+		margin-top: 0.35rem;
+		padding-top: 0.3rem;
+		border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+		font-size: 0.62rem;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+	}
+	.caption + dd {
+		margin-top: 0.35rem;
+		border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+	}
+	.tax {
+		font-weight: 600;
 	}
 	.minus {
 		color: var(--minus);
