@@ -1,4 +1,5 @@
 <script>
+	import Pct from '#lib/Pct.svelte';
 	import Check from '@lucide/svelte/icons/check';
 	import CircleAlert from '@lucide/svelte/icons/circle-alert';
 	import House from '@lucide/svelte/icons/house';
@@ -164,7 +165,7 @@
 		</label>
 		<p class="note">
 			The interest on a debt between you (forsinkelsesrente, samboerkontrakt 3.4). It changes on 1 January
-			and 1 July; empty uses {formatAmount(DEBT_RATE)} %.
+			and 1 July; empty uses {formatAmount(DEBT_RATE)}<Pct />.
 		</p>
 
 		<!-- What each paid for maintenance and improvements: a record, not ownership (4.3) -->

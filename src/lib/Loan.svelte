@@ -1,4 +1,5 @@
 <script>
+	import Pct from '#lib/Pct.svelte';
 	import { onMount, tick } from 'svelte';
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
@@ -87,7 +88,7 @@
 					<!-- What this person has paid of the apartment so far: egenkapital and principal -->
 					<span class="owned">{formatKr(Math.max(0, result.state.equity[p]))} kr</span>
 					<span class="owned share">
-						{formatPercent(ownedShare(p))} %
+						{formatPercent(ownedShare(p))}<Pct />
 						<button class="icon-button info small" onclick={() => (ownedOpen = true)} aria-label="what each has paid">
 							<Info size={14} />
 						</button>
@@ -111,7 +112,7 @@
 		<span class="tax {p}">
 			{#if tax}
 				<span class="tax-value">
-					<span title="{names[p]}'s share of the {tax.year} interest, for the tax return">{formatPercent(tax[p])} %</span>
+					<span title="{names[p]}'s share of the {tax.year} interest, for the tax return">{formatPercent(tax[p])}<Pct /></span>
 					<button class="icon-button info" onclick={() => (yearsOpen = true)} aria-label="interest paid per year">
 						<Info size={16} />
 					</button>

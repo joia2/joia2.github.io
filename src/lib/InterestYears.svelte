@@ -1,4 +1,5 @@
 <script>
+	import Pct from '#lib/Pct.svelte';
 	import Face from '#lib/Face.svelte';
 	import Sheet from '#lib/Sheet.svelte';
 	import { formatKr, formatPercent, other, PEOPLE } from '#lib/loan.js';
@@ -25,7 +26,7 @@
 		<p class="note intro">
 			Each person's share of the year's interest and fees. In the skattemelding, under
 			<em>Bank, lån og forsikring → Lån og renter</em>, change the shared loan from 50/50 so the interest
-			matches these shares, both of you, adding up to 100 %. Do it for each finished year, in spring; it
+			matches these shares, both of you, adding up to 100%. Do it for each finished year, in spring; it
 			can be corrected for up to three years.
 		</p>
 		<p class="note intro">
@@ -53,7 +54,7 @@
 						{#each PEOPLE as p (p)}
 							<td class="num">
 								{formatKr(paid[p])}
-								<span class="pct">{share(paid, p)} %</span>
+								<span class="pct">{share(paid, p)}<Pct /></span>
 							</td>
 						{/each}
 						<td class="num">{formatKr(paid.cyan + paid.mint)}</td>
@@ -95,7 +96,7 @@
 						{#each PEOPLE as p (p)}
 							<td class="num">
 								{formatKr(end.loan[p])}
-								<span class="pct">{share(end.loan, p)} %</span>
+								<span class="pct">{share(end.loan, p)}<Pct /></span>
 								{#if owes(end.debt) === p}
 									<span class="owed minus">owes {names[other(p)]} {formatKr(Math.abs(end.debt))}</span>
 								{:else if owes(end.debt) === other(p)}

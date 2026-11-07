@@ -1,9 +1,10 @@
 <script>
+	import Pct from '#lib/Pct.svelte';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-exclamation-point';
 	import Check from '@lucide/svelte/icons/check';
 	import MoveLeft from '@lucide/svelte/icons/move-left';
 	import MoveRight from '@lucide/svelte/icons/move-right';
-	import { formatAmount, formatKr, parseAmount, PEOPLE } from '#lib/loan.js';
+	import { formatAmount, formatKr, formatPercent, parseAmount, PEOPLE } from '#lib/loan.js';
 	import { typing } from '#lib/loan.svelte.js';
 
 	// row: one month from compute(); entry: what the data file holds for that month
@@ -49,11 +50,10 @@
 	const whole = (kr) => (kr == null || kr === '' ? '' : new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 2 }).format(kr));
 
 	// What the bank charges this month, and each person's part of it, of the principal and of the
-	// interest, in percent: 56 or 43,7
+	// interest, in percent: 56,25
 	const sum = (key) => row.people.cyan[key] + row.people.mint[key];
 	const bank = $derived(row.loan ? sum('min') : 0);
-	const percent = new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 1 });
-	const part = (p, key) => percent.format(sum(key) ? (row.people[p][key] / sum(key)) * 100 : 0);
+	const part = (p, key) => formatPercent(sum(key) ? (row.people[p][key] / sum(key)) * 100 : 0);
 </script>
 
 <div class="row" class:now={row.month === today} data-month={row.month}>
@@ -61,15 +61,13 @@
 		{#if i === 1}
 			<div class="mid">
 				{#if row.loan}
-					<!-- The bank's total for the month, and the part of it each person pays -->
-					<span class="bank" title="what the bank charges this month">{formatKr(bank)}</span>
-					<span class="split">
-						<span><MoveLeft size={12} />{part('cyan', 'min')} %</span>
-						<span>{part('mint', 'min')} %<MoveRight size={12} /></span>
+					<!-- The bank's total for the month; each person's part of it shows beside their field -->
+					<span class="bank" title="what the bank charges this month">
+						<MoveLeft size={12} />{formatKr(bank)}<MoveRight size={12} />
 					</span>
 				{/if}
 				<span class="month">{label}</span>
-				<!-- The rate and the fee on one line: (5.03 %) (60 kr) -->
+				<!-- The rate and the fee on one line: (5.03%) (60 kr) -->
 				<span class="rates">
 				<span class="affix">
 					<input
@@ -104,6 +102,7 @@
 		<div class="side {p}">
 			{#if row.loan}
 				{@const s = row.people[p]}
+				<span class="payline">
 				<span class="affix">
 					<button
 						class="minimum {p}"
@@ -125,10 +124,12 @@
 						onchange={edited(p)}
 					/>
 				</span>
+				<span class="share" title="{names[p]}'s part of what the bank charges">{part(p, 'min')}<Pct /></span>
+				</span>
 				<dl>
-					<dt><span class="long">principal</span><span class="short">pri.</span> ({part(p, 'principal')} %)</dt>
+					<dt><span class="long">principal</span><span class="short">pri.</span> ({part(p, 'principal')}<Pct />)</dt>
 					<dd>{formatKr(s.principal)}</dd>
-					<dt><span class="long">interest</span><span class="short">int.</span> ({part(p, 'interest')} %)</dt>
+					<dt><span class="long">interest</span><span class="short">int.</span> ({part(p, 'interest')}<Pct />)</dt>
 					<dd>{formatKr(s.interest)}</dd>
 				</dl>
 				{#if s.covered < 0}
@@ -233,25 +234,40 @@
 	.mid {
 		text-align: center;
 	}
+	/* On the fields' line: as tall as they are, so the three line up */
 	.bank {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.15rem;
+		min-height: 2.1rem;
 		font-size: 0.78rem;
 		font-weight: 600;
 		font-variant-numeric: tabular-nums;
-		line-height: 1;
-	}
-	.split {
-		display: flex;
-		justify-content: space-between;
-		margin-bottom: 0.3rem;
-		font-size: 0.62rem;
-		color: var(--muted);
-		font-variant-numeric: tabular-nums;
 		white-space: nowrap;
 	}
-	.split span {
-		display: inline-flex;
+	.bank :global(svg) {
+		flex: none;
+		color: var(--muted);
+	}
+	/* The paid field and, on its inner side, this person's part of the bank's total */
+	.payline {
+		display: flex;
 		align-items: center;
-		gap: 0.1rem;
+		gap: 0.35rem;
+	}
+	.side.mint .payline {
+		flex-direction: row-reverse;
+	}
+	.payline .affix {
+		flex: 1;
+		min-width: 0;
+	}
+	.share {
+		flex: none;
+		font-size: 0.72rem;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
 	}
 	.month {
 		font-size: 0.82rem;
@@ -480,14 +496,33 @@
 	/* Phones: a narrower middle and smaller details keep each side on one line per value */
 	@media (max-width: 480px) {
 		.row {
-			grid-template-columns: 1fr 5.6rem 1fr;
-			gap: 0.5rem;
+			grid-template-columns: 1fr 5rem 1fr;
+			gap: 0.4rem;
 			padding-inline: 0;
 		}
 		dl {
-			gap: 0.1rem 0.3rem;
-			padding: 0 0.5rem;
-			font-size: 0.7rem;
+			gap: 0.1rem 0.25rem;
+			padding: 0 0.3rem;
+			font-size: 0.64rem;
+		}
+		.payline {
+			gap: 0.15rem;
+		}
+		.share {
+			font-size: 0.56rem;
+		}
+		input.checkable {
+			padding-left: 1.55rem;
+			padding-right: 0.35rem;
+		}
+		.minimum {
+			left: 0.35rem;
+			width: 0.95rem;
+			height: 0.95rem;
+		}
+		.bank {
+			gap: 0;
+			font-size: 0.66rem;
 		}
 		/* "pri." and "int.": the whole words leave no room for the amount */
 		.long {
@@ -501,8 +536,8 @@
 			padding-inline: 0.5rem;
 		}
 		input {
-			font-size: 0.88rem;
-			padding: 0.25rem 0.5rem;
+			font-size: 0.8rem;
+			padding: 0.25rem 0.35rem;
 		}
 	}
 </style>

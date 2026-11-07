@@ -1,9 +1,10 @@
 <script>
+	import Pct from '#lib/Pct.svelte';
 	import Face from '#lib/Face.svelte';
 	import Sheet from '#lib/Sheet.svelte';
 	import { formatKr, formatPercent, toOre, PEOPLE } from '#lib/loan.js';
 
-	// What each person has paid of the apartment's cost and where it comes from. Each owns 50 % (4.1).
+	// What each person has paid of the apartment's cost and where it comes from. Each owns 50% (4.1).
 	// state: result.state from compute(); open: bindable, whether the popup shows
 	let { state, egenkapital, names, open = $bindable(false) } = $props();
 
@@ -11,12 +12,12 @@
 	const owned = (p) => Math.max(0, state.equity[p]);
 	const signed = (ore) => (ore > 0 ? '+' : ore < 0 ? '−' : '') + formatKr(Math.abs(ore));
 	const lines = $derived([
-		['paid in %', (p) => `${formatPercent((owned(p) / value) * 100)} %`],
+		['paid in %', (p) => formatPercent((owned(p) / value) * 100), true],
 		['egenkapital', (p) => formatKr(toOre(egenkapital?.[p] ?? 0))],
 		['principal paid', (p) => formatKr(owned(p) - toOre(egenkapital?.[p] ?? 0))],
 		['paid in kr', (p) => formatKr(owned(p))],
 		['principal left', (p) => formatKr(state.balance[p])],
-		['ownership share', () => '50,00 %'],
+		['ownership share', () => formatPercent(50), true],
 		['covered', (p) => signed(state.covered[p])],
 		['maintenances', (p) => formatKr(state.costs[p].maintenance)],
 		['improvements', (p) => formatKr(state.costs[p].improvement)]
@@ -35,17 +36,17 @@
 				</tr>
 			</thead>
 			<tbody>
-				{#each lines as [label, show], i (label)}
+				{#each lines as [label, show, pct], i (label)}
 					<tr class:total={i === 0 || label === 'paid in kr'}>
 						<td>{label}</td>
-						{#each PEOPLE as p (p)}<td class="num">{show(p)}</td>{/each}
+						{#each PEOPLE as p (p)}<td class="num">{show(p)}{#if pct}<Pct />{/if}</td>{/each}
 					</tr>
 				{/each}
 			</tbody>
 		</table>
 		<p class="note">
 			In kroner, as of this month. "Paid in %" is how much of the apartment's cost each of you has paid
-			in: egenkapital and principal. The rest is still owed to the bank. Each of you owns 50 % whatever
+			in: egenkapital and principal. The rest is still owed to the bank. Each of you owns 50% whatever
 			is paid (4.1); what you have paid in lowers your own loan left, and so raises your settlement
 			amount on a sale (4.2). Covered: what one of you paid for the other's instalment, + for the one
 			who paid and − for the one it was paid for. It counts as paid by the one it was paid for, and is

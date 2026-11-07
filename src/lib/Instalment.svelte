@@ -1,4 +1,5 @@
 <script>
+	import Pct from '#lib/Pct.svelte';
 	import Face from '#lib/Face.svelte';
 	import Sheet from '#lib/Sheet.svelte';
 	import { formatKr, formatPercent, instalmentFor, parseAmount, toOre, PEOPLE } from '#lib/loan.js';
@@ -29,7 +30,7 @@
 		['principal', (p) => formatKr(result.people[p].principal)],
 		['fee', (p) => formatKr(result.people[p].fee)],
 		['instalment', (p) => formatKr(result.people[p].total)],
-		['share', (p) => `${formatPercent(share(p) * 100)} %`]
+		['share', (p) => formatPercent(share(p) * 100), true]
 	];
 </script>
 
@@ -76,10 +77,10 @@
 						</td>
 					{/each}
 				</tr>
-				{#each lines as [name, show] (name)}
+				{#each lines as [name, show, pct] (name)}
 					<tr class:total={name === 'instalment' || name === 'share'}>
 						<td>{name}</td>
-						{#each PEOPLE as p (p)}<td class="num">{show(p)}</td>{/each}
+						{#each PEOPLE as p (p)}<td class="num">{show(p)}{#if pct}<Pct />{/if}</td>{/each}
 					</tr>
 				{/each}
 				{#if bank !== null}

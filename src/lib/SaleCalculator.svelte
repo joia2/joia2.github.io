@@ -71,7 +71,7 @@
 		</table>
 
 		<p class="note">
-			As of this month, under the samboerkontrakt. Each of you owns 50 %: each gets half of the price
+			As of this month, under the samboerkontrakt. Each of you owns 50%: each gets half of the price
 			less the costs of sale, less your own loan left (your settlement amount, 4.2). A debt between you
 			is then set off against it (7.9). The same applies to a buy-out, with the valuation as the price.
 			A negative amount is what that person must pay in before the sale is completed.
