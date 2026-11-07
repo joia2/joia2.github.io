@@ -206,7 +206,7 @@
 		{/if}
 	</div>
 
-	<!-- Each one's time left at their payment, and their loan left -->
+	<!-- Each one's time left at their instalment, the instalment, and their loan left -->
 	<nav class="bottom" aria-label="time left" hidden={typing} bind:offsetHeight={barHeight}>
 		{#each PEOPLE as p (p)}
 			<div class="left-for {p}">
@@ -214,6 +214,8 @@
 				<span>
 					<strong>{names[p]}</strong>
 					<span>{monthsLeft(p) === null ? 'never at this payment' : monthsLeft(p) ? timeLabel(monthsLeft(p)) : 'paid off'}</span>
+					<!-- The instalment the time left is worked out from (without the fee) -->
+					<span class="muted">{formatKr(result.firstPayment[p])} kr / month</span>
 					<span class="muted">{formatKr(loanLeft(p))} kr</span>
 				</span>
 			</div>
@@ -382,8 +384,8 @@
 		right: 0;
 		bottom: 0;
 		z-index: 10;
-		/* Above the iPhone's home indicator when installed */
-		padding: 0.5rem max(16px, env(safe-area-inset-right)) calc(0.5rem + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+		/* Above the iPhone's home indicator when installed: half its space is enough */
+		padding: 0.5rem max(16px, env(safe-area-inset-right)) calc(0.5rem + env(safe-area-inset-bottom) / 2) max(16px, env(safe-area-inset-left));
 		display: flex;
 		justify-content: space-between;
 		gap: 1rem;
