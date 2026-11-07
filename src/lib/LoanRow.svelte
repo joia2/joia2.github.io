@@ -318,6 +318,10 @@
 		flex: 1;
 		min-width: 0;
 	}
+	/* The rate needs more room than the fee: 5.03 against 60 */
+	.rates .affix:first-child {
+		flex: 1.5;
+	}
 	.mid .rates input.suffixed {
 		padding: 0.05rem 0.85rem 0.05rem 0.2rem;
 		font-size: 0.7rem;
