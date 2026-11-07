@@ -1,5 +1,4 @@
 <script>
-	import Face from '#lib/Face.svelte';
 	import Pct from '#lib/Pct.svelte';
 	import { formatKr, formatPercent, other, PEOPLE } from '#lib/loan.js';
 
@@ -22,8 +21,6 @@
 	</div>
 	{#each PEOPLE as p (p)}
 		<dl class={p}>
-			<dt class="who"><Face person={p} size={16} />{names[p]}</dt>
-			<dd></dd>
 			<dt>paid</dt>
 			<dd>{formatKr(total(p, 'paid'))}</dd>
 			<dt>principal</dt>
@@ -113,14 +110,6 @@
 	}
 	.short {
 		display: none;
-	}
-	.who {
-		display: flex;
-		align-items: center;
-		gap: 0.3rem;
-		margin-bottom: 0.2rem;
-		color: var(--text);
-		font-weight: 600;
 	}
 	/* The two numbers to type in the skattemelding */
 	.tax {
