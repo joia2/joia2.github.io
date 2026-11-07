@@ -45,6 +45,8 @@
 
 	// What a paid field shows: the amount typed
 	const shown = (key) => formatAmount(entry[key]);
+	// The fee without øre when it has none: 60, or 60,50
+	const whole = (kr) => (kr == null || kr === '' ? '' : new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 2 }).format(kr));
 
 	// What the bank charges this month, and each person's part of it, of the principal and of the
 	// interest, in percent: 56 or 43,7
@@ -67,6 +69,8 @@
 					</span>
 				{/if}
 				<span class="month">{label}</span>
+				<!-- The rate and the fee on one line: (5.03 %) (60 kr) -->
+				<span class="rates">
 				<span class="affix">
 					<input
 						class="suffixed"
@@ -81,12 +85,11 @@
 				</span>
 				{#if row.loan}
 					<span class="affix">
-						<span class="prefix" aria-hidden="true">fee</span>
 						<input
-							class="prefixed suffixed"
+							class="suffixed"
 							inputmode="decimal"
-							value={formatAmount(entry.fee)}
-							placeholder={formatKr(row.fee)}
+							value={whole(entry.fee)}
+							placeholder={whole(row.fee / 100)}
 							aria-label="fee in kroner"
 							oninput={typing}
 							onchange={edited('fee')}
@@ -94,6 +97,7 @@
 						<span class="suffix" aria-hidden="true">kr</span>
 					</span>
 				{/if}
+				</span>
 			</div>
 		{/if}
 
@@ -289,6 +293,22 @@
 	}
 	.mid input:focus {
 		border-color: var(--accent);
+	}
+	.rates {
+		display: flex;
+		gap: 0.2rem;
+	}
+	.rates .affix {
+		flex: 1;
+		min-width: 0;
+	}
+	.mid .rates input.suffixed {
+		padding: 0.05rem 0.85rem 0.05rem 0.2rem;
+		font-size: 0.7rem;
+	}
+	.rates .suffix {
+		right: 0.3rem;
+		font-size: 0.6rem;
 	}
 	/* A unit or name shown inside a field, not editable: "fee [ 50 ] kr", "[ 4.78 ] %" */
 	.affix {
