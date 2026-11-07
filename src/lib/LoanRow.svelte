@@ -568,7 +568,7 @@
 		.row {
 			grid-template-columns: 1fr 5.5rem 1fr;
 			gap: 0.4rem;
-			padding-inline: 0;
+			padding-inline: 0.5rem;
 		}
 		dl {
 			gap: 0.1rem 0.25rem;

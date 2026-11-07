@@ -356,6 +356,10 @@
 		opacity: 0.8;
 	}
 	@media (max-width: 480px) {
+		/* The rows reach the screen's edges, past the page's 16px margin */
+		.rows {
+			margin-inline: -16px;
+		}
 		.shares,
 		.owned {
 			font-size: 0.72rem;
