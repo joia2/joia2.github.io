@@ -28,7 +28,7 @@
 		onedit(key, value);
 	};
 
-	// The debt one person repaid in money this month: kept per person, like `time`
+	// The debt one person repaid in money this month: kept per person
 	const editedDebt = (p) => (event) => {
 		const input = event.currentTarget;
 		const value = parseAmount(input.value);
@@ -200,20 +200,6 @@
 				{/if}
 				{#if s.surplus}
 					<p class="warn"><TriangleAlert size={14} />{formatKr(s.surplus)} kr more than owed</p>
-				{/if}
-				{#if s.typed && s.extra > s.surplus}
-					<!-- What the extra paid does: lower the next payments, or keep them and finish sooner -->
-					<button
-						class="toggle"
-						role="switch"
-						aria-checked={s.time}
-						aria-label="extra shortens the time instead of lowering the payment"
-						onclick={() => onedit('time', !s.time, p)}
-					>
-						<span class:on={!s.time}>−pay</span>
-						<span class="track"><span class="knob"></span></span>
-						<span class:on={s.time}>−time{#if s.monthsSaved}<span> ({s.monthsSaved})</span>{/if}</span>
-					</button>
 				{/if}
 			{:else if row.debtor === p}
 				<input
@@ -520,48 +506,8 @@
 		gap: 0.25rem;
 		color: var(--warn);
 	}
-	.toggle {
-		display: flex;
-		align-items: center;
-		gap: 0.35rem;
-		padding: 0.05rem 0.6rem;
-		border: 0;
-		font-size: 0.66rem;
-		color: var(--muted);
-	}
-	.side.mint :is(.warn, .toggle) {
+	.side.mint .warn {
 		justify-content: flex-end;
-	}
-	.toggle:hover:not(:disabled) {
-		background: transparent;
-	}
-	.toggle .on {
-		color: var(--text);
-		font-weight: 600;
-	}
-	.track {
-		position: relative;
-		width: 1.8rem;
-		height: 1rem;
-		border-radius: 1rem;
-		background: var(--border);
-	}
-	.knob {
-		position: absolute;
-		top: 0.125rem;
-		left: 0.125rem;
-		width: 0.75rem;
-		height: 0.75rem;
-		border-radius: 50%;
-		background: var(--surface);
-		box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
-		transition: transform 0.2s;
-	}
-	.toggle[aria-checked='true'] .knob {
-		transform: translateX(0.8rem);
-	}
-	.toggle[aria-checked='true'] .track {
-		background: var(--accent);
 	}
 	/* Phones: a narrower middle and smaller details keep each side on one line per value */
 	@media (max-width: 480px) {
@@ -601,8 +547,7 @@
 		.short {
 			display: inline;
 		}
-		.side > p,
-		.toggle {
+		.side > p {
 			padding-inline: 0.5rem;
 		}
 		input {

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addMonths, compute, dropMin, dropStaleTime, instalmentFor, saleSplit, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
+import { addMonths, compute, dropMin, dropTime, instalmentFor, saleSplit, taxShares, setTerm, setValue, termAt, toOre, PEOPLE, TERM } from '#lib/loan.js';
 
 const START = '2026-12';
 const base = (payments = {}, extra = {}) => ({
@@ -93,10 +93,10 @@ test('one extra lowers next payments, same end, less interest', () => {
 	assert.equal(owned(r), toOre(8700000));
 });
 
-test('extra with "time": same payment, ends sooner', () => {
+test('extra with the "time" view: same payment, ends sooner', () => {
 	const plain = compute(base(), '2056-12');
 	const minJan = row(plain, '2027-01').people.cyan.min;
-	const r = compute(base({ '2027-01': { cyan: minJan / 100 + 500000, time: { cyan: true } } }), '2056-12');
+	const r = compute(base({ '2027-01': { cyan: minJan / 100 + 500000 } }), '2056-12', { time: true });
 	invariants(r, 'time');
 	assert.equal(row(r, '2027-02').people.cyan.min, row(plain, '2027-02').people.cyan.min);
 	const last = loanRows(r).filter((x) => x.people.cyan.due > 0).pop();
@@ -128,7 +128,7 @@ test('extra larger than the part: part paid off, surplus kept, no more minimum',
 test('"min" is not a payment: ignored, and removed by dropMin', () => {
 	const r = compute(base({ '2027-02': { cyan: 'min', mint: 20000 } }), '2027-03');
 	assert.equal(row(r, '2027-02').people.cyan.typed, false);
-	const d = base({ '2027-02': { cyan: 'min', time: { cyan: true } }, '2027-03': { cyan: 'min', mint: 20000 } });
+	const d = base({ '2027-02': { cyan: 'min' }, '2027-03': { cyan: 'min', mint: 20000 } });
 	d.payments[START].cyan = 'min';
 	assert.equal(dropMin(d), true);
 	assert.equal(d.payments['2027-02'], undefined);
@@ -276,19 +276,38 @@ test('tax shares: last finished year, split by interest actually paid', () => {
 	assert.equal(taxShares(r, '2026-11').year, 2026); // before the first payment: the coming year, as an estimate
 });
 
-test('dropStaleTime: "time" kept only while the toggle shows', () => {
+test('dropTime: "time" removed from older files, with months left empty', () => {
 	const d = base({
-		'2027-01': { cyan: 200000, time: { cyan: true } }, // extra: kept
-		'2027-02': { cyan: 1000, time: { cyan: true } }, // short, no extra: dropped with the month's time
-		'2027-03': { time: { mint: true } }, // nothing typed: month removed
-		'2027-04': { cyan: 200000, interest: 5, time: { cyan: true, mint: true } } // mint has no extra
+		'2027-01': { cyan: 200000, time: { cyan: true } },
+		'2027-03': { time: { mint: true } }
 	});
-	assert.equal(dropStaleTime(d), true);
-	assert.deepEqual(d.payments['2027-01'], { cyan: 200000, time: { cyan: true } });
-	assert.deepEqual(d.payments['2027-02'], { cyan: 1000 });
+	assert.equal(dropTime(d), true);
+	assert.deepEqual(d.payments['2027-01'], { cyan: 200000 });
 	assert.equal(d.payments['2027-03'], undefined);
-	assert.deepEqual(d.payments['2027-04'], { cyan: 200000, interest: 5, time: { cyan: true } });
-	assert.equal(dropStaleTime(d), false);
+	assert.equal(dropTime(d), false);
+});
+
+test('mortgage length: shorter from a month on, payments rise, ends at the new length', () => {
+	const plain = compute(base(), '2056-12');
+	const d = base({ '2027-01': { cyan: 50000 } });
+	setTerm(d, '2028-01', 120);
+	assert.deepEqual(d.payments['2028-01'], { term: 120 });
+	assert.equal(termAt(d, '2027-12'), TERM);
+	assert.equal(termAt(d, '2030-01'), 120);
+	const r = compute(d, '2056-12');
+	invariants(r, 'term');
+	assert.equal(row(r, '2027-06').people.cyan.min, compute(base({ '2027-01': { cyan: 50000 } }), '2056-12').rows.find((x) => x.month === '2027-06').people.cyan.min);
+	assert.ok(row(r, '2028-01').people.mint.min > row(plain, '2028-01').people.mint.min);
+	assert.equal(loanRows(r).length, 120);
+	assert.equal(r.state.balance.cyan + r.state.balance.mint, 0);
+	// Back to what applied before: nothing stored
+	setTerm(d, '2028-01', TERM);
+	assert.equal(d.payments['2028-01'], undefined);
+	// Shorter than the months already gone: the rest is due at once
+	setTerm(d, '2028-01', 3);
+	const now = compute(d, '2056-12');
+	assert.equal(loanRows(now).at(-1).month, '2028-01');
+	assert.equal(now.state.balance.cyan + now.state.balance.mint, 0);
 });
 
 test('take-over day: first interest only from that day; January interest in the year before', () => {
@@ -328,20 +347,21 @@ test('random months of extras, shorts and ticks (500 runs)', () => {
 			for (const p of PEOPLE) {
 				const x = rand();
 				e[p] = x < 0.3 ? 18000 + Math.round(rand() * 6000) : x < 0.5 ? Math.round(rand() * 60000) : x < 0.6 ? 0 : 25000 + Math.round(rand() * 200000);
-				if (rand() < 0.2) (e.time ??= {})[p] = true;
 			}
 			if (rand() < 0.05) e.interest = 3 + Math.round(rand() * 300) / 100;
+			if (rand() < 0.03) e.term = 1 + Math.floor(rand() * TERM);
 			pay[m] = e;
 		}
 		pay[START] = { ...pay[START], interest: 4.78, fee: 50 };
-		const r = compute(base(pay), '2031-12');
+		const time = { time: n % 2 === 1 };
+		const r = compute(base(pay), '2031-12', time);
 		invariants(r, `run ${n}`);
 		const json = JSON.stringify(r);
 		assert.ok(!/NaN|Infinity/.test(json), `run ${n}: NaN`);
 		assert.equal(owned(r), toOre(8700000), `run ${n}: ownership`);
 		for (const x of loanRows(r)) for (const p of PEOPLE) assert.ok(x.people[p].min >= 0, `run ${n}: ${x.month}`);
 		// After the last row both parts and the debt are settled, or rows hit the limit
-		const end = compute(base(pay), '2100-01');
+		const end = compute(base(pay), '2100-01', time);
 		assert.equal(end.state.balance.cyan + end.state.balance.mint, 0, `run ${n}: loan left`);
 		assert.ok(end.rows.length < 1560, `run ${n}: rows stop`);
 	}

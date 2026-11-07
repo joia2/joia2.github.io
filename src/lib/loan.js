@@ -5,8 +5,12 @@
 // Each person has their own internal part of the loan: their half of the apartment minus their
 // egenkapital. Like the bank's, each person's monthly payment stays fixed, rounded up to whole
 // kroner; interest for the actual days of the month only changes how much of it is principal, and the
-// last payment settles what is left. The payment is worked out again when the rate changes, or when a
-// month's payment differs from it (extra, or short and not covered).
+// last payment settles what is left. The payment is worked out again when the rate or the mortgage's
+// length changes, or when a month's payment differs from it (extra, or short and not covered).
+//
+// The mortgage's length (`term` in a month's entry: months from the first payment, 360 until set)
+// carries forward like the rate. An extra lowers the next payments; with `time` (a view option, not
+// saved) the payments are kept instead and the loan ends sooner.
 //
 // Each owns 50 % whatever is paid (samboerkontrakt 4.1). When one pays less than their instalment
 // and the other covers it (a Substitute Payment, 3.4), it counts as paid by the one who fell short,
@@ -89,7 +93,7 @@ const isEntered = (value) => value !== undefined && value !== null && value !== 
 // between the two, is repaid. Months without an entered payment count as paid at the minimum.
 // Returns null until the apartment price and the first month are set. `today` ('YYYY-MM') is the
 // month whose state the bar and the banner show; payments entered for later months count too.
-export function compute(data, today = currentMonth()) {
+export function compute(data, today = currentMonth(), { time = false } = {}) {
 	const payments = data?.payments ?? {};
 	const months = Object.keys(payments).sort();
 	const total = toOre(data?.total ?? 0);
@@ -107,6 +111,7 @@ export function compute(data, today = currentMonth()) {
 	const yearEnd = {}; // per year: what each person owes on 31 December, for the tax return's wealth part
 	let rate = 0;
 	let fee = 0;
+	let term = TERM;
 
 	const balance = (p) => Math.max(0, own[p] - equity[p]);
 
@@ -166,9 +171,7 @@ export function compute(data, today = currentMonth()) {
 				principal: 0,
 				interest: 0,
 				uncovered: 0,
-				surplus: 0, // paid beyond everything this person owed: not applied anywhere
-				monthsSaved: 0, // months an extra takes off the end when the payments are kept
-				time: Boolean(entry.time?.[p])
+				surplus: 0 // paid beyond everything this person owed: not applied anywhere
 			};
 		}
 
@@ -208,13 +211,10 @@ export function compute(data, today = currentMonth()) {
 			// Unpaid interest and fees are added to what this person owes the bank (3.5)
 			equity[p] -= s.feeDue - feePaid + (s.interestDue - s.interest);
 
-			// Off schedule: an extra either lowers the next payments (the default) or keeps them and ends
-			// sooner; anything else (short and not covered) works the payment out again
+			// Off schedule: an extra either lowers the next payments (the default) or, with `time`, keeps
+			// them and ends sooner; anything else (short and not covered) works the payment out again
 			if (balance(p) > 0 && balance(p) !== expected) {
-				// How many months the extra takes off the end if the payments are kept: shown either way
-				const sooner = k + monthsFor(balance(p), rate, payment[p]);
-				if (s.extra > 0) s.monthsSaved = Math.max(0, end[p] - sooner);
-				if (s.extra > 0 && s.time) end[p] = sooner;
+				if (s.extra > 0 && time) end[p] = Math.min(end[p], k + monthsFor(balance(p), rate, payment[p]));
 				else payment[p] = null;
 			}
 		}
@@ -253,6 +253,11 @@ export function compute(data, today = currentMonth()) {
 			payment.cyan = payment.mint = null; // a new rate means new payments, same end
 		}
 		if (isEntered(entry.fee)) fee = toOre(entry.fee);
+		if (isEntered(entry.term) && Number(entry.term) !== term) {
+			term = Number(entry.term);
+			end.cyan = end.mint = term - 1; // past the end already: the rest is due now
+			payment.cyan = payment.mint = null;
+		}
 		const days = interestDays(month, k === 0 && data.takeover);
 		const loan = balance('cyan') + balance('mint') > 0;
 		if (!loan && (debt === 0 || month > until)) break;
@@ -354,14 +359,14 @@ export function taxShares(result, today = currentMonth()) {
 }
 
 // Changes one value in the data file. Empty values are removed, so the file only holds what was
-// typed; `interest` and `fee` carry forward to the following months.
+// typed; `interest`, `fee` and `term` carry forward to the following months.
 export function setValue(data, month, key, value, person) {
 	const payments = (data.payments ??= {});
 	const entry = { ...payments[month] };
-	if (key === 'time' || key === 'debt') {
-		// Kept per person: `time` as true, `debt` (repaid in money) as an amount
-		const values = { ...entry[key] };
-		if (key === 'time' ? value : value !== null) values[person] = key === 'time' ? true : value;
+	if (key === 'debt') {
+		// Kept per person: the debt repaid in money
+		const values = { ...entry.debt };
+		if (value !== null) values[person] = value;
 		else delete values[person];
 		if (Object.keys(values).length) entry[key] = values;
 		else delete entry[key];
@@ -385,29 +390,41 @@ export function dropMin(data) {
 		for (const p of PEOPLE) {
 			if (entry[p] !== 'min') continue;
 			delete entry[p];
-			if (entry.time) delete entry.time[p];
 			dropped = true;
 		}
-		if (entry.time && !Object.keys(entry.time).length) delete entry.time;
 		if (!Object.keys(entry).length && month !== first) delete payments[month];
 	}
 	return dropped;
 }
 
-// A "time" choice only means something while that month shows the −pay/−time toggle: a typed
-// payment with an extra that goes into the loan. Removes the others. Returns whether anything changed.
-export function dropStaleTime(data, result = compute(data)) {
-	const rows = new Map((result?.rows ?? []).map((r) => [r.month, r]));
+// "time" is a view option now, never saved: removes it from older files. Returns whether anything
+// changed.
+export function dropTime(data) {
+	const payments = data?.payments ?? {};
+	const first = Object.keys(payments).sort()[0];
 	let dropped = false;
-	for (const [month, entry] of Object.entries(data?.payments ?? {})) {
-		for (const p of Object.keys(entry.time ?? {})) {
-			const s = rows.get(month)?.people?.[p];
-			if (s && s.typed && s.extra > s.surplus) continue;
-			setValue(data, month, 'time', false, p);
-			dropped = true;
-		}
+	for (const [month, entry] of Object.entries(payments)) {
+		if (!entry.time) continue;
+		delete entry.time;
+		dropped = true;
+		if (!Object.keys(entry).length && month !== first) delete payments[month];
 	}
 	return dropped;
+}
+
+// The mortgage's length in months that applies to a month: the last `term` entered up to it
+export function termAt(data, month) {
+	const set = Object.keys(data?.payments ?? {})
+		.sort()
+		.filter((m) => m <= month && isEntered(data.payments[m].term));
+	return set.length ? Number(data.payments[set.at(-1)].term) : TERM;
+}
+
+// Sets the mortgage's length from a month on: later lengths are replaced, and nothing is stored
+// when it is what already applies
+export function setTerm(data, month, months) {
+	for (const m of Object.keys(data.payments ?? {})) if (m >= month) setValue(data, m, 'term', null);
+	if (months !== termAt(data, month)) setValue(data, month, 'term', months);
 }
 
 // "12 345,50", "12.345,50" or "12345.5" → 12345.5; an empty field → null; anything else → undefined

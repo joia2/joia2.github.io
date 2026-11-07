@@ -15,12 +15,12 @@
 	import Owned from '#lib/Owned.svelte';
 	import SaleCalculator from '#lib/SaleCalculator.svelte';
 	import { loan, changed } from '#lib/loan.svelte.js';
-	import { compute, currentMonth, dropStaleTime, formatKr, formatPercent, other, setValue, taxShares, PEOPLE } from '#lib/loan.js';
+	import { compute, currentMonth, formatKr, formatPercent, other, setValue, taxShares, PEOPLE } from '#lib/loan.js';
 	import { ui } from '#lib/ui.svelte.js';
 
 	// The current month, refreshed when the page is shown again (the app may stay open past the 1st)
 	let today = $state(currentMonth());
-	const result = $derived(compute(loan.data, today));
+	const result = $derived(compute(loan.data, today, { time: ui.time }));
 	const names = $derived(loan.data.names);
 	const first = $derived(Object.keys(loan.data.payments).sort()[0]);
 	const tax = $derived(result && taxShares(result, today));
@@ -55,7 +55,6 @@
 
 	const edit = (month) => (key, value, person) => {
 		setValue(loan.data, month, key, value, person);
-		dropStaleTime(loan.data);
 		changed();
 	};
 
@@ -175,6 +174,21 @@
 			</button>
 		{/if}
 	</div>
+
+	<!-- A view helper for both: extras lower the next payments, or keep them and end sooner -->
+	<nav class="bottom" aria-label="view">
+		<button
+			class="toggle"
+			role="switch"
+			aria-checked={ui.time}
+			aria-label="extras shorten the time instead of lowering the payment"
+			onclick={() => (ui.time = !ui.time)}
+		>
+			<span class:on={!ui.time}>−pay</span>
+			<span class="track"><span class="knob"></span></span>
+			<span class:on={ui.time}>−time</span>
+		</button>
+	</nav>
 
 	<button class="icon-button jump" onclick={scrollEnd} aria-label={atEnd ? 'scroll to top' : 'scroll to bottom'}>
 		{#if atEnd}<ArrowUp size={22} />{:else}<ArrowDown size={22} />{/if}
@@ -322,13 +336,69 @@
 	.jump {
 		position: fixed;
 		right: calc(1rem + env(safe-area-inset-right));
-		bottom: calc(1rem + env(safe-area-inset-bottom));
+		bottom: calc(48px + 1rem + env(safe-area-inset-bottom));
 		z-index: 10;
 		width: 48px;
 		height: 48px;
 		border: 1px solid var(--border);
 		background: var(--surface);
 		box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+	}
+	.bottom {
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 10;
+		height: 48px;
+		padding-bottom: env(safe-area-inset-bottom);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--bar);
+		-webkit-backdrop-filter: saturate(180%) blur(20px);
+		backdrop-filter: saturate(180%) blur(20px);
+		border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+	}
+	.toggle {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.4rem 0.8rem;
+		border: 0;
+		font-size: 0.85rem;
+		color: var(--muted);
+	}
+	.toggle:hover:not(:disabled) {
+		background: transparent;
+	}
+	.toggle .on {
+		color: var(--text);
+		font-weight: 600;
+	}
+	.track {
+		position: relative;
+		width: 2.2rem;
+		height: 1.25rem;
+		border-radius: 1rem;
+		background: var(--border);
+	}
+	.knob {
+		position: absolute;
+		top: 0.15rem;
+		left: 0.15rem;
+		width: 0.95rem;
+		height: 0.95rem;
+		border-radius: 50%;
+		background: var(--surface);
+		box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+		transition: transform 0.2s;
+	}
+	.toggle[aria-checked='true'] .knob {
+		transform: translateX(0.95rem);
+	}
+	.toggle[aria-checked='true'] .track {
+		background: var(--accent);
 	}
 	.jump:hover:not(:disabled) {
 		background: var(--surface);

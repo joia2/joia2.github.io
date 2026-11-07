@@ -154,7 +154,8 @@ form label {
 	font-weight: 500;
 	color: var(--muted);
 }
-form input {
+form input,
+form .field select {
 	font: inherit;
 	font-size: 1rem;
 	padding: 0.8rem 1rem;
@@ -166,7 +167,13 @@ form input {
 		border-color 0.2s,
 		box-shadow 0.2s;
 }
-form input:focus {
+form .field select {
+	-webkit-appearance: none;
+	appearance: none;
+	cursor: pointer;
+}
+form input:focus,
+form .field select:focus {
 	outline: none;
 	border-color: var(--accent);
 	box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent);
@@ -188,7 +195,8 @@ form .field svg {
 form .field:focus-within svg {
 	color: var(--accent);
 }
-form .field input {
+form .field input,
+form .field select {
 	flex: 1;
 	min-width: 0;
 	padding-left: 2.75rem;

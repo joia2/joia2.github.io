@@ -11,9 +11,10 @@
 	import MonthInput from '#lib/MonthInput.svelte';
 	import { loan, changed } from '#lib/loan.svelte.js';
 	import Percent from '@lucide/svelte/icons/percent';
-	import { addMonths, currentMonth, formatAmount, parseAmount, toOre, DEBT_RATE, PEOPLE } from '#lib/loan.js';
+	import Hourglass from '@lucide/svelte/icons/hourglass';
+	import { addMonths, currentMonth, formatAmount, parseAmount, setTerm, termAt, toOre, DEBT_RATE, PEOPLE, TERM } from '#lib/loan.js';
 
-	// section: 'names' | 'apartment' | 'egenkapital'
+	// section: 'names' | 'apartment' | 'mortgage'
 	let { section, onclose } = $props();
 
 	const data = loan.data;
@@ -34,6 +35,12 @@
 	})();
 	let debtRate = $state(data.debtRate != null ? formatAmount(data.debtRate) : '');
 	let egenkapital = $state({ cyan: formatAmount(data.egenkapital.cyan || ''), mint: formatAmount(data.egenkapital.mint || '') });
+	// The mortgage's length, changed from this month on (from the first payment while before it)
+	const from = months.length && currentMonth() < months[0] ? months[0] : currentMonth();
+	const fromLabel = `${from.slice(0, 4)} ${new Date(`${from}-01T12:00:00`).toLocaleDateString('en', { month: 'short' }).toLowerCase()}`;
+	let term = $state(termAt(data, from));
+	const lengths = Array.from({ length: TERM }, (_, i) => i + 1);
+	const lengthLabel = (n) => `${n} m${n % 12 ? '' : ` (${n / 12} y)`}`;
 	let error = $state('');
 
 	// Maintenance and improvement costs, as text while editing. A total splits 50/50; changing one
@@ -103,13 +110,14 @@
 			data.costs = parsed; // always there, empty when there are none
 			if (!startLocked && start !== months[0]) moveStart();
 		}
-		if (section === 'egenkapital') {
+		if (section === 'mortgage') {
 			const [cyan, mint] = PEOPLE.map((p) => parseAmount(egenkapital[p]));
 			if (cyan === undefined || mint === undefined) return (error = 'Enter amounts in kroner.');
 			if (data.total && Math.max(cyan, mint) > data.total / 2) {
 				return (error = "Egenkapital can't be more than half the price.");
 			}
 			data.egenkapital = { cyan: cyan ?? 0, mint: mint ?? 0 };
+			if (months.length) setTerm(data, from, term);
 		}
 		changed();
 		onclose();
@@ -210,9 +218,21 @@
 			<button type="button" onclick={() => addCost('improvement')}><Paintbrush size={18} />improvement cost</button>
 		</div>
 	{:else}
+		{#if months.length}
+			<label>
+				length
+				<span class="field">
+					<Hourglass size={20} />
+					<select bind:value={term}>
+						{#each lengths as n (n)}<option value={n}>{lengthLabel(n)}</option>{/each}
+					</select>
+				</span>
+			</label>
+			<p class="note">From the first payment. A change counts from {fromLabel} on: the payments are worked out again.</p>
+		{/if}
 		{#each PEOPLE as p (p)}
 			<label>
-				{data.names[p]} (kr)
+				egenkapital {data.names[p]} (kr)
 				<span class="field">
 					<Face person={p} size={20} />
 					<input bind:value={egenkapital[p]} inputmode="decimal" placeholder="0,00" />
