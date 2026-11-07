@@ -211,6 +211,7 @@ form .field select {
 /* Autofilled fields keep the usual background instead of the browser's yellow: a shadow inside
    covers it, as the background itself can't be changed */
 form input:-webkit-autofill {
+	-webkit-text-fill-color: var(--text); /* Safari's own is black, unreadable in dark mode */
 	-webkit-box-shadow: inset 0 0 0 100px var(--surface);
 	box-shadow: inset 0 0 0 100px var(--surface);
 }
