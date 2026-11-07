@@ -59,6 +59,7 @@
 	// the right one. Vertical scrolling stays with the browser (touch-action), which cancels the swipe.
 	// Behind the row, the side's color and a check show as it slides; the side is kept after
 	// release so the color stays while the row slides back.
+	const SWIPE = 90; // px the finger must travel to tick or untick
 	let startX = null;
 	let dx = $state(0);
 	let side = $state('cyan');
@@ -72,14 +73,14 @@
 	};
 	const swipeEnd = (e) => {
 		const p = PEOPLE[dx > 0 ? 0 : 1];
-		if (e.type === 'pointerup' && Math.abs(dx) > 60 && row.people[p].min) toggleMinimum(p);
+		if (e.type === 'pointerup' && Math.abs(dx) > SWIPE && row.people[p].min) toggleMinimum(p);
 		startX = null;
 		dx = 0;
 	};
 </script>
 
 <div class="swipe">
-<span class="reveal {side}" style:opacity={Math.min(1, Math.abs(dx) / 60)}><Check size={22} /></span>
+<span class="reveal {side}" class:active={Math.abs(dx) > SWIPE}><Check size={22} /></span>
 <div
 	class="row"
 	class:now={row.month === today}
@@ -237,19 +238,22 @@
 		display: flex;
 		align-items: center;
 		padding-inline: 1.5rem;
+		background: var(--bg);
+		color: var(--muted);
+	}
+	/* Far enough to count: the side's color fills in */
+	.reveal.active {
 		background: var(--cyan);
 		color: #0b2a2e;
-		transition: opacity 0.2s;
 	}
-	.swipe:has(.swiping) .reveal {
-		transition: none;
+	.reveal.mint.active {
+		background: var(--mint);
 	}
 	.swipe:has(.now) {
 		border-radius: 14px;
 	}
 	.reveal.mint {
 		justify-content: flex-end;
-		background: var(--mint);
 	}
 	.row {
 		position: relative;
