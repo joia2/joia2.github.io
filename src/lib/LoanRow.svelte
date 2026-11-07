@@ -1,6 +1,8 @@
 <script>
 	import TriangleAlert from '@lucide/svelte/icons/triangle-exclamation-point';
 	import Check from '@lucide/svelte/icons/check';
+	import MoveLeft from '@lucide/svelte/icons/move-left';
+	import MoveRight from '@lucide/svelte/icons/move-right';
 	import { formatAmount, formatKr, parseAmount, PEOPLE } from '#lib/loan.js';
 	import { typing } from '#lib/loan.svelte.js';
 
@@ -43,12 +45,27 @@
 
 	// What a paid field shows: the amount typed
 	const shown = (key) => formatAmount(entry[key]);
+
+	// What the bank charges this month, and each person's part of it, of the principal and of the
+	// interest, in percent: 56 or 43,7
+	const sum = (key) => row.people.cyan[key] + row.people.mint[key];
+	const bank = $derived(row.loan ? sum('min') : 0);
+	const percent = new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 1 });
+	const part = (p, key) => percent.format(sum(key) ? (row.people[p][key] / sum(key)) * 100 : 0);
 </script>
 
 <div class="row" class:now={row.month === today} data-month={row.month}>
 	{#each PEOPLE as p, i (p)}
 		{#if i === 1}
 			<div class="mid">
+				{#if row.loan}
+					<!-- The bank's total for the month, and the part of it each person pays -->
+					<span class="bank" title="what the bank charges this month">{formatKr(bank)}</span>
+					<span class="split">
+						<span><MoveLeft size={12} />{part('cyan', 'min')} %</span>
+						<span>{part('mint', 'min')} %<MoveRight size={12} /></span>
+					</span>
+				{/if}
 				<span class="month">{label}</span>
 				<span class="affix">
 					<input
@@ -105,9 +122,9 @@
 					/>
 				</span>
 				<dl>
-					<dt>as principal</dt>
+					<dt>principal ({part(p, 'principal')} %)</dt>
 					<dd>{formatKr(s.principal)}</dd>
-					<dt>as interest</dt>
+					<dt>interest ({part(p, 'interest')} %)</dt>
 					<dd>{formatKr(s.interest)}</dd>
 				</dl>
 				{#if s.covered < 0}
@@ -211,6 +228,26 @@
 	}
 	.mid {
 		text-align: center;
+	}
+	.bank {
+		font-size: 0.78rem;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		line-height: 1;
+	}
+	.split {
+		display: flex;
+		justify-content: space-between;
+		margin-bottom: 0.3rem;
+		font-size: 0.62rem;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+	.split span {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.1rem;
 	}
 	.month {
 		font-size: 0.82rem;
@@ -424,10 +461,15 @@
 			gap: 0.5rem;
 			padding-inline: 0;
 		}
+		/* Each label above its amount: "principal (56 %)" leaves no room beside it */
 		dl {
-			gap: 0.1rem 0.3rem;
+			grid-template-columns: 1fr;
+			gap: 0;
 			padding: 0 0.5rem;
 			font-size: 0.7rem;
+		}
+		dd {
+			margin-bottom: 0.15rem;
 		}
 		.side > p,
 		.toggle {
