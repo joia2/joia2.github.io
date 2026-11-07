@@ -76,11 +76,10 @@
 	<label>
 		joia2data token
 		<!-- A text field marked as the username, so password managers fill it together with the password.
-		     It stays masked like a password where the browser supports -webkit-text-security. -->
+		     Not masked: Safari takes a masked field for a second password and offers no login autofill. -->
 		<span class="field">
 			<TicketCheck size={20} />
 			<input
-				class="masked"
 				type="text"
 				name="username"
 				bind:value={token}
@@ -138,9 +137,3 @@
 		{/if}
 	</button>
 </form>
-
-<style>
-	.masked {
-		-webkit-text-security: disc;
-	}
-</style>
