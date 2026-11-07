@@ -48,9 +48,9 @@
 		</dl>
 	{/each}
 	<p class="note">
-		For the skattemelding: interest + fees as each one's <em>rentefradrag</em>, loan dec 31 as each one's
-		<em>gjeld</em>{#if owes}, and the debt between you as a private debt and claim{/if}.
-		{#if estimate}An estimate: months not entered count at the minimum.{/if}
+		Skattemelding: interest + fees as <em>rentefradrag</em>, loan dec 31 as <em>gjeld</em>{#if owes}, debt
+		between you as private debt and claim{/if}.
+		{#if estimate}Estimate: months empty count at minimum.{/if}
 	</p>
 </div>
 
