@@ -64,7 +64,7 @@
 		<p class="note">
 			In kroner, interest and fees (both deductible), in the year they built up: the payment on
 			1 January is December's, so it counts in the year before. What one of you covered for the other
-			counts for the one who paid it. Estimates count months not entered yet at the minimum.
+			counts for the one it was paid for: it is their instalment, and their debt to the other (3.4, 3.6). Estimates count months not entered yet at the minimum.
 		</p>
 
 		<h2>Debt on 31 December (<em>formue</em>)</h2>

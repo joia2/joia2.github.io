@@ -1,9 +1,9 @@
 <script>
 	import Face from '#lib/Face.svelte';
 	import Sheet from '#lib/Sheet.svelte';
-	import { formatKr, formatPercent, parseAmount, saleSplit, toOre, PEOPLE } from '#lib/loan.js';
+	import { formatKr, parseAmount, saleSplit, toOre, PEOPLE } from '#lib/loan.js';
 
-	// What each person gets if the apartment is sold now (samboerkontrakt 7.8 and 7.9).
+	// What each person gets if the apartment is sold now (samboerkontrakt 4.2, 7.8 and 7.9).
 	// state: result.state from compute() (named `now` here: a variable called `state` would turn the
 	// $state rune into a store subscription); open: bindable, whether the popup shows
 	let { state: now, names, open = $bindable(false) } = $props();
@@ -46,11 +46,15 @@
 			</thead>
 			<tbody>
 				<tr>
-					<td>ownership share</td>
-					{#each PEOPLE as p (p)}<td class="num">{formatPercent(sale.share[p] * 100)} %</td>{/each}
+					<td>half, less costs</td>
+					{#each PEOPLE as p (p)}<td class="num">{signed(sale.half[p])}</td>{/each}
 				</tr>
 				<tr>
-					<td>{sale.net < 0 ? 'share of the loss' : 'share of the proceeds'}</td>
+					<td>− own loan left</td>
+					{#each PEOPLE as p (p)}<td class="num">{formatKr(now.balance[p])}</td>{/each}
+				</tr>
+				<tr>
+					<td>settlement amount</td>
 					{#each PEOPLE as p (p)}<td class="num">{signed(sale.proceeds[p])}</td>{/each}
 				</tr>
 				{#if now.debt}
@@ -60,17 +64,17 @@
 					</tr>
 				{/if}
 				<tr class="total">
-					<td>{sale.net < 0 && sale.gets.cyan < 0 && sale.gets.mint < 0 ? 'pays' : 'gets'}</td>
+					<td>gets</td>
 					{#each PEOPLE as p (p)}<td class="num">{signed(sale.gets[p])}</td>{/each}
 				</tr>
 			</tbody>
 		</table>
 
 		<p class="note">
-			As of this month, under the samboerkontrakt. The net proceeds are divided by ownership share:
-			what each of you has paid in, of what both have paid in (4.1, 7.8). A loss is borne in
-			proportion to each person's loan left. A debt between you is settled from the proceeds (7.9).
-			A negative amount is what that person must pay in.
+			As of this month, under the samboerkontrakt. Each of you owns 50 %: each gets half of the price
+			less the costs of sale, less your own loan left (your settlement amount, 4.2). A debt between you
+			is then set off against it (7.9). The same applies to a buy-out, with the valuation as the price.
+			A negative amount is what that person must pay in before the sale is completed.
 		</p>
 	</div>
 </Sheet>

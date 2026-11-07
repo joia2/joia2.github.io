@@ -27,7 +27,7 @@
 	let instalmentOpen = $state(false);
 	// This month's row, or the first one with a loan payment after it (before the take-over)
 	const thisRow = $derived(result?.rows.find((r) => r.loan && r.month >= today));
-	// Each person's share of the apartment's value (the price plus costs paid), in percent
+	// What each person has paid in (egenkapital and principal), of the apartment's cost, in percent
 	const ownedShare = (p) => (Math.max(0, result.state.equity[p]) / (result.state.own.cyan + result.state.own.mint)) * 100;
 	const debtor = $derived(result && (result.state.debt > 0 ? 'cyan' : result.state.debt < 0 ? 'mint' : null));
 
@@ -84,7 +84,7 @@
 				<Face person={p} size={64} />
 				<span class="who">
 					<span class="name">{names[p]}</span>
-					<!-- What this person has paid of the apartment so far: egenkapital, principal, costs -->
+					<!-- What this person has paid of the apartment so far: egenkapital and principal -->
 					<span class="owned">{formatKr(Math.max(0, result.state.equity[p]))} kr</span>
 					<span class="owned share">
 						{formatPercent(ownedShare(p))} %

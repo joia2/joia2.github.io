@@ -3,22 +3,24 @@
 // amounts round the way the bank's do.
 //
 // Each person has their own internal part of the loan: their half of the apartment minus their
-// egenkapital. Like the bank's, each person's monthly payment stays fixed; interest for the actual
-// days of the month only changes how much of it is principal. The payment is worked out again every
-// January, when the rate changes, or when a month's payment differs from it (extra, or short and not
-// covered).
+// egenkapital. Like the bank's, each person's monthly payment stays fixed, rounded up to whole
+// kroner; interest for the actual days of the month only changes how much of it is principal, and the
+// last payment settles what is left. The payment is worked out again when the rate changes, or when a
+// month's payment differs from it (extra, or short and not covered).
 //
-// When one pays less than their minimum and the other covers it, the covered amount moves
-// ownership to the one who covered: first as the unpaid principal, then (for covered interest
-// and fees) from the paid-in equity of the one who fell short. Once that equity is used up, the
-// rest becomes a personal debt with the bank's interest, repaid from the debtor's later principal
-// or in money (`debt: { cyan, mint }` in a month's entry).
+// Each owns 50 % whatever is paid (samboerkontrakt 4.1). When one pays less than their instalment
+// and the other covers it (a Substitute Payment, 3.4), it counts as paid by the one who fell short,
+// and the amount becomes their personal debt to the other. The debt bears interest at the rate for
+// overdue payments (forsinkelsesrente, `data.debtRate`) from the payment, unless repaid in full
+// within 40 days, that is with the next month's entry. It is repaid in money (`debt: { cyan, mint }`
+// in a month's entry), or settled from the sale (7.9).
 //
-// Maintenance and improvement costs (data.costs) raise the apartment's value: from their month on,
-// what each person paid for them is added to what that person owns.
+// Maintenance and improvement costs (data.costs) are a record of what each paid: they change
+// neither ownership nor the loan (4.3).
 
 export const PEOPLE = ['cyan', 'mint'];
 export const TERM = 360; // 30 years
+export const DEBT_RATE = 12.25; // forsinkelsesrente from 1 July 2026, until data.debtRate says otherwise
 const LIMIT = TERM + 1200; // stops a debt that is never repaid from producing rows forever
 
 export const other = (person) => (person === 'cyan' ? 'mint' : 'cyan');
@@ -42,22 +44,35 @@ export function currentMonth(date = new Date()) {
 	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
+// The days in the month before: what a payment on the 1st settles interest for
+function monthDays(month) {
+	const [y, m] = month.split('-').map(Number);
+	return new Date(Date.UTC(y, m - 1, 0)).getUTCDate();
+}
+
 // A payment on the 1st settles the interest for every day of the month before; the first one only
-// from the take-over day ('YYYY-MM-DD'), when the loan was paid out
+// from the day the loan was paid out ('YYYY-MM-DD')
 function interestDays(month, from) {
 	const [y, m] = month.split('-').map(Number);
 	const days = from ? Math.round((Date.UTC(y, m - 1, 1) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000) : 0;
-	return days > 0 ? days : new Date(Date.UTC(y, m - 1, 0)).getUTCDate();
+	return days > 0 ? days : monthDays(month);
 }
 
-// Interest on an amount for some days, at a yearly rate in percent
-const interestFor = (amount, rate, days) => Math.round((amount * rate * days) / 36500);
+// Interest on an amount for some days, at a yearly rate in percent; like the bank's, a day is a
+// 366th of the year in a leap year
+const interestFor = (amount, rate, days, yearDays = 365) => Math.round((amount * rate * days) / (yearDays * 100));
+
+// The days in the year the interest for a payment on the 1st built up in (the month before)
+function yearDays(month) {
+	const y = Number(addMonths(month, -1).slice(0, 4));
+	return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0 ? 366 : 365;
+}
 
 // The bank's monthly payment (annuity) that repays a balance in some months
 function annuity(balance, rate, months) {
 	const r = rate / 1200;
 	if (r === 0) return Math.ceil(balance / months);
-	return Math.round((balance * r) / (1 - (1 + r) ** -months));
+	return Math.ceil((balance * r) / (1 - (1 + r) ** -months) / 100) * 100; // up to whole kroner, like the bank
 }
 
 // How many months a monthly payment needs to repay a balance
@@ -81,7 +96,9 @@ export function compute(data, today = currentMonth()) {
 	if (!months.length || !(total > 0)) return null;
 
 	const half = { cyan: Math.floor(total / 2), mint: total - Math.floor(total / 2) };
-	const own = { ...half }; // each person's share of the apartment
+	const own = { ...half }; // each person's 50 % of the apartment's cost
+	const debtRate = isEntered(data.debtRate) ? Number(data.debtRate) : DEBT_RATE;
+	let fresh = 0; // debt created last month: free of interest if repaid in money this month (3.4.2)
 	const equity = { cyan: toOre(data.egenkapital?.cyan ?? 0), mint: toOre(data.egenkapital?.mint ?? 0) };
 	const end = { cyan: TERM - 1, mint: TERM - 1 }; // index of each person's last scheduled month
 	const payment = { cyan: null, mint: null }; // each person's fixed monthly payment; null: work it out
@@ -93,19 +110,14 @@ export function compute(data, today = currentMonth()) {
 
 	const balance = (p) => Math.max(0, own[p] - equity[p]);
 
-	// Costs paid in cash count as owned, from their month on (earlier ones from the first month)
+	// Costs are counted from their month on (earlier ones from the first month), as a record only
 	const costs = [...(data.costs ?? [])].sort((a, b) => (a.month < b.month ? -1 : 1));
 	let costsApplied = 0;
-	const covered = { cyan: 0, mint: 0 }; // paid-in money moved between the two by covering
+	const covered = { cyan: 0, mint: 0 }; // in total: above 0, paid for the other; below 0, paid by the other
 	const costsPaid = { cyan: { maintenance: 0, improvement: 0 }, mint: { maintenance: 0, improvement: 0 } };
 	function applyCosts(month) {
 		for (; costsApplied < costs.length && !(costs[costsApplied].month > month); costsApplied++) {
-			for (const p of PEOPLE) {
-				const paid = toOre(costs[costsApplied][p] || 0);
-				own[p] += paid;
-				equity[p] += paid;
-				costsPaid[p][costs[costsApplied].kind] += paid;
-			}
+			for (const p of PEOPLE) costsPaid[p][costs[costsApplied].kind] += toOre(costs[costsApplied][p] || 0);
 		}
 	}
 	const lastEntered = months.filter((m) => PEOPLE.some((p) => isEntered(payments[m][p]))).pop();
@@ -119,19 +131,6 @@ export function compute(data, today = currentMonth()) {
 		debt
 	});
 
-	// Moves `amount` of ownership from one person to the other, paid in as the receiver's equity.
-	// `fromEquity` says whether it also leaves the giver's equity (paid-in money changing hands)
-	// or only their share (principal the receiver paid on the giver's behalf).
-	function transfer(from, amount, fromEquity) {
-		if (amount <= 0) return;
-		own[from] -= amount;
-		if (fromEquity) equity[from] -= amount;
-		covered[from] -= amount;
-		own[other(from)] += amount;
-		equity[other(from)] += amount;
-		covered[other(from)] += amount;
-	}
-
 	function loanMonth(k, month, entry, days) {
 		const active = PEOPLE.filter((p) => balance(p) > 0);
 		const people = {};
@@ -140,11 +139,14 @@ export function compute(data, today = currentMonth()) {
 			const b = balance(p);
 			const i = active.indexOf(p);
 			const feeShare = i < 0 ? 0 : i === 0 ? Math.ceil(fee / active.length) : Math.floor(fee / active.length);
-			const interest = b ? interestFor(b, rate, days) : 0;
+			const interest = b ? interestFor(b, rate, days, yearDays(month)) : 0;
 			const monthsLeft = Math.max(1, end[p] - k + 1);
 			if (b && payment[p] === null) payment[p] = annuity(b, rate, monthsLeft);
 			// The last payment settles whatever is left, so the part ends at exactly 0
-			const due = !b ? 0 : monthsLeft === 1 ? b + interest : Math.min(payment[p], b + interest);
+			// A first month shorter than a whole one: the bank charges interest for the days only, and
+			// takes the principal as if the month were whole, so the first payment is smaller
+			const fewer = k === 0 && b ? interestFor(b, rate, monthDays(month), yearDays(month)) - interest : 0;
+			const due = !b ? 0 : monthsLeft === 1 ? b + interest : Math.min(payment[p] - Math.max(0, fewer), b + interest);
 			const min = due + feeShare;
 			const typed = isEntered(entry[p]);
 			const paid = typed ? toOre(entry[p]) : min;
@@ -181,10 +183,12 @@ export function compute(data, today = currentMonth()) {
 			o.covered = covered;
 		}
 
+		let created = 0; // debt created this month, signed like `debt`
 		for (const p of PEOPLE) {
 			const s = people[p];
 			const expected = balance(p) - s.principalDue; // where the part would be after the minimum
-			let rest = s.paid - Math.max(0, s.covered); // what this person paid for their own part
+			// A covered amount counts as paid by the one it was paid for, in the usual order (3.4.1)
+			let rest = s.paid - s.covered;
 			const feePaid = Math.min(rest, s.feeDue);
 			s.feePaid = feePaid;
 			rest -= feePaid;
@@ -192,32 +196,17 @@ export function compute(data, today = currentMonth()) {
 			rest -= s.interest;
 			s.principal = Math.min(rest, balance(p));
 			s.surplus = rest - s.principal;
-
-			// A debtor's principal goes to the other person until the debt is repaid
-			const debtor = debt > 0 ? 'cyan' : debt < 0 ? 'mint' : null;
-			const repaid = p === debtor ? Math.min(s.principal, Math.abs(debt)) : 0;
-			debt -= Math.sign(debt) * repaid;
 			equity[p] += s.principal;
-			transfer(p, repaid, true); // paid by the debtor, owned by the other
 
-			const feeLeft = s.feeDue - feePaid;
-			let costLeft = feeLeft + (s.interestDue - s.interest);
+			// ...and becomes their personal debt to the one who paid it
 			if (s.covered < 0) {
-				let covered = -s.covered;
-				// First as this month's unpaid principal...
-				const asPrincipal = Math.min(covered, Math.max(0, s.principalDue - s.principal), balance(p));
-				transfer(p, asPrincipal, false);
-				covered -= asPrincipal;
-				// ...then the covered interest and fee are taken from paid-in equity, and beyond that owed
-				const asCost = Math.min(covered, costLeft);
-				people[other(p)].costCovered = asCost; // interest and fee the coverer paid for the other
-				const fromEquity = Math.min(asCost, Math.max(0, equity[p]));
-				transfer(p, fromEquity, true);
-				debt += (p === 'cyan' ? 1 : -1) * (asCost - fromEquity);
-				costLeft -= asCost;
+				covered[p] += s.covered;
+				covered[other(p)] -= s.covered;
+				created += (p === 'cyan' ? 1 : -1) * -s.covered;
 			}
 			s.uncovered = s.short + Math.min(0, s.covered);
-			equity[p] -= costLeft; // unpaid interest and fees are added to what this person owes
+			// Unpaid interest and fees are added to what this person owes the bank (3.5)
+			equity[p] -= s.feeDue - feePaid + (s.interestDue - s.interest);
 
 			// Off schedule: an extra either lowers the next payments (the default) or keeps them and ends
 			// sooner; anything else (short and not covered) works the payment out again
@@ -235,11 +224,13 @@ export function compute(data, today = currentMonth()) {
 		const year = addMonths(month, -1).slice(0, 4);
 		const paid = (interestPaid[year] ??= { cyan: 0, mint: 0, estimate: false });
 		for (const p of PEOPLE) {
-			paid[p] += people[p].interest + people[p].feePaid + (people[p].costCovered ?? 0);
+			paid[p] += people[p].interest + people[p].feePaid;
 			// Not entered yet, so counted at the minimum: the year's numbers are an estimate
 			if (!people[p].typed && people[p].min > 0) paid.estimate = true;
 		}
 
+		debt += created;
+		fresh = created;
 		return { people };
 	}
 
@@ -262,21 +253,20 @@ export function compute(data, today = currentMonth()) {
 			payment.cyan = payment.mint = null; // a new rate means new payments, same end
 		}
 		if (isEntered(entry.fee)) fee = toOre(entry.fee);
-		// Like the bank, the payments are worked out again every January (same end), so the small
-		// differences from months of uneven length don't pile up on the last payment
-		if (k > 0 && month.endsWith('-01')) payment.cyan = payment.mint = null;
 		const days = interestDays(month, k === 0 && data.takeover);
 		const loan = balance('cyan') + balance('mint') > 0;
 		if (!loan && (debt === 0 || month > until)) break;
 
-		// The debt between the two grows with the bank's interest, compounding monthly
-		const debtInterest = interestFor(Math.abs(debt), rate, days);
-		debt += Math.sign(debt) * debtInterest;
-
-		// The debtor may also repay the debt in money, outside the loan (samboerkontrakt 3.4.5): it
-		// lowers the debt only, and moves no ownership
+		// The debt between the two bears forsinkelsesrente, compounding monthly (3.4.3). Last month's new
+		// debt is free of it when repaid in full in money now, within 40 days of being paid (3.4.2).
 		const owing = debt > 0 ? 'cyan' : debt < 0 ? 'mint' : null;
 		const cash = (p) => (isEntered(entry.debt?.[p]) ? toOre(entry.debt[p]) : 0);
+		const recent = Math.sign(fresh) === Math.sign(debt) ? Math.min(Math.abs(fresh), Math.abs(debt)) : 0;
+		const free = owing && cash(owing) >= recent ? recent : 0;
+		const debtInterest = interestFor(Math.abs(debt) - free, debtRate, days, yearDays(month));
+		debt += Math.sign(debt) * debtInterest;
+		fresh = 0;
+
 		const debtRepaid = owing ? Math.min(cash(owing), Math.abs(debt)) : 0;
 		debt -= Math.sign(debt) * debtRepaid;
 		// What each typed beyond the debt they owed (all of it, for the one who owed nothing)
@@ -286,8 +276,10 @@ export function compute(data, today = currentMonth()) {
 		const row = {
 			month,
 			rate,
+			debtRate,
 			fee,
 			days,
+			yearDays: yearDays(month),
 			loan,
 			debtInterest,
 			owing, // who owes the other at the start of the month, if anyone
@@ -313,24 +305,19 @@ export function compute(data, today = currentMonth()) {
 	return { half, rows, state, interestPaid, yearEnd };
 }
 
-// What each person gets if the apartment is sold (samboerkontrakt 7.8 and 7.9), from compute()'s
-// state, all in øre. The net proceeds (sale price less costs of sale and the loan left) are divided by
-// ownership share: what each has paid in, of what both have. A loss is borne in proportion to each
-// person's loan left. The debt between the two is then settled from the proceeds.
+// What each person gets if the apartment is sold or bought out (samboerkontrakt 4.2, 7.8 and 7.9),
+// from compute()'s state, all in øre. Each gets half of the price less the costs of sale, less their
+// own loan left (their Settlement Amount); the debt between the two is then set off against it.
 export function saleSplit(state, price, costs) {
 	const loanLeft = state.balance.cyan + state.balance.mint;
 	const net = price - costs - loanLeft;
-	const paid = { cyan: Math.max(0, state.equity.cyan), mint: Math.max(0, state.equity.mint) };
-	const both = paid.cyan + paid.mint;
-	const share = both ? { cyan: paid.cyan / both, mint: paid.mint / both } : { cyan: 0.5, mint: 0.5 };
-	// A gain by ownership share; a loss by loan left
-	const weight = net >= 0 || !loanLeft ? share.cyan : state.balance.cyan / loanLeft;
-	const proceeds = { cyan: Math.round(net * weight) };
-	proceeds.mint = net - proceeds.cyan;
+	const half = { cyan: Math.floor((price - costs) / 2) };
+	half.mint = price - costs - half.cyan;
+	const proceeds = { cyan: half.cyan - state.balance.cyan, mint: half.mint - state.balance.mint };
 	// Above 0, cyan owes mint
 	const settled = { cyan: -state.debt, mint: state.debt };
 	const gets = { cyan: proceeds.cyan + settled.cyan, mint: proceeds.mint + settled.mint };
-	return { loanLeft, net, share, proceeds, settled, gets };
+	return { loanLeft, net, half, proceeds, settled, gets };
 }
 
 // A month's instalment per person (samboerkontrakt 3.2), with the rate, fee or parts changed: what
@@ -344,7 +331,7 @@ export function instalmentFor(row, { balance, rate, fee }) {
 		const i = active.indexOf(p);
 		const feeShare = i < 0 ? 0 : i === 0 ? Math.ceil(fee / active.length) : Math.floor(fee / active.length);
 		const same = b === s.balance && rate === row.rate;
-		const interest = same ? s.interestDue : b ? interestFor(b, rate, row.days) : 0;
+		const interest = same ? s.interestDue : b ? interestFor(b, rate, row.days, row.yearDays) : 0;
 		const payment = s.monthsLeft === 1 ? b + interest : Math.min(annuity(b, rate, s.monthsLeft), b + interest);
 		const due = same ? s.due : b ? payment : 0;
 		people[p] = { interest, principal: due - interest, fee: feeShare, total: due + feeShare };

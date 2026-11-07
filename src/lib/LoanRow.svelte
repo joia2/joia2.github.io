@@ -116,7 +116,7 @@
 					<p class="plus">+{formatKr(s.covered)} kr</p>
 				{/if}
 				{#if row.owing === p || entry.debt?.[p] != null}
-					<!-- While this person owes the other, the debt can also be repaid in money (3.4.5).
+					<!-- While this person owes the other, the debt can also be repaid in money (3.4.3).
 					     An amount once typed always shows, so it can be seen and cleared. -->
 					<span class="affix">
 						<span class="prefix" aria-hidden="true">debt</span>

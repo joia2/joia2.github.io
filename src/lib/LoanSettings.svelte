@@ -9,7 +9,8 @@
 	import Face from '#lib/Face.svelte';
 	import MonthInput from '#lib/MonthInput.svelte';
 	import { loan, changed } from '#lib/loan.svelte.js';
-	import { addMonths, currentMonth, formatAmount, parseAmount, toOre, PEOPLE } from '#lib/loan.js';
+	import Percent from '@lucide/svelte/icons/percent';
+	import { addMonths, currentMonth, formatAmount, parseAmount, toOre, DEBT_RATE, PEOPLE } from '#lib/loan.js';
 
 	// section: 'names' | 'apartment' | 'egenkapital'
 	let { section, onclose } = $props();
@@ -30,6 +31,7 @@
 		const m = months.length ? addMonths(months[0], -1) : '';
 		return m && `${m.slice(0, 4)} ${new Date(`${m}-01T12:00:00`).toLocaleDateString('en', { month: 'short' }).toLowerCase()}`;
 	})();
+	let debtRate = $state(data.debtRate != null ? formatAmount(data.debtRate) : '');
 	let egenkapital = $state({ cyan: formatAmount(data.egenkapital.cyan || ''), mint: formatAmount(data.egenkapital.mint || '') });
 	let error = $state('');
 
@@ -91,6 +93,10 @@
 			}
 			const parsed = parseCosts();
 			if (typeof parsed === 'string') return (error = parsed);
+			const rate = parseAmount(debtRate);
+			if (rate === undefined) return (error = 'Enter the debt interest as a percentage.');
+			if (rate === null) delete data.debtRate;
+			else data.debtRate = rate;
 			data.total = price;
 			data.takeover = takeover;
 			data.costs = parsed; // always there, empty when there are none
@@ -108,11 +114,11 @@
 		onclose();
 	}
 
-	// The first month holds the starting rate (4.78 % until changed); later months stay
+	// The first month holds the starting rate (5.03 % until changed); later months stay
 	function moveStart() {
 		const firstEntry = months.length ? data.payments[months[0]] : {};
 		const kept = Object.entries(data.payments).filter(([m]) => m > start && m !== months[0]);
-		data.payments = { [start]: { ...firstEntry, interest: firstEntry.interest ?? 4.78 }, ...Object.fromEntries(kept) };
+		data.payments = { [start]: { ...firstEntry, interest: firstEntry.interest ?? 5.03 }, ...Object.fromEntries(kept) };
 	}
 </script>
 
@@ -149,7 +155,19 @@
 			{/if}
 		</p>
 
-		<!-- Costs that raise the apartment's value; what each paid counts as paid in -->
+		<label>
+			debt interest (%)
+			<span class="field">
+				<Percent size={20} />
+				<input bind:value={debtRate} inputmode="decimal" placeholder={formatAmount(DEBT_RATE)} />
+			</span>
+		</label>
+		<p class="note">
+			The interest on a debt between you (forsinkelsesrente, samboerkontrakt 3.4). It changes on 1 January
+			and 1 July; empty uses {formatAmount(DEBT_RATE)} %.
+		</p>
+
+		<!-- What each paid for maintenance and improvements: a record, not ownership (4.3) -->
 		{#each costs as c, i (i)}
 			<fieldset>
 				<legend>

@@ -25,7 +25,7 @@ function invariants(r, label) {
 		const fromRows = {};
 		for (const x of loanRows(r)) {
 			const y = addMonths(x.month, -1).slice(0, 4); // the year the interest built up
-			fromRows[y] = (fromRows[y] ?? 0) + x.people[p].interest + x.people[p].feePaid + (x.people[p].costCovered ?? 0);
+			fromRows[y] = (fromRows[y] ?? 0) + x.people[p].interest + x.people[p].feePaid;
 		}
 		for (const [y, v] of Object.entries(r.interestPaid)) assert.equal(v[p], fromRows[y] ?? 0, `${label}: ${p} ${y}`);
 	}
@@ -51,13 +51,13 @@ test('no entries: 360 months, ends at 0, table = interest due', () => {
 	assert.ok(Object.values(r.interestPaid).every((y) => y.estimate));
 });
 
-test('last payment close to the others (yearly recalculation)', () => {
+test('payment fixed for the whole term, like the bank; the last one settles the rest', () => {
 	const r = compute(base(), '2056-12');
 	const rows = loanRows(r);
 	for (const p of PEOPLE) {
-		const last = rows.at(-1).people[p].min;
-		const before = rows.at(-2).people[p].min;
-		assert.ok(Math.abs(last - before) < 10000, `${p}: ${before} → ${last}`); // under 100 kr
+		const mins = new Set(rows.slice(1, -1).map((x) => x.people[p].min));
+		assert.equal(mins.size, 1, `${p}: one payment`);
+		assert.ok(rows.at(-1).people[p].min <= rows.at(-2).people[p].min, `${p}: last not larger`);
 	}
 });
 
@@ -137,7 +137,7 @@ test('"min" is not a payment: ignored, and removed by dropMin', () => {
 	assert.equal(dropMin(d), false);
 });
 
-test('short covered by the other: ownership moves, interest counts for the coverer', () => {
+test('short covered by the other: counts as paid by the one short, and becomes their debt (3.4)', () => {
 	const plain = run();
 	const jan = row(plain, '2027-01');
 	const cMin = jan.people.cyan.min / 100;
@@ -147,12 +147,13 @@ test('short covered by the other: ownership moves, interest counts for the cover
 	const x = row(r, '2027-01');
 	assert.equal(x.people.cyan.covered, -x.people.cyan.short);
 	assert.equal(x.people.cyan.uncovered, 0);
-	assert.equal(x.people.mint.costCovered, x.people.cyan.interestDue + x.people.cyan.feeDue);
-	// Mint now owns more than half
-	assert.ok(r.state.own.mint > r.half.mint);
-	assert.equal(owned(r), toOre(8700000));
-	// January's interest counts for mint only
-	assert.equal(x.people.cyan.interest, 0);
+	// Cyan's part goes down as if cyan had paid, and cyan owes mint the whole amount
+	assert.deepEqual(r.state.balance, compute(base(), '2027-01').state.balance);
+	assert.equal(x.debt, jan.people.cyan.min);
+	// Ownership stays 50/50, and the interest counts for cyan, whose part it is (3.6)
+	assert.deepEqual(r.state.own, r.half);
+	assert.equal(x.people.cyan.interest, x.people.cyan.interestDue);
+	assert.equal(r.state.covered.mint, jan.people.cyan.min);
 });
 
 test('short and not covered: interest added to what that person owes', () => {
@@ -165,12 +166,21 @@ test('short and not covered: interest added to what that person owes', () => {
 	assert.equal(r.state.balance.cyan, row(r, '2027-01').people.cyan.interestDue + x.feeDue + toOre(8700000 / 2 - 500000) - row(r, '2026-12').people.cyan.principal);
 });
 
-test('covered with no equity left: becomes a debt, repaid later', () => {
-	const r = compute(base({ '2027-01': { cyan: 0, mint: 200000 } }, { egenkapital: { cyan: 0, mint: 0 } }), '2056-12');
-	invariants(r, 'debt');
-	assert.ok(row(r, '2027-01').debt > 0, 'cyan owes mint');
-	const repaid = r.rows.find((x) => x.month > '2027-01' && x.debt === 0);
-	assert.ok(repaid, 'debt repaid from later principal');
+test('a covered amount repaid in money with the next month is free of interest (40 days)', () => {
+	const jan = row(run(), '2027-01').people.cyan.min / 100;
+	const both = (row(run(), '2027-01').people.mint.min / 100) + jan;
+	// Repaid in full in February: no interest, no debt left
+	const repaid = run({ '2027-01': { cyan: 0, mint: both }, '2027-02': { debt: { cyan: jan } } }, {}, '2027-02');
+	assert.equal(row(repaid, '2027-02').debtInterest, 0);
+	assert.equal(repaid.state.debt, 0);
+	// Not repaid: forsinkelsesrente from the payment, at 12.25 % unless set
+	const kept = run({ '2027-01': { cyan: 0, mint: both } }, {}, '2027-02');
+	const feb = row(kept, '2027-02');
+	assert.equal(feb.debtInterest, Math.round((toOre(jan) * 12.25 * 31) / 36500));
+	assert.equal(row(run({ '2027-01': { cyan: 0, mint: both } }, { debtRate: 10 }, '2027-02'), '2027-02').debtInterest, Math.round((toOre(jan) * 10 * 31) / 36500));
+	// The debt is never taken from later principal: it stays until repaid in money
+	const later = compute(base({ '2027-01': { cyan: 0, mint: both } }), '2028-01');
+	assert.ok(later.state.debt > toOre(jan));
 });
 
 test('debt repaid in money: lowers the debt only, moves no ownership', () => {
@@ -224,18 +234,17 @@ test('year end: loan left on 31 December, after the December payment', () => {
 	assert.equal(r.yearEnd['2027'].debt, dec.debt);
 });
 
-test('sale: gain by ownership share, loss by loan left, debt settled', () => {
-	const state = { balance: { cyan: 300, mint: 100 }, equity: { cyan: 75, mint: 25 }, debt: 10 };
-	// Gain: 1000 − 100 costs − 400 loan = 500, split 75/25; cyan owes mint 10
-	const gain = saleSplit(state, 1000, 100);
-	assert.equal(gain.net, 500);
-	assert.deepEqual(gain.proceeds, { cyan: 375, mint: 125 });
-	assert.deepEqual(gain.gets, { cyan: 365, mint: 135 });
-	// Loss: 300 − 0 − 400 = −100, borne 300/100 by loan left
-	const loss = saleSplit(state, 300, 0);
-	assert.deepEqual(loss.proceeds, { cyan: -75, mint: -25 });
-	// Each person's gets add up to the net proceeds
-	for (const x of [gain, loss]) assert.equal(x.gets.cyan + x.gets.mint, x.net);
+test('sale: half the price less costs, less own loan left, debt set off (4.2, 7.9)', () => {
+	const state = { balance: { cyan: 300, mint: 100 }, debt: 10 };
+	// 1000 − 100 costs = 900: 450 each; cyan 450 − 300, mint 450 − 100; cyan owes mint 10
+	const sale = saleSplit(state, 1000, 100);
+	assert.equal(sale.net, 500);
+	assert.deepEqual(sale.proceeds, { cyan: 150, mint: 350 });
+	assert.deepEqual(sale.gets, { cyan: 140, mint: 360 });
+	// A negative Settlement Amount: paid in by that person
+	const low = saleSplit(state, 500, 0);
+	assert.deepEqual(low.proceeds, { cyan: -50, mint: 150 });
+	for (const x of [sale, low]) assert.equal(x.gets.cyan + x.gets.mint, x.net);
 });
 
 test('rate change: payment worked out again, same end', () => {
@@ -334,7 +343,7 @@ test('random months of extras, shorts and ticks (500 runs)', () => {
 		// After the last row both parts and the debt are settled, or rows hit the limit
 		const end = compute(base(pay), '2100-01');
 		assert.equal(end.state.balance.cyan + end.state.balance.mint, 0, `run ${n}: loan left`);
-		assert.equal(end.state.debt, 0, `run ${n}: debt left`);
+		assert.ok(end.rows.length < 1560, `run ${n}: rows stop`);
 	}
 });
 
@@ -349,4 +358,26 @@ test('instalment calculator: unchanged gives the row, a paid-off part takes no f
 	assert.equal(alone.people.cyan.fee, 5000);
 	const higher = instalmentFor(mar, { balance, rate: mar.rate + 1, fee: mar.fee });
 	assert.ok(higher.total > same.total);
+});
+
+test("the bank's plan (LOFavør Førstehjemslån, 06.11.2026): instalments, interest and balances", () => {
+	const data = { total: 8771000, egenkapital: { cyan: 0, mint: 945000 }, takeover: '2026-12-08', payments: { '2027-01': { interest: 5.03, fee: 60 } } };
+	const r = compute(data, '2027-01');
+	const kr = (x, f) => Math.round((f(x.people.cyan) + f(x.people.mint)) / 100);
+	// [month, payment with fee, interest, balance after] from the bank's plan
+	const plan = [
+		['2027-02', 42216, 33396, 7808517],
+		['2027-03', 42216, 30130, 7796491],
+		['2028-02', 42216, 32813, 7692580], // January 2028 in a leap year
+		['2029-01', 42216, 32338, 7580658]
+	];
+	for (const [m, pay, interest, left] of plan) {
+		const x = row(r, m);
+		assert.equal(kr(x, (s) => s.min), pay, `${m} payment`);
+		assert.equal(kr(x, (s) => s.interestDue), interest, `${m} interest`);
+		assert.ok(Math.abs(kr(x, (s) => s.balance - s.principalDue) - left) <= 2, `${m} balance`);
+	}
+	// The first payment: interest for 24 days only, principal as for a whole month
+	assert.ok(Math.abs(kr(row(r, '2027-01'), (s) => s.min) - 34666) <= 1);
+	assert.equal(r.rows.at(-1).month, '2056-12');
 });

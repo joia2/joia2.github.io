@@ -3,25 +3,23 @@
 	import Sheet from '#lib/Sheet.svelte';
 	import { formatKr, formatPercent, toOre, PEOPLE } from '#lib/loan.js';
 
-	// What each person has paid of the apartment's cost and where it comes from.
+	// What each person has paid of the apartment's cost and where it comes from. Each owns 50 % (4.1).
 	// state: result.state from compute(); open: bindable, whether the popup shows
 	let { state, egenkapital, names, open = $bindable(false) } = $props();
 
-	const value = $derived(state.own.cyan + state.own.mint); // the price plus the costs paid so far
+	const value = $derived(state.own.cyan + state.own.mint); // the apartment's cost
 	const owned = (p) => Math.max(0, state.equity[p]);
-	// Samboerkontrakt 4.1: what each has paid in, of what both have paid in (50/50 before anything is paid)
-	const share = (p) => owned('cyan') + owned('mint') ? owned(p) / (owned('cyan') + owned('mint')) : 0.5;
-	const signed =(ore) => (ore > 0 ? '+' : ore < 0 ? '−' : '') + formatKr(Math.abs(ore));
+	const signed = (ore) => (ore > 0 ? '+' : ore < 0 ? '−' : '') + formatKr(Math.abs(ore));
 	const lines = $derived([
-		['paid in %', (p) => `${formatPercent(owned(p) / value * 100)} %`],
+		['paid in %', (p) => `${formatPercent((owned(p) / value) * 100)} %`],
 		['egenkapital', (p) => formatKr(toOre(egenkapital?.[p] ?? 0))],
-		['principal paid', (p) => formatKr(owned(p) - toOre(egenkapital?.[p] ?? 0) - state.costs[p].maintenance - state.costs[p].improvement - state.covered[p])],
+		['principal paid', (p) => formatKr(owned(p) - toOre(egenkapital?.[p] ?? 0))],
+		['paid in kr', (p) => formatKr(owned(p))],
+		['principal left', (p) => formatKr(state.balance[p])],
+		['ownership share', () => '50,00 %'],
 		['covered', (p) => signed(state.covered[p])],
 		['maintenances', (p) => formatKr(state.costs[p].maintenance)],
-		['improvements', (p) => formatKr(state.costs[p].improvement)],
-		['paid in kr', (p) => formatKr(owned(p))],
-		['ownership share', (p) => `${formatPercent(share(p) * 100)} %`],
-		['principal left', (p) => formatKr(state.balance[p])]
+		['improvements', (p) => formatKr(state.costs[p].improvement)]
 	]);
 </script>
 
@@ -46,11 +44,12 @@
 			</tbody>
 		</table>
 		<p class="note">
-			In kroner, as of this month. "Paid in %" is how much of the apartment's cost each of you has paid:
-			the price plus the maintenance and improvement costs. The rest is still owed to the bank. "Paid in kr" is each one's Contributions in the samboerkontrakt, and
-			"ownership share" is each one's Contributions of both (4.1): it divides the proceeds of a sale. Covered: what one of you paid for the other, + for the one who paid
-			and − for the one it was paid for. Principal the other paid on your part counts in your principal
-			paid, and then in covered as −.
+			In kroner, as of this month. "Paid in %" is how much of the apartment's cost each of you has paid
+			in: egenkapital and principal. The rest is still owed to the bank. Each of you owns 50 % whatever
+			is paid (4.1); what you have paid in lowers your own loan left, and so raises your settlement
+			amount on a sale (4.2). Covered: what one of you paid for the other's instalment, + for the one
+			who paid and − for the one it was paid for. It counts as paid by the one it was paid for, and is
+			their debt to the other (3.4). Maintenance and improvement costs are a record only (4.3).
 		</p>
 	</div>
 </Sheet>
