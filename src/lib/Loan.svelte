@@ -20,7 +20,11 @@
 
 	// The current month, refreshed when the page is shown again (the app may stay open past the 1st)
 	let today = $state(currentMonth());
-	const result = $derived(compute(loan.data, today, { time: ui.time }));
+	const result = $derived(compute(loan.data, today));
+	// How long each still pays, keeping their payment: the months from now with something due
+	const monthsLeft = (p) => result.rows.filter((r) => r.loan && r.month >= today && r.people[p].due > 0).length;
+	const timeLabel = (n) => `${n} m (${Math.round((n / 12) * 10) / 10} y)`;
+	let barHeight = $state(0);
 	const names = $derived(loan.data.names);
 	const first = $derived(Object.keys(loan.data.payments).sort()[0]);
 	const tax = $derived(result && taxShares(result, today));
@@ -175,22 +179,22 @@
 		{/if}
 	</div>
 
-	<!-- A view helper for both: extras lower the next payments, or keep them and end sooner -->
-	<nav class="bottom" aria-label="view">
-		<button
-			class="toggle"
-			role="switch"
-			aria-checked={ui.time}
-			aria-label="extras shorten the time instead of lowering the payment"
-			onclick={() => (ui.time = !ui.time)}
-		>
-			<span class:on={!ui.time}>−pay</span>
-			<span class="track"><span class="knob"></span></span>
-			<span class:on={ui.time}>−time</span>
-		</button>
+	<!-- Each one's time left at their payment, and their loan left -->
+	<div class="bar-space" style:height="{barHeight}px"></div>
+	<nav class="bottom" aria-label="time left" bind:offsetHeight={barHeight}>
+		{#each PEOPLE as p (p)}
+			<div class="left-for {p}">
+				<Face person={p} size={32} />
+				<span>
+					<strong>{names[p]}</strong>
+					<span>{monthsLeft(p) ? timeLabel(monthsLeft(p)) : 'paid off'}</span>
+					<span class="muted">{formatKr(result.state.balance[p])} kr</span>
+				</span>
+			</div>
+		{/each}
 	</nav>
 
-	<button class="icon-button jump" onclick={scrollEnd} aria-label={atEnd ? 'scroll to top' : 'scroll to bottom'}>
+	<button class="icon-button jump" style:bottom="calc({barHeight}px + 1rem)" onclick={scrollEnd} aria-label={atEnd ? 'scroll to top' : 'scroll to bottom'}>
 		{#if atEnd}<ArrowUp size={22} />{:else}<ArrowDown size={22} />{/if}
 	</button>
 {/if}
@@ -336,7 +340,6 @@
 	.jump {
 		position: fixed;
 		right: calc(1rem + env(safe-area-inset-right));
-		bottom: calc(48px + 1rem + env(safe-area-inset-bottom));
 		z-index: 10;
 		width: 48px;
 		height: 48px;
@@ -350,55 +353,37 @@
 		right: 0;
 		bottom: 0;
 		z-index: 10;
-		height: 48px;
-		padding-bottom: env(safe-area-inset-bottom);
+		/* Above the iPhone's home indicator when installed */
+		padding: 0.5rem max(16px, env(safe-area-inset-right)) calc(0.5rem + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 		display: flex;
-		align-items: center;
-		justify-content: center;
+		justify-content: space-between;
+		gap: 1rem;
 		background: var(--bar);
 		-webkit-backdrop-filter: saturate(180%) blur(20px);
 		backdrop-filter: saturate(180%) blur(20px);
 		border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
 	}
-	.toggle {
+	.left-for {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		padding: 0.4rem 0.8rem;
-		border: 0;
-		font-size: 0.85rem;
+		min-width: 0;
+		font-size: 0.75rem;
+		line-height: 1.25;
+		font-variant-numeric: tabular-nums;
+	}
+	.left-for > span {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		white-space: nowrap;
+	}
+	.left-for.mint {
+		flex-direction: row-reverse;
+		text-align: right;
+	}
+	.left-for .muted {
 		color: var(--muted);
-	}
-	.toggle:hover:not(:disabled) {
-		background: transparent;
-	}
-	.toggle .on {
-		color: var(--text);
-		font-weight: 600;
-	}
-	.track {
-		position: relative;
-		width: 2.2rem;
-		height: 1.25rem;
-		border-radius: 1rem;
-		background: var(--border);
-	}
-	.knob {
-		position: absolute;
-		top: 0.15rem;
-		left: 0.15rem;
-		width: 0.95rem;
-		height: 0.95rem;
-		border-radius: 50%;
-		background: var(--surface);
-		box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
-		transition: transform 0.2s;
-	}
-	.toggle[aria-checked='true'] .knob {
-		transform: translateX(0.95rem);
-	}
-	.toggle[aria-checked='true'] .track {
-		background: var(--accent);
 	}
 	.jump:hover:not(:disabled) {
 		background: var(--surface);

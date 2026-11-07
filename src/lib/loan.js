@@ -6,21 +6,10 @@
 // egenkapital. Like the bank's, each person's monthly payment stays fixed, rounded up to whole
 // kroner; interest for the actual days of the month only changes how much of it is principal, and the
 // last payment settles what is left. The payment is worked out again when the rate or the mortgage's
-// length changes, or when a month's payment differs from it (extra, or short and not covered).
+// length changes, or when a month's payment is short and not covered.
 //
 // The mortgage's length (`term` in a month's entry: months from the first payment, 360 until set)
-// carries forward like the rate. An extra lowers the next payments; with `time` (a view option, not
-// saved) the payments are kept instead and the loan ends sooner.
-//
-// Each owns 50 % whatever is paid (samboerkontrakt 4.1). When one pays less than their instalment
-// and the other covers it (a Substitute Payment, 3.4), it counts as paid by the one who fell short,
-// and the amount becomes their personal debt to the other. The debt bears interest at the rate for
-// overdue payments (forsinkelsesrente, `data.debtRate`) from the payment, unless repaid in full
-// within 40 days, that is with the next month's entry. It is repaid in money (`debt: { cyan, mint }`
-// in a month's entry), or settled from the sale (7.9).
-//
-// Maintenance and improvement costs (data.costs) are a record of what each paid: they change
-// neither ownership nor the loan (4.3).
+// carries forward like the rate. An extra keeps the payments as they are, so the loan ends sooner.
 
 export const PEOPLE = ['cyan', 'mint'];
 export const TERM = 360; // 30 years
@@ -93,7 +82,7 @@ const isEntered = (value) => value !== undefined && value !== null && value !== 
 // between the two, is repaid. Months without an entered payment count as paid at the minimum.
 // Returns null until the apartment price and the first month are set. `today` ('YYYY-MM') is the
 // month whose state the bar and the banner show; payments entered for later months count too.
-export function compute(data, today = currentMonth(), { time = false } = {}) {
+export function compute(data, today = currentMonth()) {
 	const payments = data?.payments ?? {};
 	const months = Object.keys(payments).sort();
 	const total = toOre(data?.total ?? 0);
@@ -211,10 +200,10 @@ export function compute(data, today = currentMonth(), { time = false } = {}) {
 			// Unpaid interest and fees are added to what this person owes the bank (3.5)
 			equity[p] -= s.feeDue - feePaid + (s.interestDue - s.interest);
 
-			// Off schedule: an extra either lowers the next payments (the default) or, with `time`, keeps
-			// them and ends sooner; anything else (short and not covered) works the payment out again
+			// Off schedule: an extra keeps the payments and ends sooner; anything else (short and not
+			// covered) works the payment out again
 			if (balance(p) > 0 && balance(p) !== expected) {
-				if (s.extra > 0 && time) end[p] = Math.min(end[p], k + monthsFor(balance(p), rate, payment[p]));
+				if (s.extra > 0) end[p] = Math.min(end[p], k + monthsFor(balance(p), rate, payment[p]));
 				else payment[p] = null;
 			}
 		}
@@ -402,7 +391,7 @@ export function dropMin(data) {
 	return dropped;
 }
 
-// "time" is a view option now, never saved: removes it from older files. Returns whether anything
+// "time" is no longer a choice (extras always keep the payments): removes it from older files. Returns whether anything
 // changed.
 export function dropTime(data) {
 	const payments = data?.payments ?? {};

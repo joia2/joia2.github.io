@@ -75,29 +75,13 @@ test('payment stays fixed; interest uses real days of the previous month', () =>
 	assert.equal(dec.people.cyan.interestDue, Math.round((b * 4.78 * 30) / 36500));
 });
 
-test('one extra lowers next payments, same end, less interest', () => {
+test('an extra keeps the payment and ends sooner, with less interest', () => {
 	const plain = compute(base(), '2056-12');
 	const minJan = row(plain, '2027-01').people.cyan.min;
-	const r = compute(base({ '2027-01': { cyan: minJan / 100 + 100000 } }), '2056-12');
+	const r = compute(base({ '2027-01': { cyan: minJan / 100 + 500000 } }), '2056-12');
 	invariants(r, 'extra');
-	const jan = row(r, '2027-01').people.cyan;
-	assert.equal(jan.extra, toOre(100000));
-	assert.equal(jan.principal, jan.principalDue + toOre(100000));
-	// Balance right after is exactly 100 000 lower than without the extra
-	const after = (res) => row(res, '2027-02').people.cyan.interestDue;
-	assert.ok(after(r) < after(plain));
-	assert.ok(row(r, '2027-02').people.cyan.min < row(plain, '2027-02').people.cyan.min);
-	assert.equal(loanRows(r).length, TERM);
+	assert.equal(row(r, '2027-01').people.cyan.principal, row(plain, '2027-01').people.cyan.principalDue + toOre(500000));
 	assert.ok(sumYears(r, 'cyan') < sumYears(plain, 'cyan'));
-	assert.equal(sumYears(r, 'mint'), sumYears(plain, 'mint')); // mint unaffected
-	assert.equal(owned(r), toOre(8700000));
-});
-
-test('extra with the "time" view: same payment, ends sooner', () => {
-	const plain = compute(base(), '2056-12');
-	const minJan = row(plain, '2027-01').people.cyan.min;
-	const r = compute(base({ '2027-01': { cyan: minJan / 100 + 500000 } }), '2056-12', { time: true });
-	invariants(r, 'time');
 	assert.equal(row(r, '2027-02').people.cyan.min, row(plain, '2027-02').people.cyan.min);
 	const last = loanRows(r).filter((x) => x.people.cyan.due > 0).pop();
 	assert.ok(last.month < '2056-11', `cyan ends ${last.month}`);
@@ -347,15 +331,14 @@ test('random months of extras, shorts and ticks (500 runs)', () => {
 			pay[m] = e;
 		}
 		pay[START] = { ...pay[START], interest: 4.78, fee: 50 };
-		const time = { time: n % 2 === 1 };
-		const r = compute(base(pay), '2031-12', time);
+		const r = compute(base(pay), '2031-12');
 		invariants(r, `run ${n}`);
 		const json = JSON.stringify(r);
 		assert.ok(!/NaN|Infinity/.test(json), `run ${n}: NaN`);
 		assert.equal(owned(r), toOre(8700000), `run ${n}: ownership`);
 		for (const x of loanRows(r)) for (const p of PEOPLE) assert.ok(x.people[p].min >= 0, `run ${n}: ${x.month}`);
 		// After the last row both parts and the debt are settled, or rows hit the limit
-		const end = compute(base(pay), '2100-01', time);
+		const end = compute(base(pay), '2100-01');
 		assert.equal(end.state.balance.cyan + end.state.balance.mint, 0, `run ${n}: loan left`);
 		assert.ok(end.rows.length < 1560, `run ${n}: rows stop`);
 	}
