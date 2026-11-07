@@ -7,7 +7,7 @@
 	import RawData from '#lib/RawData.svelte';
 	import YearJump from '#lib/YearJump.svelte';
 	import { ui } from '#lib/ui.svelte.js';
-	import { isUnlocked, startDemo } from '#lib/session.svelte.js';
+	import { isUnlocked, session, startDemo } from '#lib/session.svelte.js';
 
 	let { children } = $props();
 
@@ -26,7 +26,7 @@
 					<MenuIcon size={22} />
 				</button>
 			</span>
-		{:else}
+		{:else if !session.restoring}
 			<!-- Opens example data without a token; nothing is saved -->
 			<button class="demo" onclick={startDemo}>demo</button>
 		{/if}

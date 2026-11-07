@@ -5,7 +5,7 @@
 	import ChangePassword from '#lib/ChangePassword.svelte';
 	import Loan from '#lib/Loan.svelte';
 	import LoanSettings from '#lib/LoanSettings.svelte';
-	import { isUnlocked } from '#lib/session.svelte.js';
+	import { isUnlocked, session } from '#lib/session.svelte.js';
 	import { loan, loadLoan, unloadLoan, hasUnsavedChanges } from '#lib/loan.svelte.js';
 	import { ui } from '#lib/ui.svelte.js';
 
@@ -28,7 +28,9 @@
 <!-- Asks before closing the page while an edit isn't saved yet -->
 <svelte:window onbeforeunload={(e) => hasUnsavedChanges() && e.preventDefault()} />
 
-{#if !isUnlocked()}
+{#if session.restoring}
+	<p class="loading"><LoaderCircle size={24} class="spin" /></p>
+{:else if !isUnlocked()}
 	<Unlock />
 {:else if ui.view === 'password'}
 	<ChangePassword onclose={home} />
