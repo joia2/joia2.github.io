@@ -15,14 +15,19 @@
 	import Owned from '#lib/Owned.svelte';
 	import SaleCalculator from '#lib/SaleCalculator.svelte';
 	import { loan, changed } from '#lib/loan.svelte.js';
-	import { compute, currentMonth, formatKr, formatPercent, other, setValue, taxShares, PEOPLE } from '#lib/loan.js';
+	import { compute, currentMonth, formatKr, monthsFor, formatPercent, other, setValue, taxShares, PEOPLE } from '#lib/loan.js';
 	import { ui } from '#lib/ui.svelte.js';
 
 	// The current month, refreshed when the page is shown again (the app may stay open past the 1st)
 	let today = $state(currentMonth());
 	const result = $derived(compute(loan.data, today));
-	// How long each still pays, keeping their payment: the months from now with something due
-	const monthsLeft = (p) => result.rows.filter((r) => r.loan && r.month >= today && r.people[p].due > 0).length;
+	// How long each still pays at the instalment they started with, whatever the mortgage's length is now:
+	// their loan left, at this month's rate
+	const rateNow = $derived((result?.rows.find((r) => r.month >= today) ?? result?.rows.at(-1))?.rate ?? 0);
+	const monthsLeft = (p) => {
+		const left = result.state.balance[p];
+		return left > 0 && result.firstPayment[p] ? monthsFor(left, rateNow, result.firstPayment[p]) : 0;
+	};
 	const timeLabel = (n) => `${n} m (${Math.round((n / 12) * 10) / 10} y)`;
 	let barHeight = $state(0);
 	// On touch screens a focused field brings up the keyboard, which the fixed bar would slide behind

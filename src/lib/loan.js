@@ -69,7 +69,7 @@ function annuity(balance, rate, months) {
 }
 
 // How many months a monthly payment needs to repay a balance
-function monthsFor(balance, rate, payment) {
+export function monthsFor(balance, rate, payment) {
 	const r = rate / 1200;
 	if (r === 0) return Math.ceil(balance / payment);
 	const x = 1 - (balance * r) / payment;
@@ -101,6 +101,7 @@ export function compute(data, today = currentMonth()) {
 	let rate = 0;
 	let fee = 0;
 	let term = TERM;
+	const firstPayment = { cyan: 0, mint: 0 }; // each one's instalment for the original 30 years, without the fee
 
 	const balance = (p) => Math.max(0, own[p] - equity[p]);
 
@@ -136,6 +137,7 @@ export function compute(data, today = currentMonth()) {
 			const interest = b ? interestFor(b, rate, days, yearDays(month)) : 0;
 			const monthsLeft = Math.max(1, end[p] - k + 1);
 			if (b && payment[p] === null) payment[p] = annuity(b, rate, monthsLeft);
+			if (k === 0) firstPayment[p] = b ? annuity(b, rate, TERM) : 0; // as first set: 30 years
 			// The last payment settles whatever is left, so the part ends at exactly 0
 			// A first month shorter than a whole one: the bank charges interest for the days only, and
 			// takes the principal as if the month were whole, so the first payment is smaller
@@ -301,7 +303,7 @@ export function compute(data, today = currentMonth()) {
 		state = snapshot();
 	}
 
-	return { half, rows, state, interestPaid, yearEnd };
+	return { half, rows, state, interestPaid, yearEnd, firstPayment };
 }
 
 // What each person gets if the apartment is sold or bought out (samboerkontrakt 4.2, 7.8 and 7.9),
