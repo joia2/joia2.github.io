@@ -57,13 +57,18 @@
 
 	// Swiping a row on a touch screen ticks or unticks a side: right for the left person, left for
 	// the right one. Vertical scrolling stays with the browser (touch-action), which cancels the swipe.
+	// Behind the row, the side's color and a check show as it slides; the side is kept after
+	// release so the color stays while the row slides back.
 	let startX = null;
 	let dx = $state(0);
+	let side = $state('cyan');
 	const swipeStart = (e) => {
 		if (e.pointerType !== 'mouse' && row.loan && e.target !== document.activeElement) startX = e.clientX;
 	};
 	const swipeMove = (e) => {
-		if (startX !== null) dx = e.clientX - startX;
+		if (startX === null) return;
+		dx = e.clientX - startX;
+		side = PEOPLE[dx > 0 ? 0 : 1];
 	};
 	const swipeEnd = (e) => {
 		const p = PEOPLE[dx > 0 ? 0 : 1];
@@ -73,12 +78,14 @@
 	};
 </script>
 
+<div class="swipe">
+<span class="reveal {side}" style:opacity={Math.min(1, Math.abs(dx) / 60)}><Check size={22} /></span>
 <div
 	class="row"
 	class:now={row.month === today}
 	class:swiping={dx}
 	data-month={row.month}
-	style:transform={dx ? `translateX(${Math.max(-40, Math.min(40, dx / 3))}px)` : null}
+	style:transform={dx ? `translateX(${Math.max(-80, Math.min(80, dx * 0.6))}px)` : null}
 	onpointerdown={swipeStart}
 	onpointermove={swipeMove}
 	onpointerup={swipeEnd}
@@ -231,9 +238,36 @@
 		</div>
 	{/each}
 </div>
+</div>
 
 <style>
+	.swipe {
+		position: relative;
+		overflow: hidden;
+	}
+	.reveal {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		padding-inline: 1.5rem;
+		background: var(--cyan);
+		color: #0b2a2e;
+		transition: opacity 0.2s;
+	}
+	.swipe:has(.swiping) .reveal {
+		transition: none;
+	}
+	.swipe:has(.now) {
+		border-radius: 14px;
+	}
+	.reveal.mint {
+		justify-content: flex-end;
+		background: var(--mint);
+	}
 	.row {
+		position: relative;
+		background: var(--bg);
 		display: grid;
 		/* The same space at both outer edges and between the columns keeps the fields narrow on
 		   wide screens; it shrinks with the screen */
@@ -250,7 +284,7 @@
 		transition: none;
 	}
 	.row.now {
-		background: color-mix(in srgb, var(--accent) 7%, transparent);
+		background: color-mix(in srgb, var(--accent) 7%, var(--bg)); /* opaque: hides the reveal */
 		border-radius: 14px;
 	}
 	.side,
