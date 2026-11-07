@@ -28,9 +28,6 @@
 			<dd>{formatKr(total(p, 'paid'))}</dd>
 			<dt>principal</dt>
 			<dd>{formatKr(total(p, 'principal'))}</dd>
-			<!-- What to type in the skattemelding, set apart and in bold -->
-			<dt class="caption">skattemelding</dt>
-			<dd></dd>
 			{#if paid}
 				<!-- Skattemelding: interest and fees that built up in the year (rentefradrag) -->
 				<dt><span class="long">interest</span><span class="short">int.</span> + fees ({share(paid, p)}<Pct />)</dt>
@@ -125,19 +122,7 @@
 		color: var(--text);
 		font-weight: 600;
 	}
-	/* Above the two numbers for the tax return: a thin line and a small caption */
-	.caption {
-		margin-top: 0.35rem;
-		padding-top: 0.3rem;
-		border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-		font-size: 0.62rem;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-	}
-	.caption + dd {
-		margin-top: 0.35rem;
-		border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-	}
+	/* The two numbers to type in the skattemelding */
 	.tax {
 		font-weight: 600;
 	}
