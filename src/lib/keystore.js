@@ -19,17 +19,9 @@ async function run(mode, use) {
 	}).finally(() => db.close());
 }
 
-export const saveKey = (id, key) => run('readwrite', (store) => store.put({ key, at: Date.now() }, id));
+export const saveKey = (id, key) => run('readwrite', (store) => store.put({ key }, id));
 export const loadKey = async (id) => (await run('readonly', (store) => store.get(id)))?.key ?? null;
 export const deleteKey = (id) => run('readwrite', (store) => store.delete(id));
 
-// Keys left behind by tabs that were closed: older than a day and not this tab's
-export async function deleteOldKeys(keep) {
-	const ids = await run('readonly', (store) => store.getAllKeys());
-	const day = Date.now() - 86_400_000;
-	for (const id of ids) {
-		if (id === keep) continue;
-		const entry = await run('readonly', (store) => store.get(id));
-		if (!(entry?.at > day)) await deleteKey(id);
-	}
-}
+// Every saved key: what a tab starting without a login clears, left behind by closed tabs
+export const deleteAllKeys = () => run('readwrite', (store) => store.clear());

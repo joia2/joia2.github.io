@@ -1,11 +1,12 @@
 import { browser } from '$app/env';
 import { readJSON, writeJSON, changePassword as changeVaultPassword } from '#lib/vault.js';
-import { saveKey, loadKey, deleteKey, deleteOldKeys } from '#lib/keystore.js';
+import { saveKey, loadKey, deleteKey, deleteAllKeys } from '#lib/keystore.js';
 
 // While unlocked, a reload of the tab stays unlocked; closing the tab or locking ends it. The token
 // lives in this tab's sessionStorage, which the browser clears when the tab closes. The key is in
-// IndexedDB, unreadable, under an id kept beside the token: once the tab is closed, nothing points to
-// it any more. The password itself is never kept, only the key made from it.
+// IndexedDB, unreadable, under an id kept beside the token; a tab that starts without a login deletes
+// every saved key, so none outlives its tab for long. The password itself is never kept, only the key
+// made from it.
 // demo: example data kept only in memory, opened from the login screen without a token
 // restoring: true while a reload looks for this tab's saved login
 const ID = 'joia2.session';
@@ -30,11 +31,13 @@ if (browser) {
 
 async function restore() {
 	const id = tab?.getItem(ID);
+	const token = tab?.getItem(TOKEN);
 	try {
-		const key = id && (await loadKey(id));
-		const token = tab?.getItem(TOKEN);
-		if (key && token) Object.assign(session, { token, key });
-		await deleteOldKeys(id);
+		if (!id || !token) await deleteAllKeys(); // left behind by closed tabs
+		else {
+			const key = await loadKey(id);
+			if (key) Object.assign(session, { token, key });
+		}
 	} catch {
 		// No IndexedDB here: the password is asked for again
 	}
