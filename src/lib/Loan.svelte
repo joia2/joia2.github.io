@@ -1,4 +1,5 @@
 <script>
+	import YearSummary from '#lib/YearSummary.svelte';
 	import Pct from '#lib/Pct.svelte';
 	import { onMount, tick } from 'svelte';
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
@@ -157,6 +158,16 @@
 				first={row.month === first}
 				onedit={edit(row.month)}
 			/>
+			{#if row.month.endsWith('-12')}
+				{@const year = row.month.slice(0, 4)}
+				<YearSummary
+					{year}
+					{names}
+					rows={rows.filter((r) => r.month.startsWith(year))}
+					paid={result.interestPaid[year]}
+					end={result.yearEnd[year]}
+				/>
+			{/if}
 		{/each}
 		{#if later}
 			<button class="more after" onclick={() => (ui.later = !ui.later)}>
