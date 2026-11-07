@@ -127,7 +127,7 @@
 				<span class="share" title="{names[p]}'s part of what the bank charges">{part(p, 'min')}<Pct /></span>
 				</span>
 				<dl>
-					<dt><span class="long">principal</span><span class="short">pri.</span> ({part(p, 'principal')}<Pct />)</dt>
+					<dt>principal</dt>
 					<dd>{formatKr(s.principal)}</dd>
 					<dt><span class="long">interest</span><span class="short">int.</span> ({part(p, 'interest')}<Pct />)</dt>
 					<dd>{formatKr(s.interest)}</dd>
