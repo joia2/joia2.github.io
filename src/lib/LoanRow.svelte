@@ -568,7 +568,7 @@
 		.row {
 			grid-template-columns: 1fr 5.5rem 1fr;
 			gap: 0.4rem;
-			padding-inline: 0.5rem;
+			padding-inline: 0;
 		}
 		dl {
 			gap: 0.1rem 0.25rem;
@@ -603,7 +603,7 @@
 		}
 		.side > p,
 		.toggle {
-			padding-inline: 0.5rem;
+			padding-inline: 0;
 		}
 		input {
 			font-size: 0.8rem;

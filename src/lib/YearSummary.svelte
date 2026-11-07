@@ -132,7 +132,7 @@
 	@media (max-width: 480px) {
 		.summary {
 			gap: 0.4rem;
-			padding-inline: 0.5rem;
+			padding-inline: 0;
 		}
 		dl {
 			gap: 0.1rem 0.3rem;
