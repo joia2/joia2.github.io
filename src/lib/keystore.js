@@ -23,5 +23,9 @@ export const saveKey = (id, key) => run('readwrite', (store) => store.put({ key 
 export const loadKey = async (id) => (await run('readonly', (store) => store.get(id)))?.key ?? null;
 export const deleteKey = (id) => run('readwrite', (store) => store.delete(id));
 
-// Every saved key: what a tab starting without a login clears, left behind by closed tabs
-export const deleteAllKeys = () => run('readwrite', (store) => store.clear());
+// Every saved key but `keep` (the installed app's): what a tab starting without a login clears,
+// left behind by closed tabs
+export async function deleteAllKeys(keep) {
+	const ids = await run('readonly', (store) => store.getAllKeys());
+	for (const id of ids) if (id !== keep) await deleteKey(id);
+}
