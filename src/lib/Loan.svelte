@@ -221,7 +221,7 @@
 					<span>{monthsLeft(p) === null ? 'never at this payment' : monthsLeft(p) ? timeLabel(monthsLeft(p)) : 'paid off'}</span>
 					<!-- The instalment the time left is worked out from, with half the fee -->
 					<span class="muted">min. {formatKr(minimum(p))} kr</span>
-					<span class="muted">{formatKr(loanLeft(p))} kr</span>
+					<span class="muted"><span class="long">principal</span><span class="short">pri.</span> left {formatKr(loanLeft(p))} kr</span>
 				</span>
 			</div>
 		{/each}
@@ -420,6 +420,18 @@
 	}
 	.left-for .muted {
 		color: var(--muted);
+	}
+	/* "principal left" on wider screens, "pri. left" on phones */
+	.short {
+		display: none;
+	}
+	@media (max-width: 480px) {
+		.long {
+			display: none;
+		}
+		.short {
+			display: inline;
+		}
 	}
 	.jump:hover:not(:disabled) {
 		background: var(--surface);
