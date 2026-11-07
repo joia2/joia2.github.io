@@ -45,9 +45,9 @@
 		</dl>
 	{/each}
 	<p class="note">
-		Skattemelding: interest + fees as <em>rentefradrag</em>, loan dec 31 as <em>gjeld</em>{#if owes}, debt
-		between you as private debt and claim{/if}.
-		{#if estimate}Estimate: months empty count at minimum.{/if}
+		<span class="line">Skattemelding: interest+fees as <em>rentefradrag</em>, loan dec 31 as <em>gjeld</em>{#if !owes}.{/if}</span>{#if owes}, debt
+		between you as private debt and claim.{/if}
+		{#if estimate}<span class="line">Estimate: months empty count at minimum.</span>{/if}
 	</p>
 </div>
 
@@ -128,7 +128,15 @@
 		color: var(--muted);
 		text-align: center;
 	}
+	/* Each sentence on a line of its own, never broken */
+	.line {
+		display: inline-block;
+		white-space: nowrap;
+	}
 	@media (max-width: 480px) {
+		.note {
+			font-size: min(0.62rem, 2.9vw); /* the first line fits even on the narrowest phones */
+		}
 		/* Inside the screen's edges, which the rows reach */
 		.summary {
 			gap: 0.4rem 0.9rem;
@@ -138,7 +146,7 @@
 		dl {
 			gap: 0.1rem 0.3rem;
 			padding: 0;
-			font-size: 0.62rem;
+			font-size: min(0.62rem, 2.5vw); /* both columns fit even on the narrowest phones */
 		}
 		.long {
 			display: none;
