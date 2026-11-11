@@ -200,6 +200,11 @@
 						<p class="minus">still owes {formatKr(Math.abs(row.debt))} kr</p>
 					{/if}
 				{/if}
+				{#if row.membership?.owed && p !== row.membership.member}
+					<p class="minus" title="{names[p]}'s part of the LO Favør membership, by what each has left of the loan">
+						LO Favør: owes {names[row.membership.member]} {formatKr(row.membership.owed)} kr
+					</p>
+				{/if}
 				{#if s.uncovered}
 					<p class="warn"><TriangleAlert size={14} />{formatKr(s.uncovered)} kr unpaid</p>
 				{/if}

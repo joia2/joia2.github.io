@@ -12,9 +12,10 @@
 	import { loan, changed } from '#lib/loan.svelte.js';
 	import Percent from '@lucide/svelte/icons/percent';
 	import Hourglass from '@lucide/svelte/icons/hourglass';
+	import Users from '@lucide/svelte/icons/users';
 	import { addMonths, currentMonth, formatAmount, parseAmount, setValue, toOre, DEBT_RATE, PEOPLE, TERM } from '#lib/loan.js';
 
-	// section: 'names' | 'apartment' | 'mortgage'
+	// section: 'names' | 'apartment' (the apartment and its mortgage)
 	let { section, onclose } = $props();
 
 	const data = loan.data;
@@ -53,6 +54,10 @@
 		changes = changes.slice(0, -1);
 		term = termOf(changes, from);
 	}
+	// LO Favør: what the member pays for the membership a month; a change counts from this month on
+	const lofavorOf = (month) => months.filter((m) => m <= month && data.payments[m].lofavor != null).map((m) => data.payments[m].lofavor).at(-1) ?? 0;
+	let lofavor = $state(lofavorOf(from) ? formatAmount(lofavorOf(from)) : '');
+	let member = $state(data.member === 'mint' ? 'mint' : 'cyan');
 	const lengths = Array.from({ length: TERM }, (_, i) => i + 1);
 	const lengthLabel = (n) => `${n}\u00a0m${n % 12 ? '' : `\u00a0(${n / 12}\u00a0y)`}`; // kept on one line
 	let error = $state('');
@@ -110,9 +115,11 @@
 			if (startLocked && start !== months[0]) {
 				return (error = `You've entered payments, so the take-over day can only change within ${lockedMonth}.`);
 			}
-			if (price / 2 < Math.max(data.egenkapital.cyan, data.egenkapital.mint)) {
-				return (error = "Egenkapital can't be more than half the price.");
-			}
+			const [cyan, mint] = PEOPLE.map((p) => parseAmount(egenkapital[p]));
+			if (cyan === undefined || mint === undefined) return (error = 'Enter egenkapital in kroner.');
+			if (price / 2 < Math.max(cyan ?? 0, mint ?? 0)) return (error = "Egenkapital can't be more than half the price.");
+			const membership = parseAmount(lofavor);
+			if (membership === undefined) return (error = 'Enter the LO Favør cost in kroner.');
 			const parsed = parseCosts();
 			if (typeof parsed === 'string') return (error = parsed);
 			const rate = parseAmount(debtRate);
@@ -123,16 +130,17 @@
 			data.takeover = takeover;
 			data.costs = parsed; // always there, empty when there are none
 			if (!startLocked && start !== months[0]) moveStart();
-		}
-		if (section === 'mortgage') {
-			const [cyan, mint] = PEOPLE.map((p) => parseAmount(egenkapital[p]));
-			if (cyan === undefined || mint === undefined) return (error = 'Enter amounts in kroner.');
-			if (data.total && Math.max(cyan, mint) > data.total / 2) {
-				return (error = "Egenkapital can't be more than half the price.");
-			}
 			data.egenkapital = { cyan: cyan ?? 0, mint: mint ?? 0 };
 			for (const m of Object.keys(data.payments)) setValue(data, m, 'term', null);
 			for (const c of changes) setValue(data, c.month, 'term', c.months);
+			// The membership cost, from this month on (from the first payment while before it)
+			data.member = member;
+			const first = Object.keys(data.payments).sort()[0];
+			const since = currentMonth() < first ? first : currentMonth();
+			if ((membership ?? 0) !== lofavorOf(from)) {
+				for (const m of Object.keys(data.payments)) if (m >= since) setValue(data, m, 'lofavor', null);
+				setValue(data, since, 'lofavor', membership ?? 0);
+			}
 		}
 		changed();
 		onclose();
@@ -147,7 +155,7 @@
 </script>
 
 <form onsubmit={submit}>
-	<h1>{section}</h1>
+	<h1>{section === 'apartment' ? 'apartment & mortgage' : section}</h1>
 
 	{#if section === 'names'}
 		{#each PEOPLE as p (p)}
@@ -179,6 +187,61 @@
 			{/if}
 		</p>
 
+		{#if months.length}
+			<label>
+				length
+				<span class="field">
+					<Hourglass size={20} />
+					<select value={term} onchange={(e) => pick(Number(e.currentTarget.value))}>
+						{#each lengths as n (n)}<option value={n}>{lengthLabel(n)}</option>{/each}
+					</select>
+				</span>
+			</label>
+			<p class="note">From the first payment. A change counts from {monthLabel(from)} on: the payments are worked out again.</p>
+			{#if changes.length}
+				<ul class="changes">
+					{#each changes as c, i (c.month)}
+						<li>
+							<span>{monthLabel(c.month)}: {lengthLabel(i ? changes[i - 1].months : TERM)} → {lengthLabel(c.months)}</span>
+							{#if i === changes.length - 1}
+								<button type="button" class="icon-button remove" onclick={removeLatest} aria-label="remove the latest change">
+									<Trash size={18} />
+								</button>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		{/if}
+		{#each PEOPLE as p (p)}
+			<label>
+				egenkapital {data.names[p]} (kr)
+				<span class="field">
+					<Face person={p} size={20} />
+					<input bind:value={egenkapital[p]} inputmode="decimal" placeholder="0,00" />
+				</span>
+			</label>
+		{/each}
+		<label>
+			LO Favør membership (kr a month)
+			<span class="field">
+				<Users size={20} />
+				<input bind:value={lofavor} inputmode="decimal" placeholder="0,00" />
+			</span>
+		</label>
+		<label>
+			member
+			<span class="field">
+				<Face person={member} size={20} />
+				<select bind:value={member}>
+					{#each PEOPLE as p (p)}<option value={p}>{data.names[p]}</option>{/each}
+				</select>
+			</span>
+		</label>
+		<p class="note">
+			The membership gives the mortgage its lower rate. The other owes the member a part of its cost each month, by how much of
+			the loan each has left; a change counts from {monthLabel(from)} on.
+		</p>
 		<label>
 			debt interest (%)
 			<span class="field">
@@ -232,42 +295,6 @@
 			<button type="button" onclick={() => addCost('maintenance')}><Wrench size={18} />maintenance cost</button>
 			<button type="button" onclick={() => addCost('improvement')}><Paintbrush size={18} />improvement cost</button>
 		</div>
-	{:else}
-		{#if months.length}
-			<label>
-				length
-				<span class="field">
-					<Hourglass size={20} />
-					<select value={term} onchange={(e) => pick(Number(e.currentTarget.value))}>
-						{#each lengths as n (n)}<option value={n}>{lengthLabel(n)}</option>{/each}
-					</select>
-				</span>
-			</label>
-			<p class="note">From the first payment. A change counts from {monthLabel(from)} on: the payments are worked out again.</p>
-			{#if changes.length}
-				<ul class="changes">
-					{#each changes as c, i (c.month)}
-						<li>
-							<span>{monthLabel(c.month)}: {lengthLabel(i ? changes[i - 1].months : TERM)} → {lengthLabel(c.months)}</span>
-							{#if i === changes.length - 1}
-								<button type="button" class="icon-button remove" onclick={removeLatest} aria-label="remove the latest change">
-									<Trash size={18} />
-								</button>
-							{/if}
-						</li>
-					{/each}
-				</ul>
-			{/if}
-		{/if}
-		{#each PEOPLE as p (p)}
-			<label>
-				egenkapital {data.names[p]} (kr)
-				<span class="field">
-					<Face person={p} size={20} />
-					<input bind:value={egenkapital[p]} inputmode="decimal" placeholder="0,00" />
-				</span>
-			</label>
-		{/each}
 	{/if}
 
 	{#if error}

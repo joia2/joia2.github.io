@@ -3,9 +3,9 @@
 // amounts round the way the bank's do.
 //
 // Each person has their own internal part of the loan: their half of the apartment minus their
-// egenkapital. Like the bank's, each person's monthly payment stays fixed, rounded up to whole
-// kroner; interest for the actual days of the month only changes how much of it is principal, and the
-// last payment settles what is left. The payment is worked out again when the rate or the mortgage's
+// egenkapital. The bank's monthly payment stays fixed, rounded up to whole kroner; each person's is
+// their exact part of it, to the øre, so the two always add up to the bank's. Interest for the actual
+// days of the month only changes how much of it is principal, and the last payment settles what is left. The payment is worked out again when the rate or the mortgage's
 // length changes, or when a month's payment differs from it (extra, or short and not covered).
 //
 // The mortgage's length (`term` in a month's entry: months from the first payment, 360 until set)
@@ -62,11 +62,36 @@ function yearDays(month) {
 	return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0 ? 366 : 365;
 }
 
-// The bank's monthly payment (annuity) that repays a balance in some months
+// The monthly payment (annuity) that repays a balance in some months, not rounded
 function annuity(balance, rate, months) {
 	const r = rate / 1200;
-	if (r === 0) return Math.ceil(balance / months);
-	return Math.ceil((balance * r) / (1 - (1 + r) ** -months) / 100) * 100; // up to whole kroner, like the bank
+	return r === 0 ? balance / months : (balance * r) / (1 - (1 + r) ** -months);
+}
+
+// Each person's monthly payment for their part: the bank rounds the payment for the whole loan up to
+// whole kroner, and each pays their exact part of that, to the øre (the second takes the rest).
+// `kept`: one person's payment that stays as it is, when only the other's is worked out again.
+function instalments(balance, rate, months, kept = {}) {
+	const exact = { cyan: annuity(balance.cyan, rate, months), mint: annuity(balance.mint, rate, months) };
+	const bank = Math.ceil((exact.cyan + exact.mint) / 100) * 100;
+	for (const p of PEOPLE) if (kept[p] != null && balance[p]) return { [p]: kept[p], [other(p)]: Math.max(0, bank - kept[p]) };
+	const cyan = bank ? Math.round((bank * exact.cyan) / (exact.cyan + exact.mint)) : 0;
+	return { cyan, mint: bank - cyan };
+}
+
+// The bank's interest on the whole loan, split by part: together exactly what the bank charges
+function interests(balance, rate, days, yearDays) {
+	const bank = interestFor(balance.cyan + balance.mint, rate, days, yearDays);
+	const cyan = balance.mint ? interestFor(balance.cyan, rate, days, yearDays) : bank;
+	return { cyan, mint: bank - cyan };
+}
+
+// One person's part of an amount, by what each has left of the loan; the second takes the rest
+function byBalance(amount, balance, p) {
+	const sum = balance.cyan + balance.mint;
+	if (!sum) return 0;
+	const cyan = Math.round((amount * balance.cyan) / sum);
+	return p === 'cyan' ? cyan : amount - cyan;
 }
 
 const isEntered = (value) => value !== undefined && value !== null && value !== '' && value !== 'min';
@@ -94,6 +119,9 @@ export function compute(data, today = currentMonth()) {
 	let rate = 0;
 	let fee = 0;
 	let term = TERM;
+	let membership = 0; // LO Favør: what the member pays for it a month, shared by what each has left
+	const member = data.member === 'mint' ? 'mint' : 'cyan';
+	const membershipOwed = {}; // per year: what the other owes the member for it
 	const firstPayment = { cyan: 0, mint: 0 }; // each one's instalment for the original 30 years, without the fee
 
 	const balance = (p) => Math.max(0, own[p] - equity[p]);
@@ -122,19 +150,24 @@ export function compute(data, today = currentMonth()) {
 	function loanMonth(k, month, entry, days) {
 		const active = PEOPLE.filter((p) => balance(p) > 0);
 		const people = {};
+		const left = { cyan: balance('cyan'), mint: balance('mint') };
+		const monthInterest = interests(left, rate, days, yearDays(month));
+		const whole = k === 0 ? interests(left, rate, monthDays(month), yearDays(month)) : monthInterest;
+		// Both payments are worked out together, so they add up to the bank's
+		// One off schedule: only that one's changes, and the two still add up to the bank's.
+		if (active.some((p) => payment[p] === null)) Object.assign(payment, instalments(left, rate, Math.max(1, end.cyan - k + 1), payment));
+		if (k === 0) Object.assign(firstPayment, instalments(left, rate, TERM)); // as first set: 30 years
 
 		for (const p of PEOPLE) {
 			const b = balance(p);
 			const i = active.indexOf(p);
 			const feeShare = i < 0 ? 0 : i === 0 ? Math.ceil(fee / active.length) : Math.floor(fee / active.length);
-			const interest = b ? interestFor(b, rate, days, yearDays(month)) : 0;
+			const interest = monthInterest[p];
 			const monthsLeft = Math.max(1, end[p] - k + 1);
-			if (b && payment[p] === null) payment[p] = annuity(b, rate, monthsLeft);
-			if (k === 0) firstPayment[p] = b ? annuity(b, rate, TERM) : 0; // as first set: 30 years
 			// The last payment settles whatever is left, so the part ends at exactly 0
 			// A first month shorter than a whole one: the bank charges interest for the days only, and
 			// takes the principal as if the month were whole, so the first payment is smaller
-			const fewer = k === 0 && b ? interestFor(b, rate, monthDays(month), yearDays(month)) - interest : 0;
+			const fewer = whole[p] - interest;
 			const due = !b ? 0 : monthsLeft === 1 ? b + interest : Math.min(payment[p] - Math.max(0, fewer), b + interest);
 			const min = due + feeShare;
 			const typed = isEntered(entry[p]);
@@ -236,6 +269,7 @@ export function compute(data, today = currentMonth()) {
 			payment.cyan = payment.mint = null; // a new rate means new payments, same end
 		}
 		if (isEntered(entry.fee)) fee = toOre(entry.fee);
+		if (isEntered(entry.lofavor)) membership = toOre(entry.lofavor);
 		if (isEntered(entry.term) && Number(entry.term) !== term) {
 			term = Number(entry.term);
 			end.cyan = end.mint = term - 1; // past the end already: the rest is due now
@@ -278,6 +312,12 @@ export function compute(data, today = currentMonth()) {
 			...(loan ? loanMonth(k, month, entry, days) : debtMonth(entry))
 		};
 		row.debt = debt;
+		if (loan && membership) {
+			// The other's part of the membership, by what each had left at the start of the month
+			const owed = byBalance(membership, { cyan: row.people.cyan.balance, mint: row.people.mint.balance }, other(member));
+			row.membership = { cost: membership, member, owed };
+			membershipOwed[month.slice(0, 4)] = (membershipOwed[month.slice(0, 4)] ?? 0) + owed;
+		}
 		rows.push(row);
 		// After the December payment the balances stand until 1 January: they are the debt on 31 December
 		if (month.endsWith('-12')) {
@@ -292,7 +332,7 @@ export function compute(data, today = currentMonth()) {
 		state = snapshot();
 	}
 
-	return { half, rows, state, interestPaid, yearEnd, firstPayment };
+	return { half, rows, state, interestPaid, yearEnd, firstPayment, member, membershipOwed };
 }
 
 // How many months one person still pays from `today`, at the instalment they started with
@@ -346,15 +386,16 @@ export function saleSplit(state, price, costs) {
 export function instalmentFor(row, { balance, rate, fee }) {
 	const active = PEOPLE.filter((p) => balance[p] > 0);
 	const people = {};
+	const same = PEOPLE.every((p) => balance[p] === row.people[p].balance) && rate === row.rate;
+	const payment = instalments(balance, rate, row.people.cyan.monthsLeft);
+	const monthInterest = interests(balance, rate, row.days, row.yearDays);
 	for (const p of PEOPLE) {
 		const s = row.people[p];
 		const b = balance[p];
 		const i = active.indexOf(p);
 		const feeShare = i < 0 ? 0 : i === 0 ? Math.ceil(fee / active.length) : Math.floor(fee / active.length);
-		const same = b === s.balance && rate === row.rate;
-		const interest = same ? s.interestDue : b ? interestFor(b, rate, row.days, row.yearDays) : 0;
-		const payment = s.monthsLeft === 1 ? b + interest : Math.min(annuity(b, rate, s.monthsLeft), b + interest);
-		const due = same ? s.due : b ? payment : 0;
+		const interest = same ? s.interestDue : monthInterest[p];
+		const due = same ? s.due : !b ? 0 : s.monthsLeft === 1 ? b + interest : Math.min(payment[p], b + interest);
 		people[p] = { interest, principal: due - interest, fee: feeShare, total: due + feeShare };
 	}
 	return { people, total: people.cyan.total + people.mint.total };
@@ -375,7 +416,7 @@ export function taxShares(result, today = currentMonth()) {
 }
 
 // Changes one value in the data file. Empty values are removed, so the file only holds what was
-// typed; `interest`, `fee` and `term` carry forward to the following months.
+// typed; `interest`, `fee`, `term` and `lofavor` carry forward to the following months.
 export function setValue(data, month, key, value, person) {
 	const payments = (data.payments ??= {});
 	const entry = { ...payments[month] };

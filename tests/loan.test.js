@@ -428,3 +428,26 @@ test("time left (200 runs): one's payments never change the other's", () => {
 		assert.equal(monthsLeft(b, compute(b, '2026-11'), '2026-11', 'mint'), monthsLeft(a, compute(a, '2026-11'), '2026-11', 'mint'), `run ${n}`);
 	}
 });
+
+test("each one's instalment is their exact part of the bank's, to the øre", () => {
+	const data = { total: 8770310, egenkapital: { cyan: 0, mint: 944310 }, takeover: '2026-12-08', payments: { '2027-01': { interest: 5.03, fee: 60 } } };
+	const r = compute(data, '2027-01');
+	const feb = row(r, '2027-02');
+	assert.equal(feb.people.cyan.due + feb.people.mint.due, toOre(42156)); // the bank's, in whole kroner
+	assert.notEqual(feb.people.cyan.due % 100, 0); // not rounded to whole kroner per person
+	// The interest of the two adds up to the bank's interest on the whole loan
+	for (const x of r.rows.slice(0, 24)) {
+		const whole = Math.round(((x.people.cyan.balance + x.people.mint.balance) * x.rate * x.days) / (x.yearDays * 100));
+		assert.equal(x.people.cyan.interestDue + x.people.mint.interestDue, whole, x.month);
+	}
+});
+
+test('LO Favør: the other owes the member by what each has left of the loan', () => {
+	const data = { total: 8770310, egenkapital: { cyan: 0, mint: 944310 }, takeover: '2026-12-08', payments: { '2027-01': { interest: 5.03, fee: 60, lofavor: 500 } } };
+	const r = compute(data, '2027-01');
+	const jan = row(r, '2027-01');
+	assert.equal(jan.membership.member, 'cyan');
+	assert.equal(jan.membership.owed, Math.round((50000 * 3440845) / 7826000)); // mint's part of 500 kr
+	assert.equal(r.membershipOwed['2027'], r.rows.filter((x) => x.month.startsWith('2027')).reduce((s, x) => s + x.membership.owed, 0));
+	assert.equal(compute({ ...data, member: 'mint' }, '2027-01').rows[0].membership.owed, 50000 - jan.membership.owed);
+});

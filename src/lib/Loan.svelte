@@ -208,6 +208,7 @@
 					rows={rows.filter((r) => r.month.startsWith(year))}
 					paid={result.interestPaid[year]}
 					end={result.yearEnd[year]}
+					membership={{ member: result.member, owed: result.membershipOwed[year] }}
 				/>
 			{/each}
 		{/each}
