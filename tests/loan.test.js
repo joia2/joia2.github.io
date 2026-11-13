@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addMonths, compute, monthsLeft, dropMin, dropTime, instalmentFor, saleSplit, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
+import { addMonths, compute, monthsLeft, instalmentFor, netUnionFee, saleSplit, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
 
 const START = '2026-12';
 const base = (payments = {}, extra = {}) => ({
@@ -111,18 +111,6 @@ test('extra larger than the part: part paid off, surplus kept, no more minimum',
 	assert.equal(row(r, '2027-02').people.mint.feeDue, 5000);
 });
 
-test('"min" is not a payment: ignored, and removed by dropMin', () => {
-	const r = compute(base({ '2027-02': { cyan: 'min', mint: 20000 } }), '2027-03');
-	assert.equal(row(r, '2027-02').people.cyan.typed, false);
-	const d = base({ '2027-02': { cyan: 'min' }, '2027-03': { cyan: 'min', mint: 20000 } });
-	d.payments[START].cyan = 'min';
-	assert.equal(dropMin(d), true);
-	assert.equal(d.payments['2027-02'], undefined);
-	assert.deepEqual(d.payments['2027-03'], { mint: 20000 });
-	assert.deepEqual(d.payments[START], { interest: 4.78, fee: 50 });
-	assert.equal(dropMin(d), false);
-});
-
 test('short covered by the other: counts as paid by the one short, and becomes their debt (3.4)', () => {
 	const plain = run();
 	const jan = row(plain, '2027-01');
@@ -159,11 +147,17 @@ test('a covered amount repaid in money with the next month is free of interest (
 	const repaid = run({ '2027-01': { cyan: 0, mint: both }, '2027-02': { debt: { cyan: jan } } }, {}, '2027-02');
 	assert.equal(row(repaid, '2027-02').debtInterest, 0);
 	assert.equal(repaid.state.debt, 0);
-	// Not repaid: forsinkelsesrente from the payment, at 12.25 % unless set
-	const kept = run({ '2027-01': { cyan: 0, mint: both } }, {}, '2027-02');
+	// Not repaid: interest from the payment, at the mortgage's rate as it applies (3.4.3)
+	const kept = run({ '2027-01': { cyan: 0, mint: both }, '2027-03': { interest: 6 } }, {}, '2027-02');
 	const feb = row(kept, '2027-02');
-	assert.equal(feb.debtInterest, Math.round((toOre(jan) * 12.25 * 31) / 36500));
-	assert.equal(row(run({ '2027-01': { cyan: 0, mint: both } }, { debtRate: 10 }, '2027-02'), '2027-02').debtInterest, Math.round((toOre(jan) * 10 * 31) / 36500));
+	assert.equal(feb.debtInterest, Math.round((toOre(jan) * 4.78 * 31) / 36500));
+	// ...on the amount covered only, not on the interest already added
+	assert.equal(row(kept, '2027-03').debtInterest, Math.round((toOre(jan) * 6 * 28) / 36500));
+	assert.equal(row(kept, '2027-03').debt, toOre(jan) + feb.debtInterest + row(kept, '2027-03').debtInterest);
+	// Money repays the interest first: what is left bears interest in full
+	const part = run({ '2027-01': { cyan: 0, mint: both }, '2027-03': { debt: { cyan: 100 } } }, {}, '2027-04');
+	const left = row(part, '2027-03').debt;
+	assert.equal(row(part, '2027-04').debtInterest, Math.round((Math.min(left, toOre(jan)) * 4.78 * 31) / 36500));
 	// The debt is never taken from later principal: it stays until repaid in money
 	const later = compute(base({ '2027-01': { cyan: 0, mint: both } }), '2028-01');
 	assert.ok(later.state.debt > toOre(jan));
@@ -260,17 +254,6 @@ test('tax shares: last finished year, split by interest actually paid', () => {
 	assert.ok(t.cyan < 50);
 	assert.equal(taxShares(r, '2028-03').year, 2027);
 	assert.equal(taxShares(r, '2026-11').year, 2026); // before the first payment: the coming year, as an estimate
-});
-
-test('dropTime: "time" removed from older files, with months left empty', () => {
-	const d = base({
-		'2027-01': { cyan: 200000, time: { cyan: true } },
-		'2027-03': { time: { mint: true } }
-	});
-	assert.equal(dropTime(d), true);
-	assert.deepEqual(d.payments['2027-01'], { cyan: 200000 });
-	assert.equal(d.payments['2027-03'], undefined);
-	assert.equal(dropTime(d), false);
 });
 
 test('mortgage length: shorter from a month on, payments rise, ends at the new length', () => {
@@ -442,12 +425,23 @@ test("each one's instalment is their exact part of the bank's, to the øre", () 
 	}
 });
 
-test('LO Favør: the other owes the member by what each has left of the loan', () => {
+test('union fee (3.9): the other pays the member a part, less the tax saved, by what each has left after the payment', () => {
 	const data = { total: 8770310, egenkapital: { cyan: 0, mint: 944310 }, takeover: '2026-12-08', payments: { '2027-01': { interest: 5.03, fee: 60, lofavor: 500 } } };
 	const r = compute(data, '2027-01');
 	const jan = row(r, '2027-01');
+	const feb = row(r, '2027-02');
 	assert.equal(jan.membership.member, 'cyan');
-	assert.equal(jan.membership.owed, Math.round((50000 * 3440845) / 7826000)); // mint's part of 500 kr
+	assert.equal(jan.membership.cost, 39000); // 500 kr less 22 %: the year's 6 000 kr is under the limit
+	// Mint's part of it, by the parts as February starts: after January's payment
+	const after = { cyan: feb.people.cyan.balance, mint: feb.people.mint.balance };
+	assert.equal(jan.membership.owed, 39000 - Math.round((39000 * after.cyan) / (after.cyan + after.mint)));
 	assert.equal(r.membershipOwed['2027'], r.rows.filter((x) => x.month.startsWith('2027')).reduce((s, x) => s + x.membership.owed, 0));
-	assert.equal(compute({ ...data, member: 'mint' }, '2027-01').rows[0].membership.owed, 50000 - jan.membership.owed);
+	assert.equal(compute({ ...data, member: 'mint' }, '2027-01').rows[0].membership.owed, 39000 - jan.membership.owed);
+	// A year of fees over the limit: only 8 700 kr of it lowers the tax
+	assert.equal(netUnionFee(100000, 1200000), 100000 - Math.round(0.22 * 870000 / 12));
+	const high = compute({ ...data, payments: { '2027-01': { interest: 5.03, fee: 60, lofavor: 1000 } } }, '2027-01');
+	assert.equal(high.rows.slice(0, 12).reduce((s, x) => s + x.membership.cost, 0), 1200000 - 0.22 * 870000);
+	// Nothing once the other has repaid their part
+	const paidOff = compute({ ...data, payments: { '2027-01': { interest: 5.03, fee: 60, lofavor: 500, mint: 4000000 } } }, '2027-01');
+	assert.equal(row(paidOff, '2027-01').membership.owed, 0);
 });

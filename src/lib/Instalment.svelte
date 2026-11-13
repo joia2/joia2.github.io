@@ -83,6 +83,10 @@
 						{#each PEOPLE as p (p)}<td class="num">{show(p)}{#if pct}<Pct />{/if}</td>{/each}
 					</tr>
 				{/each}
+				<tr>
+					<td>a quarter of the interest</td>
+					<td class="num" colspan="2">{formatKr(Math.round((result.people.cyan.interest + result.people.mint.interest) / 4))}</td>
+				</tr>
 				{#if bank !== null}
 					<tr class="total">
 						<td>pays</td>
@@ -100,7 +104,8 @@
 		<p class="note">
 			In kroner. Each of you pays the instalment on your own part of the loan, and the fee is split
 			equally (3.2). Change any field to try other numbers; an empty field uses the month's own value.
-			Type what the bank charges to split it by the shares.
+			Type what the bank charges to split it by the shares. A quarter of the interest: what the one
+			living in the home alone pays the other each month after a termination notice (7.2).
 		</p>
 	</div>
 </Sheet>

@@ -14,7 +14,7 @@
 export const PEOPLE = ['cyan', 'mint'];
 export const TERM = 360; // 30 years
 export const TAX_DEDUCTION = 0.22; // rentefradrag: interest and fees lower the tax by 22 %
-export const DEBT_RATE = 12.25; // forsinkelsesrente from 1 July 2026, until data.debtRate says otherwise
+export const UNION_LIMIT = 8700; // fagforeningsfradrag: the most of a year's union fee that lowers the tax (2026), in kroner
 const LIMIT = TERM + 1200; // stops a debt that is never repaid from producing rows forever
 
 export const other = (person) => (person === 'cyan' ? 'mint' : 'cyan');
@@ -62,6 +62,10 @@ function yearDays(month) {
 	return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0 ? 366 : 365;
 }
 
+// The union fee the member pays in a month, less the tax it saves (samboerkontrakt 3.9): 22 % of it,
+// or of the deductible part when the year's fees pass the limit. `fee`: øre; `year`: that year's fees.
+export const netUnionFee = (fee, year) => fee - Math.round(TAX_DEDUCTION * fee * Math.min(1, toOre(UNION_LIMIT) / (year || 1)));
+
 // The monthly payment (annuity) that repays a balance in some months, not rounded
 function annuity(balance, rate, months) {
 	const r = rate / 1200;
@@ -94,7 +98,7 @@ function byBalance(amount, balance, p) {
 	return p === 'cyan' ? cyan : amount - cyan;
 }
 
-const isEntered = (value) => value !== undefined && value !== null && value !== '' && value !== 'min';
+const isEntered = (value) => value !== undefined && value !== null && value !== '';
 
 // Works through every month from the first entry in data.payments until the loan, and any debt
 // between the two, is repaid. Months without an entered payment count as paid at the minimum.
@@ -108,20 +112,29 @@ export function compute(data, today = currentMonth()) {
 
 	const half = { cyan: Math.floor(total / 2), mint: total - Math.floor(total / 2) };
 	const own = { ...half }; // each person's 50 % of the apartment's cost
-	const debtRate = isEntered(data.debtRate) ? Number(data.debtRate) : DEBT_RATE;
 	let fresh = 0; // debt created last month: free of interest if repaid in money this month (3.4.2)
 	const equity = { cyan: toOre(data.egenkapital?.cyan ?? 0), mint: toOre(data.egenkapital?.mint ?? 0) };
 	const end = { cyan: TERM - 1, mint: TERM - 1 }; // index of each person's last scheduled month
 	const payment = { cyan: null, mint: null }; // each person's fixed monthly payment; null: work it out
-	let debt = 0; // between the two: above 0, cyan owes mint; below 0, mint owes cyan
+	let debt = 0; // between the two, with its interest: above 0, cyan owes mint; below 0, mint owes cyan
+	let accrued = 0; // the part of the debt that is interest: it bears no interest itself
+	// Adds to the debt (signed like it); an amount the other way is set off, interest first
+	const addDebt = (amount) => {
+		if (Math.sign(amount) !== Math.sign(debt)) accrued = Math.max(0, accrued - Math.abs(amount));
+		debt += amount;
+	};
 	const interestPaid = {}; // per year: the interest and fees each person paid, for the tax return
 	const yearEnd = {}; // per year: what each person owes on 31 December, for the tax return's wealth part
 	let rate = 0;
 	let fee = 0;
 	let term = TERM;
-	let membership = 0; // LO Favør: what the member pays for it a month, shared by what each has left
+	let membership = 0; // the union fee the LO member pays a month, for the mortgage's LO Favør terms (3.9)
 	const member = data.member === 'mint' ? 'mint' : 'cyan';
 	const membershipOwed = {}; // per year: what the other owes the member for it
+	// The fee in any month (the last one entered up to it), and a calendar year's fees
+	const feeMonths = months.filter((m) => isEntered(payments[m].lofavor));
+	const feeIn = (month) => toOre(payments[feeMonths.findLast((m) => m <= month)]?.lofavor ?? 0);
+	const yearFees = (year) => Array.from({ length: 12 }, (_, i) => feeIn(`${year}-${String(i + 1).padStart(2, '0')}`)).reduce((a, b) => a + b);
 	const firstPayment = { cyan: 0, mint: 0 }; // each one's instalment for the original 30 years, without the fee
 
 	const balance = (p) => Math.max(0, own[p] - equity[p]);
@@ -242,7 +255,7 @@ export function compute(data, today = currentMonth()) {
 			if (!people[p].typed && people[p].min > 0) paid.estimate = true;
 		}
 
-		debt += created;
+		addDebt(created);
 		fresh = created;
 		return { people };
 	}
@@ -252,7 +265,7 @@ export function compute(data, today = currentMonth()) {
 		const typed = isEntered(entry[debtor]);
 		const paid = typed ? toOre(entry[debtor]) : 0;
 		const repaid = Math.min(paid, Math.abs(debt));
-		debt -= Math.sign(debt) * repaid;
+		addDebt(-Math.sign(debt) * repaid);
 		return { debtor, paid: typed ? paid : null, surplus: paid - repaid };
 	}
 
@@ -269,7 +282,7 @@ export function compute(data, today = currentMonth()) {
 			payment.cyan = payment.mint = null; // a new rate means new payments, same end
 		}
 		if (isEntered(entry.fee)) fee = toOre(entry.fee);
-		if (isEntered(entry.lofavor)) membership = toOre(entry.lofavor);
+		membership = feeIn(month);
 		if (isEntered(entry.term) && Number(entry.term) !== term) {
 			term = Number(entry.term);
 			end.cyan = end.mint = term - 1; // past the end already: the rest is due now
@@ -279,18 +292,22 @@ export function compute(data, today = currentMonth()) {
 		const loan = balance('cyan') + balance('mint') > 0;
 		if (!loan && (debt === 0 || month > until)) break;
 
-		// The debt between the two bears forsinkelsesrente, compounding monthly (3.4.3). Last month's new
-		// debt is free of it when repaid in full in money now, within 40 days of being paid (3.4.2).
+		// The debt between the two bears interest at the mortgage's rate, on the amounts covered only
+		// (3.4.3). Last month's new debt is free of it when repaid in full in money now, within 40 days
+		// of being paid (3.4.2).
 		const owing = debt > 0 ? 'cyan' : debt < 0 ? 'mint' : null;
 		const cash = (p) => (isEntered(entry.debt?.[p]) ? toOre(entry.debt[p]) : 0);
 		const recent = Math.sign(fresh) === Math.sign(debt) ? Math.min(Math.abs(fresh), Math.abs(debt)) : 0;
 		const free = owing && cash(owing) >= recent ? recent : 0;
-		const debtInterest = interestFor(Math.abs(debt) - free, debtRate, days, yearDays(month));
+		const debtInterest = interestFor(Math.abs(debt) - accrued - free, rate, days, yearDays(month));
 		debt += Math.sign(debt) * debtInterest;
+		accrued += debtInterest;
 		fresh = 0;
 
+		// Money repays last month's new debt first when that frees it of interest, then interest
 		const debtRepaid = owing ? Math.min(cash(owing), Math.abs(debt)) : 0;
 		debt -= Math.sign(debt) * debtRepaid;
+		accrued = Math.max(0, accrued - Math.max(0, debtRepaid - free));
 		// What each typed beyond the debt they owed (all of it, for the one who owed nothing)
 		const debtSurplus = { cyan: cash('cyan'), mint: cash('mint') };
 		if (owing) debtSurplus[owing] -= debtRepaid;
@@ -300,7 +317,6 @@ export function compute(data, today = currentMonth()) {
 			rate,
 			rateChanged,
 			feeChanged,
-			debtRate,
 			fee,
 			days,
 			yearDays: yearDays(month),
@@ -313,9 +329,10 @@ export function compute(data, today = currentMonth()) {
 		};
 		row.debt = debt;
 		if (loan && membership) {
-			// The other's part of the membership, by what each had left at the start of the month
-			const owed = byBalance(membership, { cyan: row.people.cyan.balance, mint: row.people.mint.balance }, other(member));
-			row.membership = { cost: membership, member, owed };
+			// The other's part of the fee less the tax it saves, by what each has left after this payment
+			const cost = netUnionFee(membership, yearFees(month.slice(0, 4)));
+			const owed = byBalance(cost, { cyan: balance('cyan'), mint: balance('mint') }, other(member));
+			row.membership = { cost, member, owed };
 			membershipOwed[month.slice(0, 4)] = (membershipOwed[month.slice(0, 4)] ?? 0) + owed;
 		}
 		rows.push(row);
@@ -435,38 +452,6 @@ export function setValue(data, month, key, value, person) {
 	const first = Object.keys(payments).sort()[0];
 	if (Object.keys(entry).length || month === first) payments[month] = entry;
 	else delete payments[month];
-}
-
-// Payments must be amounts: an old "min" (paid at the minimum, whatever it was) is not valid and is
-// removed, with the month itself when nothing else is left in it. Returns whether anything changed.
-export function dropMin(data) {
-	const payments = data?.payments ?? {};
-	const first = Object.keys(payments).sort()[0];
-	let dropped = false;
-	for (const [month, entry] of Object.entries(payments)) {
-		for (const p of PEOPLE) {
-			if (entry[p] !== 'min') continue;
-			delete entry[p];
-			dropped = true;
-		}
-		if (!Object.keys(entry).length && month !== first) delete payments[month];
-	}
-	return dropped;
-}
-
-// "time" is no longer a choice (extras always lower the next payments): removes it from older files. Returns whether anything
-// changed.
-export function dropTime(data) {
-	const payments = data?.payments ?? {};
-	const first = Object.keys(payments).sort()[0];
-	let dropped = false;
-	for (const [month, entry] of Object.entries(payments)) {
-		if (!entry.time) continue;
-		delete entry.time;
-		dropped = true;
-		if (!Object.keys(entry).length && month !== first) delete payments[month];
-	}
-	return dropped;
 }
 
 // "12 345,50", "12.345,50" or "12345.5" → 12345.5; an empty field → null; anything else → undefined

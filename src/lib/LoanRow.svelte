@@ -201,8 +201,8 @@
 					{/if}
 				{/if}
 				{#if row.membership?.owed && p !== row.membership.member}
-					<p class="minus" title="{names[p]}'s part of the LO Favør membership, by what each has left of the loan">
-						LO Favør: owes {names[row.membership.member]} {formatKr(row.membership.owed)} kr
+					<p class="minus" title="{names[p]}'s part of the union fee less the tax it saves, by what each has left of the loan after this payment (3.9)">
+						union fee: owes {names[row.membership.member]} {formatKr(row.membership.owed)} kr
 					</p>
 				{/if}
 				{#if s.uncovered}

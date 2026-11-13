@@ -10,10 +10,9 @@
 	import Face from '#lib/Face.svelte';
 	import MonthInput from '#lib/MonthInput.svelte';
 	import { loan, changed } from '#lib/loan.svelte.js';
-	import Percent from '@lucide/svelte/icons/percent';
 	import Hourglass from '@lucide/svelte/icons/hourglass';
 	import Users from '@lucide/svelte/icons/users';
-	import { addMonths, currentMonth, formatAmount, parseAmount, setValue, toOre, DEBT_RATE, PEOPLE, TERM } from '#lib/loan.js';
+	import { addMonths, currentMonth, formatAmount, parseAmount, setValue, toOre, PEOPLE, TERM, UNION_LIMIT } from '#lib/loan.js';
 
 	// section: 'names' | 'apartment' (the apartment and its mortgage)
 	let { section, onclose } = $props();
@@ -34,7 +33,6 @@
 		const m = months.length ? addMonths(months[0], -1) : '';
 		return m && `${m.slice(0, 4)} ${new Date(`${m}-01T12:00:00`).toLocaleDateString('en', { month: 'short' }).toLowerCase()}`;
 	})();
-	let debtRate = $state(data.debtRate != null ? formatAmount(data.debtRate) : '');
 	let egenkapital = $state({ cyan: formatAmount(data.egenkapital.cyan || ''), mint: formatAmount(data.egenkapital.mint || '') });
 	// The mortgage's length, changed from this month on (from the first payment while before it)
 	const from = months.length && currentMonth() < months[0] ? months[0] : currentMonth();
@@ -54,7 +52,7 @@
 		changes = changes.slice(0, -1);
 		term = termOf(changes, from);
 	}
-	// LO Favør: what the member pays for the membership a month; a change counts from this month on
+	// The union fee the LO member pays a month (3.9); a change counts from this month on
 	const lofavorOf = (month) => months.filter((m) => m <= month && data.payments[m].lofavor != null).map((m) => data.payments[m].lofavor).at(-1) ?? 0;
 	let lofavor = $state(lofavorOf(from) ? formatAmount(lofavorOf(from)) : '');
 	let member = $state(data.member === 'mint' ? 'mint' : 'cyan');
@@ -119,13 +117,9 @@
 			if (cyan === undefined || mint === undefined) return (error = 'Enter egenkapital in kroner.');
 			if (price / 2 < Math.max(cyan ?? 0, mint ?? 0)) return (error = "Egenkapital can't be more than half the price.");
 			const membership = parseAmount(lofavor);
-			if (membership === undefined) return (error = 'Enter the LO Favør cost in kroner.');
+			if (membership === undefined) return (error = 'Enter the union fee in kroner.');
 			const parsed = parseCosts();
 			if (typeof parsed === 'string') return (error = parsed);
-			const rate = parseAmount(debtRate);
-			if (rate === undefined) return (error = 'Enter the debt interest as a percentage.');
-			if (rate === null) delete data.debtRate;
-			else data.debtRate = rate;
 			data.total = price;
 			data.takeover = takeover;
 			data.costs = parsed; // always there, empty when there are none
@@ -133,7 +127,7 @@
 			data.egenkapital = { cyan: cyan ?? 0, mint: mint ?? 0 };
 			for (const m of Object.keys(data.payments)) setValue(data, m, 'term', null);
 			for (const c of changes) setValue(data, c.month, 'term', c.months);
-			// The membership cost, from this month on (from the first payment while before it)
+			// The union fee, from this month on (from the first payment while before it)
 			data.member = member;
 			const first = Object.keys(data.payments).sort()[0];
 			const since = currentMonth() < first ? first : currentMonth();
@@ -155,7 +149,7 @@
 </script>
 
 <form onsubmit={submit}>
-	<h1>{section === 'apartment' ? 'apartment & mortgage' : section}</h1>
+	<h1>{section}</h1>
 
 	{#if section === 'names'}
 		{#each PEOPLE as p (p)}
@@ -223,14 +217,14 @@
 			</label>
 		{/each}
 		<label>
-			LO Favør membership (kr a month)
+			union fee (kr a month)
 			<span class="field">
 				<Users size={20} />
 				<input bind:value={lofavor} inputmode="decimal" placeholder="0,00" />
 			</span>
 		</label>
 		<label>
-			member
+			LO member
 			<span class="field">
 				<Face person={member} size={20} />
 				<select bind:value={member}>
@@ -239,19 +233,10 @@
 			</span>
 		</label>
 		<p class="note">
-			The membership gives the mortgage its lower rate. The other owes the member a part of its cost each month, by how much of
-			the loan each has left; a change counts from {monthLabel(from)} on.
-		</p>
-		<label>
-			debt interest (%)
-			<span class="field">
-				<Percent size={20} />
-				<input bind:value={debtRate} inputmode="decimal" placeholder={formatAmount(DEBT_RATE)} />
-			</span>
-		</label>
-		<p class="note">
-			The interest on a debt between you (forsinkelsesrente, samboerkontrakt 3.4). It changes on 1 January
-			and 1 July; empty uses {formatAmount(DEBT_RATE)}<Pct />.
+			The LO membership gives the mortgage its LO Favør terms (3.9). Enter the fee as on the payslip, without insurance, fund
+			and other deductions. The other pays the member a part of it each month, less the 22<Pct /> tax it saves (on up to
+			{formatAmount(UNION_LIMIT)} kr of fees a year), by how much of the loan each has left after that month's payment. A change
+			counts from {monthLabel(from)} on.
 		</p>
 
 		<!-- What each paid for maintenance and improvements: a record, not ownership (4.3) -->

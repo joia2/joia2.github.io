@@ -1,7 +1,6 @@
 // The loan data file (loan.json in joia2data): loaded after login, saved shortly after each edit,
 // and dropped from memory when the app locks
 import { read, write, session } from '#lib/session.svelte.js';
-import { dropMin, dropTime } from '#lib/loan.js';
 
 const FILE = 'loan.json';
 const SAVE_DELAY = 3000; // ms after the last edit or keystroke, so a burst of edits saves once
@@ -41,9 +40,7 @@ export async function loadLoan() {
 		loan.data = { ...empty(), ...file?.value };
 		loan.sha = file?.sha ?? null;
 		loan.status = 'idle';
-		// Saves the file without entries no longer used: "min" payments and "time"
-		const dropped = dropMin(loan.data);
-		if (dropTime(loan.data) || dropped) changed();
+		delete loan.data.debtRate; // no longer used: a debt between the two bears the mortgage's rate
 	} catch (e) {
 		loan.status = 'error';
 		loan.error = e.message;

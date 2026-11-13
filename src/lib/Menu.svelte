@@ -60,12 +60,12 @@
 	</div>
 	<nav>
 		<button bind:this={first} onclick={choose(show('names'))}><Users size={20} />names</button>
-		<button onclick={choose(show('apartment'))}><House size={20} />apartment & mortgage</button>
-		<button onclick={choose(() => ((ui.view = 'home'), (ui.saleOpen = true)))}><Calculator size={20} />sale calculator</button>
-		<button onclick={choose(() => (ui.rawOpen = true))}><FileBraces size={20} />raw data</button>
+		<button onclick={choose(show('apartment'))}><House size={20} />apartment</button>
+		<button onclick={choose(() => ((ui.view = 'home'), (ui.saleOpen = true)))}><Calculator size={20} />sale</button>
+		<button onclick={choose(() => (ui.rawOpen = true))}><FileBraces size={20} />data</button>
 		<hr />
 		{#if !session.demo}
-			<button onclick={choose(show('password'))}><KeyRound size={20} />change password</button>
+			<button onclick={choose(show('password'))}><KeyRound size={20} />password</button>
 		{/if}
 		<button onclick={choose(lockApp)}><Lock size={20} />lock</button>
 	</nav>

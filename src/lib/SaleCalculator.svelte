@@ -15,7 +15,7 @@
 	const signed = (ore) => (ore < 0 ? '−' : '') + formatKr(Math.abs(ore));
 </script>
 
-<Sheet title="sale calculator" bind:open>
+<Sheet title="sale" bind:open>
 	<div class="scroll">
 		<label>
 			sale price (kr)
