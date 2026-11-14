@@ -245,7 +245,7 @@
 	}
 </script>
 
-<!-- A person: a dot in their color and the start of their name (up to 5 letters) -->
+<!-- A person: the start of their name (up to 5 letters) -->
 {#snippet initial(p)}
 	<span class="initial {p}" title={data.names[p]}>{data.names[p].slice(0, 5).toLowerCase()}</span>
 {/snippet}
@@ -785,19 +785,6 @@
 		align-items: center;
 		gap: 0.2em;
 		white-space: nowrap;
-	}
-	.initial::before {
-		content: '';
-		flex-shrink: 0;
-		width: 0.5em;
-		height: 0.5em;
-		border-radius: 50%;
-	}
-	.initial.cyan::before {
-		background: var(--cyan);
-	}
-	.initial.mint::before {
-		background: var(--mint);
 	}
 	.documents {
 		display: flex;
