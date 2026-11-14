@@ -680,7 +680,9 @@
 		box-shadow: none;
 	}
 	/* Like the other fields, a bit smaller, growing with its text */
+	/* border-box: the height set from scrollHeight (text and padding) plus the border, and no more */
 	.note-field {
+		box-sizing: border-box;
 		font: inherit;
 		font-size: 0.875rem;
 		line-height: 1.4;
