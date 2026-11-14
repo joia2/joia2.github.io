@@ -407,7 +407,9 @@
 			<fieldset class="cost">
 				<legend>
 					{#if c.kind === 'maintenance'}<Wrench size={18} />{:else if c.kind === 'object'}<Sofa size={18} />{:else}<Paintbrush size={18} />{/if}
-					{label(c)}
+					<!-- The description, cut short with … when too long, and the total on the right -->
+					<span class="title">{c.note.trim().split('\n')[0] || label(c)}</span>
+					<span class="sum">{formatKr(costSplit(c.entries).total)} kr</span>
 					<button type="button" class="icon-button remove" onclick={() => costs.splice(i, 1)} aria-label="remove {label(c)}">
 						<Trash size={18} />
 					</button>
@@ -416,7 +418,6 @@
 				{#if c.entries.length}
 					{@const split = costSplit(c.entries)}
 					<p class="split">
-						total {formatKr(split.total)} kr<br />
 						{#each PEOPLE as p, k (p)}
 							{#if k}•{/if}
 							{data.names[p]} {formatKr(split[p])} kr ({formatPercent(split.total ? (split[p] / split.total) * 100 : 0)}<Pct />)
@@ -447,12 +448,12 @@
 					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}><BanknoteArrowUp size={16} class="turn" />{data.names.cyan} ← {data.names.mint}</button>
 				</div>
 				<label>
-					note
 					<textarea
 						class="note-field"
 						rows="1"
 						bind:value={c.note}
-						placeholder={c.kind === 'object' ? 'washing machine, sofa…' : 'new kitchen, roof…'}
+						placeholder="description…"
+						aria-label="description"
 						onpaste={(e) => [...(e.clipboardData?.items ?? [])].some((i) => i.kind === 'file') && pasted(c, e)}
 						use:grow={c.note}
 					></textarea>
@@ -726,7 +727,20 @@
 		border-radius: 12px;
 	}
 	.cost legend {
+		width: 100%;
+		box-sizing: border-box;
 		font-size: 0.8rem;
+	}
+	.cost legend .title {
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.cost legend .sum {
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
 	}
 	.cost label {
 		gap: 0.2rem;
