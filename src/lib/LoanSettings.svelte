@@ -697,7 +697,7 @@
 		max-width: none;
 		min-height: 0;
 		margin: 0;
-		padding: 0.25rem 1.5rem 1.5rem;
+		padding: 0.25rem 1rem 1.5rem;
 		overflow: auto;
 		background: none;
 		border-radius: 0;
@@ -841,6 +841,13 @@
 		width: 28px;
 		height: 28px;
 	}
+	.chips .attach {
+		min-width: 0;
+		white-space: nowrap;
+	}
+	.chips .initial {
+		padding: 0 0.3em;
+	}
 	/* Close to the two names it joins */
 	.arrow {
 		margin-inline: -0.12rem;
@@ -879,10 +886,11 @@
 	.entries :global(.turn) {
 		transform: rotate(-90deg) translateY(-9.4%) scaleY(1.125);
 	}
+	/* The three on one line, whatever the width: they shrink a little instead of wrapping */
 	.chips {
 		display: flex;
-		flex-wrap: wrap;
-		gap: 0.3rem;
+		flex-wrap: nowrap;
+		gap: 0.25rem;
 	}
 	.payer {
 		display: grid;
