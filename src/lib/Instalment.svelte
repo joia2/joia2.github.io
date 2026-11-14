@@ -2,30 +2,19 @@
 	import Pct from '#lib/Pct.svelte';
 	import Face from '#lib/Face.svelte';
 	import Sheet from '#lib/Sheet.svelte';
-	import { formatKr, formatPercent, instalmentFor, parseAmount, toOre, PEOPLE } from '#lib/loan.js';
-
-	// Each person's part of a month's bank instalment (samboerkontrakt 3.2), for any month and with
-	// the rate, fee and parts changeable to try things out. An empty field uses the month's own value.
+	import { formatKr, formatPercent, instalmentFor, PEOPLE } from '#lib/loan.js';
+	// Each person's part of a month's bank instalment (samboerkontrakt 3.2), for any month.
 	// rows: the rows from compute() with a loan; start: the month to open on; open: bindable
 	let { rows, start, names, open = $bindable(false) } = $props();
-
 	let month = $state(start);
-	let edits = $state({});
 	const row = $derived(rows.find((r) => r.month === month) ?? rows[0]);
-
-	const typed = (key) => parseAmount(edits[key] ?? '') ?? undefined;
-	const rate = $derived(typed('rate') ?? row.rate);
-	const fee = $derived(typed('fee') !== undefined ? toOre(typed('fee')) : row.fee);
-	const part = (p) => (typed(p) !== undefined ? toOre(typed(p)) : row.people[p].balance);
-	const result = $derived(instalmentFor(row, { balance: { cyan: part('cyan'), mint: part('mint') }, rate, fee }));
+	const balance = $derived({ cyan: row.people.cyan.balance, mint: row.people.mint.balance });
+	const result = $derived(instalmentFor(row, { balance, rate: row.rate, fee: row.fee }));
 	const share = (p) => (result.total ? result.people[p].total / result.total : 0);
-
-	// What the bank actually charges, split by the same shares
-	const bank = $derived(typed('bank') !== undefined ? toOre(typed('bank')) : null);
-	const pays = (p) => (p === 'cyan' ? Math.round(bank * share('cyan')) : bank - Math.round(bank * share('cyan')));
-
-	const label = (m) => new Date(`${m}-01T12:00:00`).toLocaleDateString('en', { month: 'short', year: 'numeric' }).toLowerCase();
+	// "2027 jan"
+	const label = (m) => `${m.slice(0, 4)} ${new Date(`${m}-01T12:00:00`).toLocaleDateString('en', { month: 'short' }).toLowerCase()}`;
 	const lines = [
+		['loan left', (p) => formatKr(balance[p])],
 		['interest', (p) => formatKr(result.people[p].interest)],
 		['principal', (p) => formatKr(result.people[p].principal)],
 		['fee', (p) => formatKr(result.people[p].fee)],
@@ -36,23 +25,13 @@
 
 <Sheet title="instalment" bind:open>
 	<div class="scroll">
-		<div class="fields">
-			<label class="wide">
-				month
-				<select bind:value={month} onchange={() => (edits = {})}>
-					{#each rows as r (r.month)}<option value={r.month}>{label(r.month)}</option>{/each}
-				</select>
-			</label>
-			<label>
-				interest (%)
-				<input bind:value={edits.rate} inputmode="decimal" placeholder={formatPercent(row.rate)} />
-			</label>
-			<label>
-				fee (kr)
-				<input bind:value={edits.fee} inputmode="decimal" placeholder={formatKr(row.fee)} />
-			</label>
-		</div>
-
+		<label>
+			month
+			<select bind:value={month}>
+				{#each rows as r (r.month)}<option value={r.month}>{label(r.month)}</option>{/each}
+			</select>
+		</label>
+		<p class="terms">{formatPercent(row.rate)}<Pct /> · fee {formatKr(row.fee)} kr · bank {formatKr(result.total)} kr</p>
 		<table>
 			<thead>
 				<tr>
@@ -63,20 +42,6 @@
 				</tr>
 			</thead>
 			<tbody>
-				<tr>
-					<td>loan left</td>
-					{#each PEOPLE as p (p)}
-						<td class="num">
-							<input
-								class="cell"
-								bind:value={edits[p]}
-								inputmode="decimal"
-								placeholder={formatKr(row.people[p].balance)}
-								aria-label="{names[p]}'s loan left"
-							/>
-						</td>
-					{/each}
-				</tr>
 				{#each lines as [name, show, pct] (name)}
 					<tr class:total={name === 'instalment' || name === 'share'}>
 						<td>{name}</td>
@@ -87,25 +52,12 @@
 					<td>a quarter of the interest</td>
 					<td class="num" colspan="2">{formatKr(Math.round((result.people.cyan.interest + result.people.mint.interest) / 4))}</td>
 				</tr>
-				{#if bank !== null}
-					<tr class="total">
-						<td>pays</td>
-						{#each PEOPLE as p (p)}<td class="num">{formatKr(pays(p))}</td>{/each}
-					</tr>
-				{/if}
 			</tbody>
 		</table>
-
-		<label class="bank">
-			bank instalment (kr)
-			<input bind:value={edits.bank} inputmode="decimal" placeholder={formatKr(result.total)} />
-		</label>
-
 		<p class="note">
 			In kroner. Each of you pays the instalment on your own part of the loan, and the fee is split
-			equally (3.2). Change any field to try other numbers; an empty field uses the month's own value.
-			Type what the bank charges to split it by the shares. A quarter of the interest: what the one
-			living in the home alone pays the other each month after a termination notice (7.2).
+			equally (3.2). A quarter of the interest: what the one living in the home alone pays the other
+			each month after a termination notice (7.2).
 		</p>
 	</div>
 </Sheet>
@@ -115,14 +67,6 @@
 		overflow: auto;
 		padding: 0 1.5rem 1.5rem;
 	}
-	.fields {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		gap: 0.75rem;
-	}
-	.wide {
-		grid-column: 1 / -1;
-	}
 	label {
 		display: flex;
 		flex-direction: column;
@@ -130,10 +74,12 @@
 		font-size: 0.85rem;
 		color: var(--muted);
 	}
-	.bank {
-		margin-top: 1rem;
+	.terms {
+		margin: 0.6rem 0 0;
+		font-size: 0.85rem;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
 	}
-	input,
 	select {
 		font: inherit;
 		font-size: 1rem;
@@ -142,27 +88,13 @@
 		border-radius: 12px;
 		background: var(--surface);
 		color: var(--text);
-		text-align: right;
 		width: 100%;
 		box-sizing: border-box;
 	}
-	select {
-		text-align: left;
-	}
-	input.cell {
-		font-size: 0.82rem;
-		padding: 0.3rem 0.5rem;
-		border-radius: 8px;
-	}
-	input:focus,
 	select:focus {
 		outline: none;
 		border-color: var(--accent);
 		box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent);
-	}
-	input::placeholder {
-		color: var(--muted);
-		opacity: 0.8;
 	}
 	table {
 		width: 100%;
