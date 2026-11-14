@@ -8,6 +8,7 @@
 	import Paintbrush from '@lucide/svelte/icons/paintbrush';
 	import Sofa from '@lucide/svelte/icons/sofa';
 	import Paperclip from '@lucide/svelte/icons/paperclip';
+	import ClipboardPaste from '@lucide/svelte/icons/clipboard-paste';
 	import X from '@lucide/svelte/icons/x';
 	import Attachment from '#lib/Attachment.svelte';
 	import { upload, remove, MAX_SIZE } from '#lib/attachments.js';
@@ -95,12 +96,31 @@
 	// Attachments: picked files wait here, and are uploaded (encrypted) when the page is saved
 	let shown = $state(null); // the attachment in the preview
 	let previewOpen = $state(false);
+	function add(c, file) {
+		if (file.size > MAX_SIZE) error = `${file.name} is larger than ${MAX_SIZE / 1024 / 1024} MB.`;
+		else c.files.push({ name: file.name, type: file.type, file });
+	}
 	function attach(c, event) {
-		for (const file of event.currentTarget.files) {
-			if (file.size > MAX_SIZE) error = `${file.name} is larger than ${MAX_SIZE / 1024 / 1024} MB.`;
-			else c.files.push({ name: file.name, type: file.type, file });
-		}
+		for (const file of event.currentTarget.files) add(c, file);
 		event.currentTarget.value = '';
+	}
+	// An image or PDF copied to the clipboard, named by when it was pasted: pasted 2026-11-14 18.05.png
+	async function paste(c) {
+		error = '';
+		try {
+			let found = false;
+			for (const item of await navigator.clipboard.read()) {
+				const type = item.types.find((t) => t.startsWith('image/') || t === 'application/pdf');
+				if (!type) continue;
+				const stamp = new Date().toLocaleString('sv').slice(0, 16).replace(':', '.');
+				const ext = type === 'application/pdf' ? 'pdf' : type.split('/')[1].replace('jpeg', 'jpg');
+				add(c, new File([await item.getType(type)], `pasted ${stamp}.${ext}`, { type }));
+				found = true;
+			}
+			if (!found) error = 'The clipboard has no image or PDF.';
+		} catch {
+			error = 'The clipboard could not be read: allow it in the browser, or use + attachment.';
+		}
 	}
 	// What one person paid of a cost, in percent of what both paid
 	const paidShare = (c, p) => {
@@ -358,6 +378,7 @@
 						<Paperclip size={16} />+ attachment
 						<input type="file" accept="application/pdf,image/*" multiple onchange={(e) => attach(c, e)} />
 					</label>
+					<button type="button" class="attach" onclick={() => paste(c)}><ClipboardPaste size={16} />+ paste</button>
 				</div>
 			</fieldset>
 		{/each}
@@ -523,7 +544,11 @@
 		height: 28px;
 	}
 	form .attach {
+		display: inline-flex;
 		flex-direction: row;
+		background: transparent;
+		color: var(--muted);
+		font-weight: 500;
 		align-items: center;
 		gap: 0.3rem;
 		padding: 0.3rem 0.6rem;
