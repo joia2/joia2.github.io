@@ -18,6 +18,8 @@
 	--shadow: 0 2px 8px rgb(0 0 0 / 0.04), 0 16px 48px rgb(0 0 0 / 0.06);
 	--radius: 22px;
 	--cyan: #22d3ee;
+	/* A light wash of the two colors, cyan to mint, laid over the bars and the menu */
+	--tint: linear-gradient(90deg, color-mix(in srgb, var(--cyan) 10%, transparent), color-mix(in srgb, var(--mint) 10%, transparent));
 	--mint: #49c57f;
 	--minus: #ef6b6b; /* light red: someone else covered for this person */
 	--plus: #15803d; /* dark-ish green: this person covered for the other */

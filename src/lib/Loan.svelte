@@ -400,7 +400,7 @@
 		display: flex;
 		justify-content: space-between;
 		gap: 1rem;
-		background: var(--bar);
+		background: var(--tint), var(--bar);
 		-webkit-backdrop-filter: saturate(180%) blur(20px);
 		backdrop-filter: saturate(180%) blur(20px);
 		border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
