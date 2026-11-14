@@ -140,9 +140,10 @@
 
 {#if files.length}
 	<ul class="files">
-		{#each listed as { f, i } (f.id ?? f.name + i)}
+		{#each listed as { f, i }, n (f.id ?? f.name + i)}
 			{@const parts = split(f.name)}
 			<li class:uploading={!f.id} title={f.id ? f.name : 'saving…'}>
+				<span class="num">{n + 1}</span>
 				<button type="button" class="name" onclick={() => preview(f)}>
 					{#if f.type?.startsWith('image/')}<ImageIcon size={14} />{:else if f.type === 'application/pdf'}<FileText size={14} />{:else}<FileIcon size={14} />{/if}
 					{#if tags}<span class="tag" style:--hue={hue(parts.tag)}>{parts.tag}</span>{/if}
@@ -216,6 +217,13 @@
 		margin: 0 0.2rem 0 0.35rem;
 		border-radius: 50%;
 		background: var(--muted);
+	}
+	/* Its place in the list, small, right after the dot */
+	.num {
+		min-width: 0.9em;
+		font-size: 0.65rem;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
 	}
 	/* Not uploaded yet */
 	.uploading {
