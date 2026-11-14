@@ -312,7 +312,8 @@ export function compute(data, today = currentMonth()) {
 			const left = { cyan: balance('cyan'), mint: balance('mint') };
 			const sum = left.cyan + left.mint;
 			const share = sum ? left.mint / sum : 0;
-			row.lo = { share, owed: Math.round(toOre(entry.lo ?? 0) * (1 - TAX_DEDUCTION) * share) };
+			const fee = toOre(entry.lo ?? 0);
+			row.lo = { fee, share, owed: Math.round(fee * (1 - TAX_DEDUCTION) * share) };
 		}
 		rows.push(row);
 		// After the December payment the balances stand until 1 January: they are the debt on 31 December

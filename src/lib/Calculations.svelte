@@ -99,6 +99,8 @@
 					`${b}’s LO`,
 					`${a}’s LO fee × (1 − 22%) × ${b}’s principal left ÷ total principal left, after that month’s payment`,
 					[
+						`${a}’s LO fee = ${kr(r.lo.fee)}`,
+						`less 22% = ${kr(Math.round(r.lo.fee * (1 - TAX_DEDUCTION)))}`,
 						`${b}’s principal left = ${kr(after('mint'))}`,
 						`total principal left = ${kr(totalAfter)}`,
 						`share = ${pct(r.lo.share * 100)}`,
