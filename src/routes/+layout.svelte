@@ -72,6 +72,7 @@
 			background: linear-gradient(to top, transparent, rgb(0 0 0 / 0.45)), var(--tint), var(--bar);
 		}
 		.unblur {
+			display: block;
 			position: fixed;
 			inset: 0 0 auto;
 			z-index: 11;
