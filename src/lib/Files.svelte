@@ -257,7 +257,6 @@
 		border-radius: 0.7rem;
 		background: hsl(var(--hue) 75% 50% / 0.22);
 		color: hsl(var(--hue) 60% 30%);
-		font-weight: 600;
 		white-space: nowrap;
 	}
 	@media (prefers-color-scheme: dark) {
