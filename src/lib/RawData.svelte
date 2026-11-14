@@ -32,8 +32,8 @@
 		padding: 0.5rem 1.5rem 1.5rem;
 		overflow: auto;
 		font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-		font-size: 0.8rem;
-		line-height: 1.5;
+		font-size: 0.68rem;
+		line-height: 1.45;
 		tab-size: 2;
 		white-space: pre-wrap; /* long lines wrap instead of scrolling sideways */
 		overflow-wrap: anywhere;
