@@ -3,7 +3,7 @@
 import { read, write, session } from '#lib/session.svelte.js';
 import { encryptJSON, decryptJSON } from '#lib/crypto.js';
 import { DecryptError } from '#lib/errors.js';
-import { cleanUp } from '#lib/cleanup.js';
+import { cleanUp, keepExisting } from '#lib/cleanup.js';
 
 const FILE = 'data.json';
 const SAVE_DELAY = 3000; // ms after the last edit or keystroke, so a burst of edits saves once
@@ -67,7 +67,8 @@ export async function loadLoan() {
 		// An edit left from a closing before its save: saved now, if made on this same version
 		const draft = JSON.parse(storage()?.getItem(DRAFT) ?? 'null');
 		if (draft && draft.sha === loan.sha) {
-			loan.data = await decryptJSON(session.key, draft.text);
+			// Listing only files still there: one removed meanwhile is dropped, never left pointing nowhere
+			loan.data = await keepExisting(session.token, await decryptJSON(session.key, draft.text));
 			changed();
 		} else if (draft) {
 			dropDraft();

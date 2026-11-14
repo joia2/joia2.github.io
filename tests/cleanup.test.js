@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-const { cleanUp } = await import('#lib/cleanup.js');
+const { cleanUp, keepExisting } = await import('#lib/cleanup.js');
 
 const DAY = 24 * 60 * 60 * 1000;
 const NOW = new Date('2026-11-14T12:00:00Z');
@@ -53,10 +53,10 @@ function fakeGitHub(history, { moveBranchMeanwhile = false } = {}) {
 const data = { costs: [{ files: [{ id: 'kept' }] }], documents: [{ id: 'doc' }] };
 const listed = ['salt.json', 'data.json', 'files/kept.json', 'files/doc.json', 'files/doc.1.json', 'files/doc.2.json'];
 
-test('clean-up: removes unlisted files older than a week, parts included; keeps the rest', async () => {
+test('clean-up: removes unlisted files older than a day, parts included; keeps the rest', async () => {
 	const now = fakeGitHub([
-		{ date: new Date(NOW - 10 * DAY), files: [...listed, 'files/old.1.json', 'files/old.2.json', 'files/gone.json'] },
-		{ date: new Date(NOW - 1 * DAY), files: [...listed, 'files/old.1.json', 'files/old.2.json', 'files/gone.json', 'files/new.1.json'] }
+		{ date: new Date(NOW - 2 * DAY), files: [...listed, 'files/old.1.json', 'files/old.2.json', 'files/gone.json'] },
+		{ date: new Date(NOW - 0.5 * DAY), files: [...listed, 'files/old.1.json', 'files/old.2.json', 'files/gone.json', 'files/new.1.json'] }
 	]);
 	assert.equal(await cleanUp('token', data, NOW), 3);
 	assert.deepEqual(now(), [...listed, 'files/new.1.json']); // the recent one may be an upload going on
@@ -73,4 +73,10 @@ test('clean-up: saved from elsewhere meanwhile, it gives up and changes nothing'
 	const now = fakeGitHub([{ date: new Date(NOW - 10 * DAY), files }], { moveBranchMeanwhile: true });
 	await assert.rejects(cleanUp('token', data, NOW));
 	assert.deepEqual(now(), files);
+});
+
+test('an edit saved late lists only files still there', async () => {
+	fakeGitHub([{ date: new Date(NOW - 2 * DAY), files: listed }]);
+	const late = { costs: [{ files: [{ id: 'kept' }, { id: 'removed' }] }, { entries: [] }], documents: [{ id: 'doc' }, { id: 'gone' }] };
+	assert.deepEqual(await keepExisting('token', late), { costs: [{ files: [{ id: 'kept' }] }, { entries: [] }], documents: [{ id: 'doc' }] });
 });
