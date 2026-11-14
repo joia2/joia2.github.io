@@ -8,6 +8,7 @@
 	// the right forwards from the first (fish, chicken…). The two never show the same animal.
 	let { person, size = 56, animal } = $props();
 	const color = $derived(person === 'cyan' ? '#22d3ee' : '#49c57f');
+	const ink = $derived(person === 'cyan' ? '#0e7490' : '#1f7a4a');
 	const chosen = $derived(animal ?? loan.data?.animals?.[person]);
 	const n = ANIMAL_NAMES.length;
 	const turn = $derived(ANIMAL_NAMES[person === 'mint' ? clock.minute % n : n - 1 - (clock.minute % n)]);
@@ -22,12 +23,13 @@
 {:else}
 	<svg class="face" viewBox="0 0 40 40" width={size} height={size} aria-hidden="true">
 		<circle cx="20" cy="20" r="17.5" fill={color} />
-		<g fill="none" stroke="#0b2a2e" stroke-width="2.5" stroke-linecap="round">
-			<circle cx="20" cy="20" r="17.5" />
+		<!-- Outline, smile and eyes in a dark shade of the face's own color -->
+		<g fill="none" stroke={ink} stroke-width="1.6" stroke-linecap="round">
+			<circle cx="20" cy="20" r="18" />
 			<path d="M11.5 23.5q8.5 7.5 17 0" />
 		</g>
-		<circle cx="14" cy="16" r="2.3" fill="#0b2a2e" />
-		<circle cx="26" cy="16" r="2.3" fill="#0b2a2e" />
+		<circle cx="14" cy="16" r="2.1" fill={ink} />
+		<circle cx="26" cy="16" r="2.1" fill={ink} />
 	</svg>
 {/if}
 
