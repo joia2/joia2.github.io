@@ -27,6 +27,20 @@
 	});
 	// data.json as it is before encryption, indented with 2 spaces; follows edits while open
 	const text = $derived(loan.data ? JSON.stringify(plain(), null, 2) : '');
+	// Colored as in a code editor: keys, strings, numbers, true/false/null; the rest as it is
+	const TOKEN = /("(?:\\.|[^"\\])*")(\s*:)?|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|\b(true|false|null)\b/g;
+	const pieces = $derived.by(() => {
+		const out = [];
+		let at = 0;
+		for (const m of text.matchAll(TOKEN)) {
+			if (m.index > at) out.push({ text: text.slice(at, m.index) });
+			if (m[1]) out.push({ text: m[1], kind: m[2] ? 'key' : 'string' }, ...(m[2] ? [{ text: m[2] }] : []));
+			else out.push({ text: m[0], kind: m[3] ? 'number' : 'literal' });
+			at = m.index + m[0].length;
+		}
+		if (at < text.length) out.push({ text: text.slice(at) });
+		return out;
+	});
 	const plural = (n, word) => `${n ?? '…'} ${word}${n === 1 ? '' : 's'}`;
 
 	async function copy() {
@@ -48,7 +62,7 @@
 			{#if copied}<CopyCheck size={20} />{:else}<Copy size={20} />{/if}
 		</button>
 	{/snippet}
-	<pre>{text}</pre>
+	<pre>{#each pieces as t, i (i)}{#if t.kind}<span class={t.kind}>{t.text}</span>{:else}{t.text}{/if}{/each}</pre>
 </Sheet>
 
 <style>
@@ -72,5 +86,18 @@
 		tab-size: 2;
 		white-space: pre-wrap; /* long lines wrap instead of scrolling sideways */
 		overflow-wrap: anywhere;
+		color: var(--muted); /* brackets, commas and colons */
+	}
+	.key {
+		color: color-mix(in srgb, var(--cyan) 65%, var(--text));
+	}
+	.string {
+		color: color-mix(in srgb, var(--mint) 70%, var(--text));
+	}
+	.number {
+		color: #d9822b;
+	}
+	.literal {
+		color: #a463d6;
 	}
 </style>
