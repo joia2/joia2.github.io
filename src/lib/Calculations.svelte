@@ -118,10 +118,14 @@
 					both((p) => kr(r.people[p].paid - Math.round(TAX_DEDUCTION * (r.people[p].interest + r.people[p].feePaid))))
 				],
 				[
-					'tax return share',
-					`own interest and fees in the year ÷ both (${year})`,
+					`tax return share (${year})`,
+					`own (interest + fees) in ${year} ÷ total (interest + fees) in ${year}; a payment on 1 January counts in the year before`,
 					paidYear
-						? both((p) => `${kr(paidYear[p])} → ${pct((paidYear[p] / (paidYear.cyan + paidYear.mint)) * 100)}`)
+						? [
+								...both((p) => `interest + fees = ${kr(paidYear[p])}`),
+								`total = ${kr(paidYear.cyan + paidYear.mint)}${paidYear.estimate ? ' (estimate: months not entered count at the minimum)' : ''}`,
+								...both((p) => `${kr(paidYear[p])} ÷ ${kr(paidYear.cyan + paidYear.mint)} = ${pct((paidYear[p] / (paidYear.cyan + paidYear.mint)) * 100)}`)
+							]
 						: []
 				],
 				[
