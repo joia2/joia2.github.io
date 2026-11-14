@@ -469,6 +469,7 @@
 
 <Sheet title="file name" bind:open={renameOpen}>
 	{#if renaming}
+		{#key renaming}
 		<form class="rename" onsubmit={rename}>
 			<span class="field-name">
 				<input bind:value={renaming.base} aria-label="file name" autocomplete="off" use:selectAll />
@@ -476,6 +477,7 @@
 			</span>
 			<button class="primary" type="submit"><Check size={20} />ok</button>
 		</form>
+		{/key}
 	{/if}
 </Sheet>
 
