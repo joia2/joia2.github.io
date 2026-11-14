@@ -126,25 +126,6 @@
 		if (/\.pdf$/i.test(blob.name ?? '')) return 'application/pdf';
 		return '';
 	}
-	// The paste box: the way that also works where the button can't read the clipboard (an iPhone
-	// photo, say): the system's own Paste puts the photo in as a file
-	let pasteBox = $state(null); // the cost whose paste box shows
-	async function paste(c) {
-		error = '';
-		try {
-			let found = false;
-			for (const item of await navigator.clipboard.read()) {
-				const type = item.types.find(isFile);
-				if (!type) continue;
-				addPasted(c, await item.getType(type), type);
-				found = true;
-			}
-			if (found) return (pasteBox = null);
-		} catch {
-			// Not allowed, or not offered: the paste box below
-		}
-		pasteBox = c;
-	}
 	async function pasted(c, event) {
 		event.preventDefault();
 		const files = [...(event.clipboardData?.items ?? [])].filter((i) => i.kind === 'file').map((i) => i.getAsFile()).filter(Boolean);
@@ -154,7 +135,6 @@
 			if (type) (addPasted(c, f, type), (found = true));
 		}
 		if (!found) return (error = `The clipboard has no image or PDF${files.length ? ` (it has: ${files.map((f) => f.type || 'no type').join(', ')})` : ''}.`);
-		pasteBox = null;
 	}
 	// What one person paid of a cost, in percent of what both paid
 	const paidShare = (c, p) => {
@@ -417,18 +397,19 @@
 						<Paperclip size={16} />+ attachment
 						<input type="file" accept="application/pdf,image/*" multiple onchange={(e) => attach(c, e)} />
 					</label>
-					<button type="button" class="attach" onclick={() => paste(c)}><ClipboardPaste size={16} />+ paste</button>
-					{#if pasteBox === c}
-						<!-- A plain text field, like a chat's: the system's Paste hands it files too. Typed text is dropped. -->
-						<textarea
-							class="paste-box"
-							rows="2"
-							placeholder="tap and hold here, then Paste"
-							aria-label="paste here"
+					<!-- An empty field to paste a file into with the keyboard's Paste, as in a chat: the
+					     system hands it the file. Nothing can be typed into it. -->
+					<label class="attach paste">
+						<ClipboardPaste size={16} />
+						<input
+							placeholder="+ paste"
+							aria-label="paste an image or PDF"
+							autocomplete="off"
 							onpaste={(e) => pasted(c, e)}
+							onbeforeinput={(e) => e.inputType !== 'insertFromPaste' && e.preventDefault()}
 							oninput={(e) => (e.currentTarget.value = '')}
-						></textarea>
-					{/if}
+						/>
+					</label>
 				</div>
 			</fieldset>
 		{/each}
@@ -607,21 +588,27 @@
 		font-size: 0.82rem;
 		cursor: pointer;
 	}
-	.paste-box {
-		flex-basis: 100%;
-		resize: none;
-		font: inherit;
-		padding: 0.8rem;
-		border: 1px dashed var(--accent);
-		border-radius: 10px;
-		font-size: 0.82rem;
-		color: var(--muted);
-		text-align: center;
-		-webkit-user-select: text;
-		user-select: text;
-	}
-	.attach input {
+	.attach input[type='file'] {
 		display: none;
+	}
+	/* The paste field: no box of its own inside the chip, "+ paste" as clear as the chip's other text */
+	form .paste input {
+		width: 4.5rem;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		font: inherit;
+		color: inherit;
+	}
+	form .paste input:focus {
+		box-shadow: none;
+	}
+	.paste:focus-within {
+		border-color: var(--accent);
+	}
+	.paste input::placeholder {
+		color: inherit;
+		opacity: 1;
 	}
 	/* The three on one row; when the row is too narrow for icon and text side by side, every
 	   button puts its icon above its text */
