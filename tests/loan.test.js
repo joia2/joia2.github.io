@@ -446,3 +446,11 @@ test('time left: a short or covered month is overdue, never more time or "never"
 		assert.equal(monthsLeft(d, compute(d, '2026-11'), '2026-11', 'cyan'), n);
 	}
 });
+
+test('set-up costs: half each, deductible in the take-over year, nothing else changes', () => {
+	const plain = run({}, { takeover: '2026-11-08' });
+	const r = run({}, { takeover: '2026-11-08', setupCosts: 3300 });
+	assert.equal(r.interestPaid[2026].cyan - plain.interestPaid[2026].cyan, 165000);
+	assert.equal(r.interestPaid[2026].mint - plain.interestPaid[2026].mint, 165000);
+	assert.deepEqual(r.rows, plain.rows);
+});

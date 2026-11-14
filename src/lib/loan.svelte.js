@@ -30,6 +30,7 @@ const empty = () => ({
 	v: 1,
 	names: { cyan: 'Person A', mint: 'Person B' },
 	takeover: undefined, // set in the apartment form; kept here so it is written before the total
+	setupCosts: undefined, // the loan's set-up costs, paid on the take-over day
 	total: 0,
 	egenkapital: { cyan: 0, mint: 0 },
 	costs: [],

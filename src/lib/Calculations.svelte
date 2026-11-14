@@ -119,7 +119,7 @@
 				],
 				[
 					`tax return share (${year})`,
-					`own (interest + fees) in ${year} ÷ total (interest + fees) in ${year}; a payment on 1 January counts in the year before`,
+					`own (interest + fees) in ${year} ÷ total (interest + fees) in ${year}; a payment on 1 January counts in the year before; the loan’s set-up costs, half each, in the take-over year`,
 					paidYear
 						? [
 								...both((p) => `interest + fees = ${kr(paidYear[p])}`),

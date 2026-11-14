@@ -333,6 +333,15 @@ export function compute(data, today = currentMonth()) {
 		state = snapshot();
 	}
 
+	// The loan's set-up costs (etablering, depot), paid out of it on the take-over day: inside the total
+	// price, so half each, and deductible like interest that year
+	const setup = toOre(data.setupCosts ?? 0);
+	if (setup && data.takeover) {
+		const paid = (interestPaid[data.takeover.slice(0, 4)] ??= { cyan: 0, mint: 0, estimate: false });
+		paid.cyan += Math.ceil(setup / 2);
+		paid.mint += Math.floor(setup / 2);
+	}
+
 	return { half, rows, state, interestPaid, yearEnd, firstPayment };
 }
 

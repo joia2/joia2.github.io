@@ -24,6 +24,7 @@
 	import RefreshCcw from '@lucide/svelte/icons/refresh-ccw';
 	import { loan, changed } from '#lib/loan.svelte.js';
 	import Hourglass from '@lucide/svelte/icons/hourglass';
+	import Landmark from '@lucide/svelte/icons/landmark';
 	import { addMonths, costSplit, currentMonth, formatAmount, formatKr, formatPercent, parseAmount, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
 
 	// section: 'names' | 'apartment' (the apartment and its mortgage) | 'costs' (maintenance, improvements and objects)
@@ -57,6 +58,7 @@
 		const m = months.length ? addMonths(months[0], -1) : '';
 		return m && `${m.slice(0, 4)} ${new Date(`${m}-01T12:00:00`).toLocaleDateString('en', { month: 'short' }).toLowerCase()}`;
 	})();
+	let setupCosts = $state(formatAmount(data.setupCosts || ''));
 	let egenkapital = $state({ cyan: formatAmount(data.egenkapital.cyan || ''), mint: formatAmount(data.egenkapital.mint || '') });
 	// The mortgage's length, changed from this month on (from the first payment while before it)
 	const from = months.length && currentMonth() < months[0] ? months[0] : currentMonth();
@@ -225,11 +227,15 @@
 			if (startLocked && start !== months[0]) {
 				return (error = `You've entered payments, so the take-over day can only change within ${lockedMonth}.`);
 			}
+			const setup = parseAmount(setupCosts);
+			if (setup === undefined) return (error = 'Enter the set-up costs in kroner.');
 			const [cyan, mint] = PEOPLE.map((p) => parseAmount(egenkapital[p]));
 			if (cyan === undefined || mint === undefined) return (error = 'Enter egenkapital in kroner.');
 			if (price / 2 < Math.max(cyan ?? 0, mint ?? 0)) return (error = "Egenkapital can't be more than half the price.");
 			data.total = price;
 			data.takeover = takeover;
+			if (setup) data.setupCosts = setup;
+			else delete data.setupCosts;
 			if (!startLocked && start !== months[0]) moveStart();
 			data.egenkapital = { cyan: cyan ?? 0, mint: mint ?? 0 };
 			for (const m of Object.keys(data.payments)) setValue(data, m, 'term', null);
@@ -319,6 +325,14 @@
 				You've entered payments, so the take-over day can only change within {lockedMonth}.
 			{/if}
 		</p>
+		<label>
+			loan set-up costs (kr)
+			<span class="field">
+				<Landmark size={20} />
+				<input bind:value={setupCosts} inputmode="decimal" placeholder="0,00" />
+			</span>
+		</label>
+		<p class="note">Paid out of the loan on the take-over day (etablering, depot): inside the total price, so half each, and deductible like interest that year.</p>
 
 		{#if months.length}
 			<label>
