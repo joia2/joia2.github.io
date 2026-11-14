@@ -373,7 +373,7 @@
 		flex-wrap: nowrap;
 		gap: 0.25rem;
 	}
-	/* The two as small dashed chips; the paste field without a box of its own inside */
+	/* The two as small chips on a faint gray; the paste field without a box of its own inside */
 	.chip {
 		display: inline-flex;
 		flex-direction: row;
@@ -381,7 +381,8 @@
 		gap: 0.2rem;
 		min-width: 0;
 		padding: 0.15rem 0.3rem;
-		border: 1px dashed var(--border);
+		border: 0;
+		background: color-mix(in srgb, var(--muted) 10%, transparent);
 		border-radius: 8px;
 		font-size: 0.75rem;
 		font-weight: 500;

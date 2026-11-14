@@ -912,13 +912,13 @@
 	form .attach {
 		display: inline-flex;
 		flex-direction: row;
-		background: transparent;
+		background: color-mix(in srgb, var(--muted) 10%, transparent);
 		color: var(--muted);
 		font-weight: 500;
 		align-items: center;
 		gap: 0.3rem;
 		padding: 0.3rem 0.6rem;
-		border: 1px dashed var(--border);
+		border: 0;
 		border-radius: 10px;
 		font-size: 0.82rem;
 		cursor: pointer;
