@@ -35,5 +35,7 @@
 		font-size: 0.8rem;
 		line-height: 1.5;
 		tab-size: 2;
+		white-space: pre-wrap; /* long lines wrap instead of scrolling sideways */
+		overflow-wrap: anywhere;
 	}
 </style>
