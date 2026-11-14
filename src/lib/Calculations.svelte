@@ -170,13 +170,13 @@
 </script>
 
 <Sheet title="calculations" bind:open>
-	<div class="scroll">
-		<label>
+	<label>
 			year month
 			<select bind:value={month}>
 				{#each rows as x (x.month)}<option value={x.month}>{monthLabel(x.month)}</option>{/each}
 			</select>
-		</label>
+	</label>
+	<div class="scroll">
 		{#each sections as s (s.title)}
 			<h2>{s.title}</h2>
 			<dl>
@@ -196,13 +196,9 @@
 		overflow: auto;
 		padding: 0 1.5rem 1.5rem;
 	}
-	/* The month stays at the top while the formulas scroll under it */
+	/* Outside the scrolling part: the month stays at the top */
 	label {
-		position: sticky;
-		top: 0;
-		z-index: 1;
-		padding-bottom: 0.5rem;
-		background: var(--surface);
+		margin: 0 1.5rem 0.5rem;
 		display: flex;
 		flex-direction: column;
 		gap: 0.3rem;
