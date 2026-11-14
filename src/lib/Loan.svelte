@@ -423,6 +423,8 @@
 		left: 0;
 		right: 0;
 		z-index: 11;
+		display: flex;
+		align-items: center;
 		width: fit-content;
 		height: 44px;
 		margin-inline: auto;
