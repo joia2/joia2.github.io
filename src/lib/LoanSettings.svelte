@@ -357,9 +357,9 @@
 		<!-- What each paid for maintenance and improvements (a record, not ownership: 4.3), and for
 		     objects bought for the home, owned by what each paid (the register of household items, 6.1) -->
 		{#each costs as c, i (i)}
+			{@const split = costSplit(c.entries)}
 			<div class="cost">
 				<!-- At a glance: the kind's icon, and the description, the total and what each paid -->
-				{@const split = costSplit(c.entries)}
 				<div class="head">
 					<span class="kind">
 						{#if c.kind === 'maintenance'}<Wrench size={22} />{:else if c.kind === 'object'}<Sofa size={22} />{:else}<Paintbrush size={22} />{/if}
@@ -693,22 +693,6 @@
 		color: var(--muted);
 		white-space: nowrap;
 	}
-	.cost legend {
-		width: 100%;
-		box-sizing: border-box;
-		font-size: 0.8rem;
-	}
-	.cost legend .title {
-		flex: 1;
-		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-	.cost legend .sum {
-		font-variant-numeric: tabular-nums;
-		white-space: nowrap;
-	}
 	.cost label {
 		gap: 0.2rem;
 		font-size: 0.75rem;
@@ -814,7 +798,6 @@
 	.initial.mint::before {
 		background: var(--mint);
 	}
-	/* One line, the amounts with their øre: a small text */
 	.documents {
 		display: flex;
 		flex-direction: column;
@@ -822,14 +805,6 @@
 		padding: 0.5rem 0.6rem 0.6rem;
 		border: 1px solid var(--border);
 		border-radius: 12px;
-	}
-	.split {
-		margin: 0;
-		text-align: center;
-		white-space: nowrap;
-		font-size: 0.62rem;
-		color: var(--muted);
-		font-variant-numeric: tabular-nums;
 	}
 	/* The transfer icons on their side, the arrow along the →. On its side the banknote is 16 of 24
 	   wide and sits 2 off center: stretched to the wallet's 18 and centered, its height unchanged
