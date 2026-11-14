@@ -95,6 +95,8 @@
 	});
 	let costs = $state((data.costs ?? []).map(asFields));
 	// What each kind is called on screen; the data file keeps maintenance, improvement and object
+	// Kroner without øre, for the summary line: 12 345
+	const wholeKr = (ore) => new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 0 }).format(ore / 100);
 	const label = (c) => ({ maintenance: 'maintain', improvement: 'improve', object: 'object' })[c.kind];
 	// A new cost starts with its first payment
 	function addCost(kind) {
@@ -450,7 +452,7 @@
 					<p class="split">
 						{#each PEOPLE as p, k (p)}
 							{#if k}•{/if}
-							{@render initial(p)} {formatKr(split[p])} kr ({formatPercent(split.total ? (split[p] / split.total) * 100 : 0)}<Pct />)
+							{@render initial(p)} {wholeKr(split[p])} kr ({formatPercent(split.total ? (split[p] / split.total) * 100 : 0)}<Pct />)
 						{/each}
 					</p>
 					<ul class="entries">
@@ -878,10 +880,12 @@
 	.initial.mint {
 		background: var(--mint);
 	}
+	/* One line: whole kroner and a slightly smaller text */
 	.split {
 		margin: 0;
 		text-align: center;
-		font-size: 0.72rem;
+		white-space: nowrap;
+		font-size: 0.68rem;
 		color: var(--muted);
 		font-variant-numeric: tabular-nums;
 	}
