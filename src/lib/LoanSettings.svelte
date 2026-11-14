@@ -357,25 +357,34 @@
 		<!-- What each paid for maintenance and improvements (a record, not ownership: 4.3), and for
 		     objects bought for the home, owned by what each paid (the register of household items, 6.1) -->
 		{#each costs as c, i (i)}
-			<fieldset class="cost">
-				<legend>
-					{#if c.kind === 'maintenance'}<Wrench size={18} />{:else if c.kind === 'object'}<Sofa size={18} />{:else}<Paintbrush size={18} />{/if}
-					<!-- The description, cut short with … when too long, and the total on the right -->
-					<span class="title">{c.note.trim().split('\n')[0] || label(c)}</span>
-					<span class="sum">{formatKr(costSplit(c.entries).total)} kr</span>
+			<div class="cost">
+				<!-- At a glance: the kind's icon, and the description, the total and what each paid -->
+				{@const split = costSplit(c.entries)}
+				<div class="head">
+					<span class="kind">
+						{#if c.kind === 'maintenance'}<Wrench size={22} />{:else if c.kind === 'object'}<Sofa size={22} />{:else}<Paintbrush size={22} />{/if}
+					</span>
+					<div class="lines">
+						<textarea
+							class="description"
+							rows="1"
+							bind:value={c.note}
+							placeholder="description…"
+							aria-label="description"
+							onpaste={(e) => [...(e.clipboardData?.items ?? [])].some((item) => item.kind === 'file') && filesOf[i]?.paste(e)}
+							use:grow={c.note}
+						></textarea>
+						<span class="total">{formatKr(split.total)} kr</span>
+						{#each PEOPLE as p (p)}
+							<span class="each">{@render initial(p)} {formatKr(split[p])} kr ({formatPercent(split.total ? (split[p] / split.total) * 100 : 0)}<Pct />)</span>
+						{/each}
+					</div>
 					<button type="button" class="icon-button remove" onclick={() => costs.splice(i, 1)} aria-label="remove {label(c)}">
 						<Trash size={18} />
 					</button>
-				</legend>
+				</div>
 				<!-- Payments to the store or provider, and transfers between the two: tap one to change it -->
 				{#if c.entries.length}
-					{@const split = costSplit(c.entries)}
-					<p class="split">
-						{#each PEOPLE as p, k (p)}
-							{#if k}•{/if}
-							{@render initial(p)} {formatKr(split[p])} kr ({formatPercent(split.total ? (split[p] / split.total) * 100 : 0)}<Pct />)
-						{/each}
-					</p>
 					<ul class="entries">
 						{#each c.entries as e, j (j)}
 							<li>
@@ -400,20 +409,9 @@
 					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'cyan', to: 'mint' })}><BanknoteArrowDown size={16} class="turn" />{@render initial('cyan')}<span class="arrow">→</span>{@render initial('mint')}</button>
 					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}><BanknoteArrowUp size={16} class="turn" />{@render initial('mint')}<span class="arrow">→</span>{@render initial('cyan')}</button>
 				</div>
-				<label>
-					<textarea
-						class="note-field"
-						rows="1"
-						bind:value={c.note}
-						placeholder="description…"
-						aria-label="description"
-						onpaste={(e) => [...(e.clipboardData?.items ?? [])].some((item) => item.kind === 'file') && filesOf[i]?.paste(e)}
-						use:grow={c.note}
-					></textarea>
-				</label>
 				<!-- Receipts, invoices, photos: tap one to see it -->
 				<Files bind:files={c.files} onchange={saveCosts} bind:this={filesOf[i]} />
-			</fieldset>
+			</div>
 		{/each}
 		<div class="add">
 			<div class="add-row">
@@ -638,10 +636,62 @@
 		opacity: 0.8;
 	}
 	/* The costs: compact, so more of them fit on the screen */
-	fieldset.cost {
+	/* Each cost in a rounded box */
+	.cost {
+		display: flex;
+		flex-direction: column;
 		gap: 0.4rem;
-		padding: 0.4rem 0.7rem 0.6rem;
-		border-radius: 12px;
+		padding: 0.5rem 0.6rem 0.6rem 0.4rem;
+		border: 1px solid var(--border);
+		border-radius: 14px;
+	}
+	/* The icon in a 50 px square, then four lines: description, total, and what each paid */
+	.head {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.3rem;
+	}
+	.kind {
+		display: grid;
+		place-items: center;
+		flex-shrink: 0;
+		width: 50px;
+		height: 50px;
+		color: var(--muted);
+	}
+	.lines {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-width: 0;
+		font-size: 0.8rem;
+		line-height: 1.35;
+		font-variant-numeric: tabular-nums;
+	}
+	/* The description, written in place: no box of its own */
+	form .description {
+		box-sizing: border-box;
+		width: 100%;
+		min-height: 0;
+		padding: 0;
+		border: 0;
+		border-radius: 4px;
+		background: transparent;
+		font: inherit;
+		color: var(--text);
+		resize: none;
+		overflow: hidden;
+	}
+	form .description:focus {
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+	}
+	.total {
+		color: var(--text);
+	}
+	.each {
+		font-size: 0.72rem;
+		color: var(--muted);
+		white-space: nowrap;
 	}
 	.cost legend {
 		width: 100%;
