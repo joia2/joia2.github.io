@@ -7,7 +7,9 @@
 	import Wrench from '@lucide/svelte/icons/wrench';
 	import Paintbrush from '@lucide/svelte/icons/paintbrush';
 	import Sofa from '@lucide/svelte/icons/sofa';
-	import Receipt from '@lucide/svelte/icons/receipt';
+	import Wallet from '@lucide/svelte/icons/wallet';
+	import BanknoteArrowUp from '@lucide/svelte/icons/banknote-arrow-up';
+	import BanknoteArrowDown from '@lucide/svelte/icons/banknote-arrow-down';
 	import Paperclip from '@lucide/svelte/icons/paperclip';
 	import ClipboardPaste from '@lucide/svelte/icons/clipboard-paste';
 	import X from '@lucide/svelte/icons/x';
@@ -436,9 +438,9 @@
 					</ul>
 				{/if}
 				<div class="chips">
-					<button type="button" class="attach" onclick={() => editEntry(c, { who: 'cyan' })}><Receipt size={16} />+ payment</button>
-					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'cyan', to: 'mint' })}>{data.names.cyan} → {data.names.mint}</button>
-					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}>{data.names.mint} → {data.names.cyan}</button>
+					<button type="button" class="attach" onclick={() => editEntry(c, { who: 'cyan' })}><Wallet size={16} />+ payment</button>
+					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'cyan', to: 'mint' })}><BanknoteArrowUp size={16} />{data.names.cyan} → {data.names.mint}</button>
+					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}><BanknoteArrowDown size={16} />{data.names.mint} → {data.names.cyan}</button>
 				</div>
 				<label>
 					note
