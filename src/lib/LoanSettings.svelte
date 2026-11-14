@@ -106,10 +106,25 @@
 	}
 	// An image or PDF copied to the clipboard, named by when it was pasted: pasted 2026-11-14 18.05.png
 	const isFile = (type) => type.startsWith('image/') || type === 'application/pdf';
+	// Keeps the file's own name when it has one (a PDF from Mail), else names it by the time
 	function addPasted(c, blob, type) {
 		const stamp = new Date().toLocaleString('sv').slice(0, 16).replace(':', '.');
 		const ext = type === 'application/pdf' ? 'pdf' : type.split('/')[1].replace('jpeg', 'jpg');
-		add(c, new File([blob], `pasted ${stamp}.${ext}`, { type }));
+		const own = blob.name && !/^image\.\w+$/.test(blob.name) ? blob.name : '';
+		add(c, new File([blob], own || `pasted ${stamp}.${ext}`, { type }));
+	}
+	// What a file really is, from its first bytes, when the clipboard doesn't say (an iPhone can give
+	// a PDF from Mail no type at all)
+	async function sniff(blob) {
+		if (isFile(blob.type)) return blob.type;
+		const b = new Uint8Array(await blob.slice(0, 12).arrayBuffer());
+		const text = String.fromCharCode(...b);
+		if (text.startsWith('%PDF')) return 'application/pdf';
+		if (b[0] === 0x89 && text.slice(1, 4) === 'PNG') return 'image/png';
+		if (b[0] === 0xff && b[1] === 0xd8) return 'image/jpeg';
+		if (text.slice(4, 8) === 'ftyp') return 'image/heic';
+		if (/\.pdf$/i.test(blob.name ?? '')) return 'application/pdf';
+		return '';
 	}
 	// The paste box: the way that also works where the button can't read the clipboard (an iPhone
 	// photo, say): the system's own Paste puts the photo in as a file
@@ -130,11 +145,15 @@
 		}
 		pasteBox = c;
 	}
-	function pasted(c, event) {
+	async function pasted(c, event) {
 		event.preventDefault();
-		const files = [...(event.clipboardData?.items ?? [])].filter((i) => i.kind === 'file' && isFile(i.type)).map((i) => i.getAsFile());
-		if (!files.length) return (error = 'The clipboard has no image or PDF.');
-		for (const f of files) addPasted(c, f, f.type);
+		const files = [...(event.clipboardData?.items ?? [])].filter((i) => i.kind === 'file').map((i) => i.getAsFile()).filter(Boolean);
+		let found = false;
+		for (const f of files) {
+			const type = await sniff(f);
+			if (type) (addPasted(c, f, type), (found = true));
+		}
+		if (!found) return (error = `The clipboard has no image or PDF${files.length ? ` (it has: ${files.map((f) => f.type || 'no type').join(', ')})` : ''}.`);
 		pasteBox = null;
 	}
 	// What one person paid of a cost, in percent of what both paid
