@@ -4,7 +4,7 @@
 	import { onMount, tick } from 'svelte';
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
-	import Calculator from '@lucide/svelte/icons/calculator';
+	import BanknoteArrowUp from '@lucide/svelte/icons/banknote-arrow-up';
 	import CircleAlert from '@lucide/svelte/icons/circle-alert';
 	import House from '@lucide/svelte/icons/house';
 	import Info from '@lucide/svelte/icons/info';
@@ -122,7 +122,7 @@
 		{#each PEOPLE as p, i (p)}
 			{#if i === 1 && thisRow}
 				<button class="icon-button instalment" onclick={() => (instalmentOpen = true)} aria-label="this month's instalment">
-					<Calculator size={22} />
+					<BanknoteArrowUp size={22} />
 				</button>
 			{/if}
 			<div class="person {p}">
