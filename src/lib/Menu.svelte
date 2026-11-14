@@ -119,7 +119,7 @@
 		box-sizing: border-box;
 		display: flex;
 		flex-direction: column;
-		padding: 0 2rem calc(1rem + env(safe-area-inset-bottom));
+		padding: env(safe-area-inset-top) 2rem calc(1rem + env(safe-area-inset-bottom));
 		background:
 			linear-gradient(180deg, color-mix(in srgb, var(--cyan) 10%, transparent), color-mix(in srgb, var(--mint) 10%, transparent)),
 			color-mix(in srgb, var(--surface) 88%, transparent);

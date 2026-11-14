@@ -58,6 +58,13 @@
 		-webkit-backdrop-filter: saturate(180%) blur(20px);
 		backdrop-filter: saturate(180%) blur(20px);
 		border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+		padding-top: env(safe-area-inset-top); /* below the iPhone's clock */
+	}
+	/* Installed: darker towards the top, so the white clock and battery stay readable */
+	@media (display-mode: standalone) {
+		header {
+			background: linear-gradient(to top, transparent, rgb(0 0 0 / 0.45)), var(--tint), var(--bar);
+		}
 	}
 	nav {
 		max-width: 980px;
