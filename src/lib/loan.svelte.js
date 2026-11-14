@@ -38,8 +38,8 @@ export async function loadLoan() {
 	try {
 		const file = await read(FILE);
 		// The file keeps its fields in this order: the animals right after the names
-		const { names, animals, ...rest } = { ...empty(), ...file?.value };
-		loan.data = { names, ...(animals && { animals }), ...rest };
+		const { v, names, animals, ...rest } = { ...empty(), ...file?.value };
+		loan.data = { v, names, ...(animals && { animals }), ...rest };
 		loan.sha = file?.sha ?? null;
 		loan.status = 'idle';
 		// No longer used: the debt between the two bears the mortgage's rate; LO is entered each month

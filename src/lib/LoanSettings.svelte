@@ -119,7 +119,7 @@
 			data.animals = { ...animals };
 			// The animals right after the names in the file: every other field moves after them
 			for (const k of Object.keys(data)) {
-				if (k === 'names' || k === 'animals') continue;
+				if (k === 'v' || k === 'names' || k === 'animals') continue;
 				const v = data[k];
 				delete data[k];
 				data[k] = v;
