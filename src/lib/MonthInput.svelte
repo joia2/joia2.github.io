@@ -2,7 +2,7 @@
 	import { currentMonth } from '#lib/loan.js';
 
 	// A month field in English on every device, shown like the rows: "2026 dec".
-	// value: 'YYYY-MM', or 'YYYY-MM-DD' to pick a day too ("2026 nov 15"); children: an icon on the left
+	// value: 'YYYY-MM', or 'YYYY-MM-DD' to pick a day too ("2026 nov 05", the day always 2 digits); children: an icon on the left
 	let { value = $bindable(), disabled = false, label, children } = $props();
 
 	const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
