@@ -11,6 +11,7 @@
 	// onrename: when given, a pencil to rename the file
 	let { file, open = $bindable(false), onrename } = $props();
 
+	const PREVIEW_MAX = 10 * 1000 * 1000; // larger files are opened, not shown in the popup
 	let url = $state('');
 	let blob = $state(null);
 	let error = $state('');
@@ -126,6 +127,12 @@
 			<p class="error">{error}</p>
 		{:else if !url}
 			<LoaderCircle size={24} class="spin" />
+		{:else if blob.size > PREVIEW_MAX}
+			<!-- Too large to draw here without the page running out of memory: opened as a download is -->
+			<div class="large">
+				<p>{(blob.size / 1e6).toFixed(1).replace('.', ',')} MB: too large to show here.</p>
+				<button class="primary" onclick={save}><Download size={20} />open</button>
+			</div>
 		{:else if file.type.startsWith('image/')}
 			<img
 				src={url}
@@ -207,6 +214,17 @@
 		border: 0;
 		border-radius: 8px;
 		background: #fff;
+	}
+	.large {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.75rem;
+		color: var(--muted);
+		font-size: 0.9rem;
+	}
+	.large p {
+		margin: 0;
 	}
 	.error {
 		color: var(--error);
