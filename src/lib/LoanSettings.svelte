@@ -317,9 +317,9 @@
 	}
 </script>
 
-<!-- A person as a small circle in their color with their initial -->
+<!-- A person as a small pill in their color with the start of their name (up to 5 letters) -->
 {#snippet initial(p)}
-	<span class="initial {p}" title={data.names[p]}>{data.names[p].slice(0, 1).toLowerCase()}</span>
+	<span class="initial {p}" title={data.names[p]}>{data.names[p].slice(0, 5).toLowerCase()}</span>
 {/snippet}
 
 <form class="settings" onsubmit={submit}>
@@ -837,9 +837,11 @@
 	.initial {
 		display: inline-grid;
 		place-items: center;
-		width: 1.3em;
+		min-width: 1.3em;
 		height: 1.3em;
-		border-radius: 50%;
+		padding: 0 0.4em;
+		box-sizing: border-box;
+		border-radius: 0.65em;
 		font-size: 0.85em;
 		font-weight: 600;
 		line-height: 1;
