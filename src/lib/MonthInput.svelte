@@ -36,7 +36,7 @@
 	{#if day}
 		<select aria-label="{label} day" value={day} {disabled} onchange={(e) => set(year, month, e.currentTarget.value)}>
 			{#each Array.from({ length: daysIn(year, month) }, (_, i) => String(i + 1).padStart(2, '0')) as d (d)}
-				<option value={d}>{Number(d)}</option>
+				<option value={d}>{d}</option>
 			{/each}
 		</select>
 	{/if}
