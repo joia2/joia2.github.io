@@ -822,6 +822,7 @@
 		text-align: left;
 	}
 	.entry .date {
+		font-size: 0.68rem;
 		color: var(--muted);
 		font-variant-numeric: tabular-nums;
 	}
