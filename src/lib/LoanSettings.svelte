@@ -11,6 +11,7 @@
 	import MonthInput from '#lib/MonthInput.svelte';
 	import { ANIMAL_NAMES, killedThisYear } from '#lib/animals.js';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import Heart from '@lucide/svelte/icons/heart';
 	import RefreshCcw from '@lucide/svelte/icons/refresh-ccw';
 	import { loan, changed } from '#lib/loan.svelte.js';
 	import Hourglass from '@lucide/svelte/icons/hourglass';
@@ -171,7 +172,7 @@
 					</button>
 				</span>
 			</label>
-			<p class="honour">in honour of…</p>
+			<p class="honour"><Heart size={14} />in memory and honour of the individuals killed and their families…</p>
 			<!-- The icon: one of the animals, in this person's color; picking the chosen one again goes back to the face -->
 			<div class="animals" role="radiogroup" aria-label="{names[p] || p}'s icon">
 				{#each ANIMAL_NAMES as a (a)}
@@ -307,6 +308,9 @@
 		margin: -0.25rem 0 0.5rem;
 	}
 	.honour {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
 		margin: -0.25rem 0 0;
 		font-size: 0.85rem;
 		font-style: italic;
