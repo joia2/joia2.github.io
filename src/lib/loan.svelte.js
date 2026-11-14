@@ -4,6 +4,7 @@ import { read, write, session } from '#lib/session.svelte.js';
 import { encryptJSON, decryptJSON } from '#lib/crypto.js';
 import { DecryptError } from '#lib/errors.js';
 import { cleanUp, keepExisting } from '#lib/cleanup.js';
+import { getFile } from '#lib/github.js';
 
 const FILE = 'data.json';
 const SAVE_DELAY = 3000; // ms after the last edit or keystroke, so a burst of edits saves once
@@ -47,6 +48,7 @@ const demo = () => ({
 export const loan = $state({ data: null, sha: null, status: 'idle', error: '' });
 
 let timer;
+let cleaned = false;
 let queue = Promise.resolve(); // saves run one after another, each on top of the previous version
 
 export async function loadLoan() {
@@ -81,12 +83,19 @@ export async function loadLoan() {
 		for (const entry of Object.values(loan.data.payments ?? {})) delete entry.lofavor;
 		// Unused attachment files left by an upload or removal that stopped halfway: removed in the
 		// background (failing quietly: it tries again on the next opening)
-		cleanUp(session.token, $state.snapshot(loan.data)).catch(() => {});
+		if (!cleaned) cleanUp(session.token, $state.snapshot(loan.data)).catch(() => {});
+		cleaned = true; // once per opening of the app
 	} catch (e) {
 		loan.status = 'error';
 		// A key that no longer opens the data: the password was most likely changed on another device
 		loan.error = e instanceof DecryptError ? `${e.message} If the password was changed, lock and log in with the new one.` : e.message;
 	}
+}
+
+// Whether data.json changed in the repo since it was read here (saved from another device)
+export async function changedElsewhere() {
+	const file = await getFile(session.token, FILE);
+	return Boolean(file) && file.sha !== loan.sha;
 }
 
 export function unloadLoan() {
