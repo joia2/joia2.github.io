@@ -11,6 +11,7 @@
 	import MonthInput from '#lib/MonthInput.svelte';
 	import { ANIMAL_NAMES } from '#lib/animals.js';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import RefreshCcw from '@lucide/svelte/icons/refresh-ccw';
 	import { loan, changed } from '#lib/loan.svelte.js';
 	import Hourglass from '@lucide/svelte/icons/hourglass';
 	import { addMonths, currentMonth, formatAmount, parseAmount, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
@@ -173,7 +174,8 @@
 					class="{p} rotate"
 					onclick={() => (animals[p] = animals[p] === 'rotate' ? undefined : 'rotate')}
 				>
-					<RefreshCw size={30} />
+					<!-- Turning toward the middle: counter-clockwise on the left, clockwise on the right -->
+					{#if p === 'cyan'}<RefreshCcw size={30} />{:else}<RefreshCw size={30} />{/if}
 					<span>rotate</span>
 				</button>
 			</div>
