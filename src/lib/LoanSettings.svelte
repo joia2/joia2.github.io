@@ -826,7 +826,7 @@
 		flex-shrink: 0;
 		width: 5px;
 		height: 5px;
-		margin-right: 0.2rem;
+		margin: 0 0.2rem 0 0.35rem;
 		border-radius: 50%;
 		background: var(--muted); /* a drawn dot: exactly in the line's middle, unlike the • character */
 	}
