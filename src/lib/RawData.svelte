@@ -24,6 +24,8 @@
 			})
 			.catch(() => {});
 	});
+	// data.json as it is before encryption, indented with 2 spaces; follows edits while open
+	const text = $derived(loan.data ? JSON.stringify(plain(), null, 2) : '');
 	const plural = (n, word) => `${n ?? '…'} ${word}${n === 1 ? '' : 's'}`;
 
 	async function copy() {
