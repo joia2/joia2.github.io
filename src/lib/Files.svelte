@@ -35,7 +35,7 @@
 
 	// Returns the entry added, or nothing when the file is too large
 	function add(file) {
-		if (file.size > MAX_SIZE) return void (error = `${file.name} is larger than ${MAX_SIZE / 1024 / 1024} MB.`);
+		if (file.size > MAX_SIZE) return void (error = `${file.name} is too large: encrypted it would pass GitHub's limit of 100 MB a file (the most is about ${Math.floor(MAX_SIZE / 1e6)} MB).`);
 		files.push({ name: file.name, type: file.type, file });
 		return files.at(-1);
 	}

@@ -5,7 +5,10 @@ import { session } from '#lib/session.svelte.js';
 import { getFile, getRawFile, putFile, deleteFile } from '#lib/github.js';
 import { encryptJSON, decryptJSON } from '#lib/crypto.js';
 
-export const MAX_SIZE = 10 * 1024 * 1024; // GitHub takes files up to 100 MB; an encrypted one is about 1.8 times larger
+// The largest file that can be kept: GitHub refuses files over 100 MB, and an encrypted one is
+// written as text, about 16/9 of its size (base64 inside the encryption, and again around it).
+// Anything smaller is tried; an error from GitHub is shown if it still can't be saved.
+export const MAX_SIZE = Math.floor((100 * 1000 * 1000 * 9) / 16) - 1000;
 const path = (id) => `files/${id}.json`;
 
 // Uploads a File, under its name or another; returns what loan.json keeps of it
