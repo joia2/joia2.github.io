@@ -94,6 +94,7 @@
 	onpointerup={swipeEnd}
 	onpointercancel={swipeEnd}
 >
+	{@render tick('cyan')}
 	{#each PEOPLE as p, i (p)}
 		{#if i === 1}
 			<div class="mid">
@@ -248,8 +249,25 @@
 			{/if}
 		</div>
 	{/each}
+	{@render tick('mint')}
 </div>
 </div>
+
+<!-- On big screens, at each end of the row: tick or untick that side, like the swipe on a phone -->
+{#snippet tick(p)}
+	{@const s = row.loan ? row.people[p] : null}
+	<button
+		type="button"
+		class="tick {p}"
+		class:paid={s && paidMinimum(s)}
+		disabled={!s?.min}
+		onclick={() => toggleMinimum(p)}
+		aria-label="{names[p]} paid"
+		aria-pressed={Boolean(s && paidMinimum(s))}
+	>
+		{#if s?.min}<Check size={20} />{/if}
+	</button>
+{/snippet}
 
 <style>
 	.swipe {
@@ -289,6 +307,50 @@
 		border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 		touch-action: pan-y;
 		transition: transform 0.2s;
+	}
+	.tick {
+		display: none;
+	}
+	/* Big screens with a mouse: the row gets a 50 px button at each end, as tall as the row */
+	@media (min-width: 720px) and (hover: hover) {
+		.row {
+			grid-template-columns: 50px 1fr 6.25rem 1fr 50px;
+			padding-inline: 0;
+		}
+		.tick {
+			display: grid;
+			place-items: center;
+			align-self: stretch;
+			margin-block: -0.9rem; /* over the row's own padding: its whole height */
+			padding: 0;
+			border: 0;
+			border-radius: 0;
+			background: transparent;
+			color: var(--muted);
+		}
+		.row.now .tick.cyan {
+			border-radius: 14px 0 0 14px;
+		}
+		.row.now .tick.mint {
+			border-radius: 0 14px 14px 0;
+		}
+		.tick.cyan:hover:not(:disabled) {
+			background: color-mix(in srgb, var(--cyan) 22%, transparent);
+		}
+		.tick.mint:hover:not(:disabled) {
+			background: color-mix(in srgb, var(--mint) 22%, transparent);
+		}
+		/* Paid: the side's full color, as the swipe shows it */
+		.tick.paid.cyan,
+		.tick.paid.cyan:hover:not(:disabled) {
+			background: var(--cyan);
+			color: var(--bg);
+		}
+		.tick.paid.mint,
+		.tick.paid.mint:hover:not(:disabled) {
+			background: var(--mint);
+			color: var(--bg);
+		}
 	}
 	.row.swiping {
 		transition: none;
