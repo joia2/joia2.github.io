@@ -416,9 +416,10 @@
 				{#if c.entries.length}
 					{@const split = costSplit(c.entries)}
 					<p class="split">
-						total {formatKr(split.total)} kr
-						{#each PEOPLE as p (p)}
-							<span>· {data.names[p]} {formatKr(split[p])} ({formatPercent(split.total ? (split[p] / split.total) * 100 : 0)}<Pct />)</span>
+						total {formatKr(split.total)} kr<br />
+						{#each PEOPLE as p, k (p)}
+							{#if k}•{/if}
+							{data.names[p]} {formatKr(split[p])} kr ({formatPercent(split.total ? (split[p] / split.total) * 100 : 0)}<Pct />)
 						{/each}
 					</p>
 					<ul class="entries">
