@@ -218,7 +218,7 @@
 	<nav class="bottom" aria-label="time left" hidden={typing} bind:offsetHeight={barHeight}>
 		<!-- Costs and ownership, and this month's instalment: at the top of the bar, in the middle, over everything -->
 		<span class="actions">
-			<button class="icon-button" onclick={() => (ui.view = 'costs')} aria-label="costs/ownership"><ChartPie size={18} /><span>split</span></button>
+			<button class="icon-button" onclick={() => (ui.view = 'costs')} aria-label="costs/ownership"><ChartPie size={18} /><span>costs</span></button>
 			{#if thisRow}
 				<button class="icon-button" onclick={() => (ui.instalmentOpen = true)} aria-label="this month's instalment">
 					<BanknoteArrowUp size={18} /><span>pay</span>
