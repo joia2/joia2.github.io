@@ -111,12 +111,26 @@ export async function getBlob(token, sha) {
 	return new TextDecoder().decode(Uint8Array.fromBase64(content));
 }
 
-// Writes { path: text } as one commit on top of state.head. Throws ConflictError if the branch
-// moved since listFiles, instead of overwriting what changed meanwhile.
-export async function commitFiles(token, { branch, head, tree: baseTree }, files, message) {
+// Stores a text as a blob, not yet part of any commit; returns its sha. Tried again on a passing
+// failure (network, GitHub busy), as a password change uploads many of them.
+export async function createBlob(token, text) {
+	for (let attempt = 1; ; attempt++) {
+		try {
+			return (await gitJSON(token, 'POST', '/git/blobs', { content: text, encoding: 'utf-8' })).sha;
+		} catch (e) {
+			if (attempt === 3 || e instanceof TokenError) throw e;
+			await new Promise((done) => setTimeout(done, attempt * 2000));
+		}
+	}
+}
+
+// Writes the files as one commit on top of state.head: entries are { path, text } or { path, sha }
+// (a blob stored before). The branch moves to it only if nobody moved it since listFiles (no
+// force): a change is all or nothing, and never overwrites what changed meanwhile (ConflictError).
+export async function commitFiles(token, { branch, head, tree: baseTree }, entries, message) {
 	const tree = await gitJSON(token, 'POST', '/git/trees', {
 		base_tree: baseTree,
-		tree: Object.entries(files).map(([path, content]) => ({ path, mode: '100644', type: 'blob', content }))
+		tree: entries.map(({ path, text, sha }) => ({ path, mode: '100644', type: 'blob', ...(sha ? { sha } : { content: text }) }))
 	});
 	const commit = await gitJSON(token, 'POST', '/git/commits', { message, tree: tree.sha, parents: [head] });
 	const response = await request(token, 'PATCH', `/git/refs/heads/${branch}`, { sha: commit.sha });

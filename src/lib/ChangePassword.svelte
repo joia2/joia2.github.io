@@ -2,7 +2,7 @@
 	import CircleAlert from '@lucide/svelte/icons/circle-alert';
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import { session, changePassword } from '#lib/session.svelte.js';
-	import { UserError, WrongPasswordError } from '#lib/errors.js';
+	import { UserError, WrongPasswordError, ConflictError } from '#lib/errors.js';
 	import { save, loadLoan, hasUnsavedChanges } from '#lib/loan.svelte.js';
 
 	let { onclose } = $props();
@@ -13,6 +13,7 @@
 	let error = $state('');
 	let done = $state(false);
 	let busy = $state(false);
+	let progress = $state(''); // files re-encrypted so far: 3/25
 
 	async function submit(event) {
 		event.preventDefault();
@@ -34,15 +35,18 @@
 		try {
 			await save(); // a waiting loan edit is saved first, so it gets re-encrypted too
 			if (hasUnsavedChanges()) throw new UserError('Your last change could not be saved. Try again first.');
-			await changePassword(current, next);
+			await changePassword(current, next, (n, total) => (progress = `${n}/${total}`));
 			await loadLoan(); // re-encrypting gave loan.json a new version to save on top of
 			done = true;
 			current = next = repeat = '';
 		} catch (e) {
-			error = e instanceof UserError ? e.message : `Something went wrong: ${e.message}`;
+			// Whatever went wrong, nothing was changed: the old password still opens everything
+			if (e instanceof ConflictError) error = 'The data was saved from somewhere else meanwhile. Nothing was changed: try again.';
+			else error = `${e instanceof UserError ? e.message : `Something went wrong: ${e.message}`} Nothing was changed: the current password still works.`;
 			if (e instanceof WrongPasswordError) current = '';
 		} finally {
 			busy = false;
+			progress = '';
 		}
 	}
 </script>
@@ -70,15 +74,25 @@
 			<input type="password" name="repeat" bind:value={repeat} autocomplete="new-password" />
 		</label>
 
+		{#if busy}
+			<p class="note">Keep the app open until it's done. If it stops (closed, offline), nothing is changed and you can start again.</p>
+		{/if}
 		{#if error}
 			<p class="error" role="alert"><CircleAlert size={18} />{error}</p>
 		{/if}
 
 		<p class="actions">
 			<button class="primary" type="submit" disabled={busy}>
-				{busy ? 're-encrypting…' : 'change password'}
+				{busy ? `re-encrypting ${progress}…` : 'change password'}
 			</button>
 			<button type="button" onclick={onclose} disabled={busy}>cancel</button>
 		</p>
 	{/if}
 </form>
+
+<style>
+	.note {
+		font-size: 0.8rem;
+		color: var(--muted);
+	}
+</style>

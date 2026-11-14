@@ -2,6 +2,7 @@
 // and dropped from memory when the app locks
 import { read, write, session } from '#lib/session.svelte.js';
 import { encryptJSON, decryptJSON } from '#lib/crypto.js';
+import { DecryptError } from '#lib/errors.js';
 
 const FILE = 'loan.json';
 const SAVE_DELAY = 3000; // ms after the last edit or keystroke, so a burst of edits saves once
@@ -76,7 +77,8 @@ export async function loadLoan() {
 		for (const entry of Object.values(loan.data.payments ?? {})) delete entry.lofavor;
 	} catch (e) {
 		loan.status = 'error';
-		loan.error = e.message;
+		// A key that no longer opens the data: the password was most likely changed on another device
+		loan.error = e instanceof DecryptError ? `${e.message} If the password was changed, lock and log in with the new one.` : e.message;
 	}
 }
 

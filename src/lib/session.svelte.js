@@ -169,7 +169,8 @@ export function write(path, value, sha) {
 }
 
 // Re-encrypts all data with a new password; this session then continues with the new key
-export async function changePassword(current, next) {
-	const { key, raw } = await changeVaultPassword(session.token, current, next);
+// onprogress(done, total): after each file
+export async function changePassword(current, next, onprogress) {
+	const { key, raw } = await changeVaultPassword(session.token, current, next, undefined, onprogress);
 	unlock(session.token, key, raw);
 }
