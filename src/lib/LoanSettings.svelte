@@ -328,7 +328,7 @@
 	}
 </script>
 
-<!-- A person as a small pill in their color with the start of their name (up to 5 letters) -->
+<!-- A person: a dot in their color and the start of their name (up to 5 letters) -->
 {#snippet initial(p)}
 	<span class="initial {p}" title={data.names[p]}>{data.names[p].slice(0, 5).toLowerCase()}</span>
 {/snippet}
@@ -867,31 +867,27 @@
 		min-width: 0;
 		white-space: nowrap;
 	}
-	.chips .initial {
-		padding: 0 0.3em;
-	}
 	/* Close to the two names it joins */
 	.arrow {
 		margin-inline: -0.12rem;
 	}
 	.initial {
-		display: inline-grid;
-		place-items: center;
-		min-width: 1.3em;
-		height: 1.3em;
-		padding: 0 0.4em;
-		box-sizing: border-box;
-		border-radius: 0.65em;
-		font-size: 0.85em;
-		font-weight: 600;
-		line-height: 1;
-		color: #0b2a2e;
-		vertical-align: middle;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.2em;
+		white-space: nowrap;
 	}
-	.initial.cyan {
+	.initial::before {
+		content: '';
+		flex-shrink: 0;
+		width: 0.5em;
+		height: 0.5em;
+		border-radius: 50%;
+	}
+	.initial.cyan::before {
 		background: var(--cyan);
 	}
-	.initial.mint {
+	.initial.mint::before {
 		background: var(--mint);
 	}
 	/* One line: whole kroner and a slightly smaller text */
