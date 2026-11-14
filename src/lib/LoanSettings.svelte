@@ -743,7 +743,8 @@
 		font-size: 0.75rem;
 	}
 	form .cost .attach {
-		padding: 0.15rem 0.5rem;
+		gap: 0.2rem;
+		padding: 0.15rem 0.3rem;
 		border-radius: 8px;
 	}
 	.cost .remove {
@@ -809,7 +810,7 @@
 	.chips {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.4rem;
+		gap: 0.3rem;
 	}
 	.payer {
 		display: grid;
