@@ -137,12 +137,22 @@
 		if (base) renaming.entry.name = base + renaming.ext;
 		renameOpen = false;
 	}
-	// A text area as tall as its text: set on opening and after every change
+	// A text area as tall as its text: after every change, and when it comes into view (in a popup
+	// still closed it has no height to measure)
 	const grow = (area) => {
-		const fit = () => ((area.style.height = 'auto'), (area.style.height = `${area.scrollHeight + 2}px`));
-		fit();
+		const fit = () => {
+			if (!area.offsetParent) return; // not shown yet
+			area.style.height = 'auto';
+			area.style.height = `${area.scrollHeight + 2}px`;
+		};
+		const seen = new IntersectionObserver(fit);
+		seen.observe(area);
 		area.addEventListener('input', fit);
-		return { update: fit, destroy: () => area.removeEventListener('input', fit) };
+		fit();
+		return {
+			update: fit,
+			destroy: () => (seen.disconnect(), area.removeEventListener('input', fit))
+		};
 	};
 	// The name field opens with its text selected, so typing replaces it; after the popup has taken
 	// the focus on opening
@@ -623,6 +633,7 @@
 		color: var(--text);
 		resize: none;
 		overflow: hidden;
+		min-height: calc(1.4em + 1.2rem + 2px); /* one line, before it is measured */
 	}
 	.note-field:focus {
 		outline: none;
