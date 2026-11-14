@@ -252,11 +252,10 @@
 	.empty p {
 		margin: 0;
 	}
-	/* Three columns of equal sides: the instalment button stays in the middle whatever the numbers */
 	.people {
-		display: grid;
-		grid-template-columns: 1fr auto 1fr;
-		gap: 0.5rem;
+		position: relative;
+		display: flex;
+		justify-content: space-between;
 		max-width: 44rem;
 		margin: 0 auto;
 	}
@@ -268,8 +267,6 @@
 		min-width: 0;
 	}
 	.person.mint {
-		grid-column: 3;
-		justify-self: end;
 		flex-direction: row-reverse;
 	}
 	.who {
@@ -293,9 +290,13 @@
 	.person.mint .share {
 		flex-direction: row-reverse;
 	}
+	/* Over everything in the middle, taking no room from the two sides: centered with margins, as the
+	   shared button press style changes transforms */
 	.instalment {
-		grid-column: 2;
-		align-self: center;
+		position: absolute;
+		inset: 0;
+		z-index: 5;
+		margin: auto;
 		flex-shrink: 0;
 		width: 44px;
 		height: 44px;
