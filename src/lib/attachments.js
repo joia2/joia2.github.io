@@ -43,13 +43,13 @@ export async function upload(file, name = file.name, onprogress) {
 export async function download(id) {
 	const { type, data, parts } = await read(path(id));
 	if (!parts) return new Blob([Uint8Array.fromBase64(data)], { type });
-	// Four parts at a time: much faster than one after another, without flooding GitHub
+	// Ten parts at a time: much faster than one after another, well within what GitHub allows
 	const chunks = new Array(parts);
 	let next = 1;
 	const worker = async () => {
 		for (let k = next++; k <= parts; k = next++) chunks[k - 1] = Uint8Array.fromBase64((await read(path(id, k))).data);
 	};
-	await Promise.all(Array.from({ length: Math.min(4, parts) }, worker));
+	await Promise.all(Array.from({ length: Math.min(10, parts) }, worker));
 	return new Blob(chunks, { type });
 }
 
