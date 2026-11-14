@@ -107,6 +107,13 @@ export async function filesAt(token, branch, moment) {
 	return new Set(tree.tree.filter((entry) => entry.type === 'blob').map((entry) => entry.path));
 }
 
+// The paths of the files on the default branch now, in one request (no commit can be made from it:
+// that needs listFiles' state)
+export async function listPaths(token) {
+	const tree = await gitJSON(token, 'GET', '/git/trees/HEAD?recursive=1');
+	return tree.tree.filter((entry) => entry.type === 'blob').map((entry) => entry.path);
+}
+
 // Returns the current state of the default branch: { branch, head, tree, files: [{ path, sha }] }
 export async function listFiles(token) {
 	const { default_branch: branch } = await gitJSON(token, 'GET', '');

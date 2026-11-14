@@ -6,21 +6,21 @@
 	import { loan, plain } from '#lib/loan.svelte.js';
 	import { ui } from '#lib/ui.svelte.js';
 	import { session } from '#lib/session.svelte.js';
-	import { listFiles } from '#lib/github.js';
+	import { listPaths } from '#lib/github.js';
 
 	let copied = $state(false);
 
 	// The attachments the data lists: the costs' and the apartment's documents
-	// What the repo's files/ folder holds, counted when opened: the attachments (files/<id>.json) and
+	// What the repo's files/ folder holds, counted when opened (one request): the attachments (files/<id>.json) and
 	// all its files, the parts of large attachments included
 	let stored = $state(null); // { files, parts }
 	$effect(() => {
 		if (!ui.rawOpen || session.demo) return;
 		stored = null;
-		listFiles(session.token)
-			.then((state) => {
-				const all = state.files.filter((f) => f.path.startsWith('files/'));
-				stored = { files: all.filter((f) => /^files\/[^/.]+\.json$/.test(f.path)).length, parts: all.length };
+		listPaths(session.token)
+			.then((paths) => {
+				const all = paths.filter((p) => p.startsWith('files/'));
+				stored = { files: all.filter((p) => /^files\/[^/.]+\.json$/.test(p)).length, parts: all.length };
 			})
 			.catch(() => {});
 	});
