@@ -301,6 +301,11 @@
 	}
 </script>
 
+<!-- A person as a small circle in their color with their initial -->
+{#snippet initial(p)}
+	<span class="initial {p}" title={data.names[p]}>{data.names[p].slice(0, 1)}</span>
+{/snippet}
+
 <form class="settings" onsubmit={submit}>
 
 	{#if section === 'names'}
@@ -420,7 +425,7 @@
 					<p class="split">
 						{#each PEOPLE as p, k (p)}
 							{#if k}•{/if}
-							{data.names[p]} {formatKr(split[p])} kr ({formatPercent(split.total ? (split[p] / split.total) * 100 : 0)}<Pct />)
+							{@render initial(p)} {formatKr(split[p])} kr ({formatPercent(split.total ? (split[p] / split.total) * 100 : 0)}<Pct />)
 						{/each}
 					</p>
 					<ul class="entries">
@@ -430,8 +435,8 @@
 									<span class="date">{e.date}</span>
 									<span class="what">
 										{#if e.who}<Wallet size={15} />{:else if e.from === 'cyan'}<BanknoteArrowDown size={15} class="turn" />{:else}<BanknoteArrowUp size={15} class="turn" />{/if}
-										{#if e.who}<Face person={e.who} size={16} />{data.names[e.who]} paid
-										{:else}<Face person={e.from} size={16} />{transfer(e)}{/if}
+										{#if e.who}{@render initial(e.who)} paid
+										{:else}{@render initial('cyan')} {e.from === 'cyan' ? '→' : '←'} {@render initial('mint')}{/if}
 									</span>
 									<span class="amount">{formatAmount(e.amount)}</span>
 								</button>
@@ -444,8 +449,8 @@
 				{/if}
 				<div class="chips">
 					<button type="button" class="attach" onclick={() => editEntry(c, { who: 'cyan' })}><Wallet size={16} />+ pay</button>
-					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'cyan', to: 'mint' })}><BanknoteArrowDown size={16} class="turn" />{data.names.cyan} → {data.names.mint}</button>
-					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}><BanknoteArrowUp size={16} class="turn" />{data.names.cyan} ← {data.names.mint}</button>
+					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'cyan', to: 'mint' })}><BanknoteArrowDown size={16} class="turn" />{@render initial('cyan')} → {@render initial('mint')}</button>
+					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}><BanknoteArrowUp size={16} class="turn" />{@render initial('cyan')} ← {@render initial('mint')}</button>
 				</div>
 				<label>
 					<textarea
@@ -808,6 +813,24 @@
 	.entries .icon-button {
 		width: 28px;
 		height: 28px;
+	}
+	.initial {
+		display: inline-grid;
+		place-items: center;
+		width: 1.3em;
+		height: 1.3em;
+		border-radius: 50%;
+		font-size: 0.85em;
+		font-weight: 600;
+		line-height: 1;
+		color: #0b2a2e;
+		vertical-align: middle;
+	}
+	.initial.cyan {
+		background: var(--cyan);
+	}
+	.initial.mint {
+		background: var(--mint);
 	}
 	.split {
 		margin: 0;
