@@ -439,8 +439,8 @@
 				{/if}
 				<div class="chips">
 					<button type="button" class="attach" onclick={() => editEntry(c, { who: 'cyan' })}><Wallet size={16} />+ payment</button>
-					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'cyan', to: 'mint' })}><BanknoteArrowUp size={16} />{data.names.cyan} → {data.names.mint}</button>
-					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}><BanknoteArrowDown size={16} />{data.names.mint} → {data.names.cyan}</button>
+					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'cyan', to: 'mint' })}><BanknoteArrowUp size={16} class="turn" />{data.names.cyan} → {data.names.mint}</button>
+					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}><BanknoteArrowDown size={16} class="turn" />{data.names.mint} → {data.names.cyan}</button>
 				</div>
 				<label>
 					note
@@ -795,6 +795,10 @@
 		font-size: 0.72rem;
 		color: var(--muted);
 		font-variant-numeric: tabular-nums;
+	}
+	/* The transfer icons on their side: the arrow points along the → */
+	.chips :global(.turn) {
+		transform: rotate(-90deg);
 	}
 	.chips {
 		display: flex;
