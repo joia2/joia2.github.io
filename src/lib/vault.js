@@ -24,8 +24,8 @@ export async function setup(token, password, vaultFile = VAULT_FILE) {
 	return { key, raw };
 }
 
-// Re-encrypts every encrypted file in salt.json's folder (and below): the .json ones (data.json, older
-// attachments) and the .bin ones (attachments, crypto.js encryptBytes), with a new password, together
+// Re-encrypts every encrypted file in salt.json's folder (and below): the .json ones (data.json) and
+// the .bin ones (attachments, crypto.js encryptBytes), with a new password, together
 // with a new salt.json. Safe at every step:
 // - Nothing in the repo changes until the very end. Each file is read, decrypted with the old key,
 //   encrypted with the new one, checked to open again to the same content, and stored as a blob

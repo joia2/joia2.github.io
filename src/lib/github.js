@@ -62,13 +62,6 @@ export async function getRawBytes(token, path) {
 	return new Uint8Array(await response.arrayBuffer());
 }
 
-// Returns a file's text as it is, also above the 1 MB the JSON reply above holds
-export async function getRawFile(token, path) {
-	const response = await request(token, 'GET', contentsPath(path), undefined, 'application/vnd.github.raw+json');
-	if (!response.ok) throw await httpError(response, 'Reading a file');
-	return response.text();
-}
-
 // Creates the file when sha is null, otherwise replaces that exact version. Returns the new sha.
 // The content is a text, or bytes (a Uint8Array).
 // GitHub answers 409 also when another save (an upload, data.json) moved the branch at the same

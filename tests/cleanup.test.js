@@ -50,16 +50,16 @@ function fakeGitHub(history, { moveBranchMeanwhile = false } = {}) {
 	return () => head.files;
 }
 
-const data = { costs: [{ files: [{ id: 'kept' }] }], documents: [{ id: 'doc' }] };
-const listed = ['salt.json', 'data.json', 'files/kept.json', 'files/doc.json', 'files/doc.1.json', 'files/doc.2.json'];
+const data = { costs: [{ files: [{ id: 'kept' }] }], documents: [{ id: 'doc', parts: 2 }] };
+const listed = ['salt.json', 'data.json', 'files/kept.bin', 'files/doc.1.bin', 'files/doc.2.bin'];
 
 test('clean-up: removes unlisted files older than a week, parts included; keeps the rest', async () => {
 	const now = fakeGitHub([
-		{ date: new Date(NOW - 8 * DAY), files: [...listed, 'files/old.1.json', 'files/old.2.json', 'files/gone.json'] },
-		{ date: new Date(NOW - 3 * DAY), files: [...listed, 'files/old.1.json', 'files/old.2.json', 'files/gone.json', 'files/new.1.json'] }
+		{ date: new Date(NOW - 8 * DAY), files: [...listed, 'files/old.1.bin', 'files/old.2.bin', 'files/gone.bin'] },
+		{ date: new Date(NOW - 3 * DAY), files: [...listed, 'files/old.1.bin', 'files/old.2.bin', 'files/gone.bin', 'files/new.1.bin'] }
 	]);
 	assert.equal(await cleanUp('token', data, NOW), 3);
-	assert.deepEqual(now(), [...listed, 'files/new.1.json']); // the recent one may be an upload going on
+	assert.deepEqual(now(), [...listed, 'files/new.1.bin']); // the recent one may be an upload going on
 });
 
 test('clean-up: nothing unlisted, nothing changes', async () => {
@@ -69,7 +69,7 @@ test('clean-up: nothing unlisted, nothing changes', async () => {
 });
 
 test('clean-up: saved from elsewhere meanwhile, it gives up and changes nothing', async () => {
-	const files = [...listed, 'files/old.json'];
+	const files = [...listed, 'files/old.bin'];
 	const now = fakeGitHub([{ date: new Date(NOW - 10 * DAY), files }], { moveBranchMeanwhile: true });
 	await assert.rejects(cleanUp('token', data, NOW));
 	assert.deepEqual(now(), files);
@@ -77,16 +77,16 @@ test('clean-up: saved from elsewhere meanwhile, it gives up and changes nothing'
 
 test('an edit saved late lists only files still there', async () => {
 	fakeGitHub([{ date: new Date(NOW - 2 * DAY), files: listed }]);
-	const late = { costs: [{ files: [{ id: 'kept' }, { id: 'removed' }] }, { entries: [] }], documents: [{ id: 'doc' }, { id: 'gone' }] };
-	assert.deepEqual(await keepExisting('token', late), { costs: [{ files: [{ id: 'kept' }] }, { entries: [] }], documents: [{ id: 'doc' }] });
+	const late = { costs: [{ files: [{ id: 'kept' }, { id: 'removed' }] }, { entries: [] }], documents: [{ id: 'doc', parts: 2 }, { id: 'gone' }] };
+	assert.deepEqual(await keepExisting('token', late), { costs: [{ files: [{ id: 'kept' }] }, { entries: [] }], documents: [{ id: 'doc', parts: 2 }] });
 });
 
-test('the new format (.bin): an unlisted one is removed, a listed one kept, parts included', async () => {
-	const withBin = { ...data, documents: [...data.documents, { id: 'big', bin: true, parts: 2 }, { id: 'small', bin: true }] };
+test('an unlisted one is removed, a listed one kept, parts included', async () => {
+	const withBin = { ...data, documents: [...data.documents, { id: 'big', parts: 2 }, { id: 'small' }] };
 	const files = [...listed, 'files/big.1.bin', 'files/big.2.bin', 'files/small.bin', 'files/stray.bin', 'files/stray2.1.bin'];
 	const now = fakeGitHub([{ date: new Date(NOW - 10 * DAY), files }]);
 	assert.equal(await cleanUp('token', withBin, NOW), 2);
 	assert.deepEqual(now(), files.filter((p) => !p.includes('stray')));
-	const late = { documents: [{ id: 'big', bin: true, parts: 2 }, { id: 'small', bin: true }, { id: 'stray', bin: true }] };
+	const late = { documents: [{ id: 'big', parts: 2 }, { id: 'small' }, { id: 'stray' }] };
 	assert.deepEqual((await keepExisting('token', late)).documents.map((f) => f.id), ['big', 'small']);
 });

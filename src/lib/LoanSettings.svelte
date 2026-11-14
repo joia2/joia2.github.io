@@ -152,7 +152,7 @@
 
 	// Returns the costs for the data file, or an error message
 	// What data.json keeps of an attachment (not the File of one still uploading)
-	const keep = ({ id, name, type, size, bin, parts }) => ({ id, name, type, ...(size && { size }), ...(bin && { bin }), ...(parts && { parts }) });
+	const keep = ({ id, name, type, size, parts }) => ({ id, name, type, ...(size && { size }), ...(parts && { parts }) });
 	// The costs as the data file keeps them: attachments only once uploaded
 	function parseCosts() {
 		return costs.map((c) => {
