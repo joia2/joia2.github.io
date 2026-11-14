@@ -119,10 +119,10 @@
 <Sheet title={file?.name ?? ''} bind:open>
 	{#snippet actions()}
 		{#if onrename}
-			<button class="icon-button" onclick={onrename} aria-label="rename"><Pencil size={20} /></button>
+			<button type="button" class="icon-button" onclick={onrename} aria-label="rename"><Pencil size={20} /></button>
 		{/if}
 		{#if url}
-			<button class="icon-button" onclick={save} aria-label="download"><Download size={22} /></button>
+			<button type="button" class="icon-button" onclick={save} aria-label="download"><Download size={22} /></button>
 		{/if}
 	{/snippet}
 	<div class="view" bind:this={box}>
@@ -134,7 +134,7 @@
 			<!-- Too large to draw here without the page running out of memory: opened as a download is -->
 			<div class="large">
 				<p>{(blob.size / 1e6).toFixed(1).replace('.', ',')} MB: too large to show here.</p>
-				<button class="primary" onclick={save}><FileBox size={20} />open</button>
+				<button type="button" class="primary" onclick={save}><FileBox size={20} />open</button>
 			</div>
 		{:else if file.type.startsWith('image/')}
 			<img

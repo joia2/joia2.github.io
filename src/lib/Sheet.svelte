@@ -2,7 +2,8 @@
 	import X from '@lucide/svelte/icons/x';
 
 	// A popup: a glass card over the dimmed page, closed with Escape, the × or a click outside.
-	// actions: optional buttons next to the ×
+	// actions: optional buttons next to the ×. Every button here is type="button": a popup can sit
+	// inside a page's form (a file's preview in the apartment popup), and must not submit it
 	let { title, open = $bindable(false), actions, children } = $props();
 
 	let dialog = $state();
@@ -23,7 +24,7 @@
 	<div class="top">
 		<h1>{title}</h1>
 		{@render actions?.()}
-		<button class="icon-button" onclick={() => dialog.close()} aria-label="close"><X size={22} /></button>
+		<button type="button" class="icon-button" onclick={() => dialog.close()} aria-label="close"><X size={22} /></button>
 	</div>
 	{@render children()}
 </dialog>
