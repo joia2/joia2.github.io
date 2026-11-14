@@ -13,7 +13,11 @@
 	// onsize(bytes): once the file is fetched, for a list that didn't know its size yet
 	let { file, open = $bindable(false), onrename, onsize } = $props();
 
-	const PREVIEW_MAX = 10 * 1000 * 1000; // larger files are opened, not shown in the popup
+	// A computer (no touch screen): its browser shows any PDF, all pages, in its own viewer, and has
+	// the memory for large files. A phone or tablet: PDFs drawn here page by page (its viewer in a
+	// frame shows only the first page), and files over 10 MB opened instead of shown.
+	const computer = typeof navigator !== 'undefined' && navigator.maxTouchPoints === 0;
+	const PREVIEW_MAX = computer ? 200 * 1000 * 1000 : 10 * 1000 * 1000;
 	let url = $state('');
 	let blob = $state(null);
 	let error = $state('');
@@ -150,7 +154,7 @@
 				onpointercancel={up}
 				draggable="false"
 			/>
-		{:else if file.type === 'application/pdf'}
+		{:else if file.type === 'application/pdf' && !computer}
 			<div
 				role="document"
 				aria-label={file.name}
