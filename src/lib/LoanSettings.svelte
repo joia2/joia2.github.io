@@ -10,15 +10,10 @@
 	import Wallet from '@lucide/svelte/icons/wallet';
 	import BanknoteArrowUp from '@lucide/svelte/icons/banknote-arrow-up';
 	import BanknoteArrowDown from '@lucide/svelte/icons/banknote-arrow-down';
-	import Paperclip from '@lucide/svelte/icons/paperclip';
-	import ImageIcon from '@lucide/svelte/icons/image';
-	import FileText from '@lucide/svelte/icons/file-text';
-	import FileIcon from '@lucide/svelte/icons/file';
-	import ClipboardPaste from '@lucide/svelte/icons/clipboard-paste';
 	import X from '@lucide/svelte/icons/x';
-	import Attachment from '#lib/Attachment.svelte';
+	import Files from '#lib/Files.svelte';
 	import Sheet from '#lib/Sheet.svelte';
-	import { upload, remove, MAX_SIZE } from '#lib/attachments.js';
+	import { remove } from '#lib/attachments.js';
 	import { session } from '#lib/session.svelte.js';
 	import Trash from '@lucide/svelte/icons/trash';
 	import Face from '#lib/Face.svelte';
@@ -94,9 +89,8 @@
 		files: [...(c.files ?? [])] // saved ones { id, name, type }; new ones { name, type, file } until saved
 	});
 	let costs = $state((data.costs ?? []).map(asFields));
+	const filesOf = $state([]); // each cost's file list, for a paste into its description
 	// What each kind is called on screen; the data file keeps maintenance, improvement and object
-	// Kroner without øre, for the summary line: 12 345
-	const wholeKr = (ore) => new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 0 }).format(ore / 100);
 	const label = (c) => ({ maintenance: 'maintain', improvement: 'improve', object: 'object' })[c.kind];
 	// A new cost starts with its first payment
 	function addCost(kind) {
@@ -130,49 +124,6 @@
 		entryOpen = false;
 	}
 
-	// Attachments: picked files wait here, and are uploaded (encrypted) when the page is saved
-	let shown = $state(null); // the attachment in the preview
-	let previewOpen = $state(false);
-	// Returns the entry added, or nothing when the file is too large
-	function add(c, file) {
-		if (file.size > MAX_SIZE) return void (error = `${file.name} is larger than ${MAX_SIZE / 1024 / 1024} MB.`);
-		c.files.push({ name: file.name, type: file.type, file });
-		return c.files.at(-1);
-	}
-	function attach(c, event) {
-		for (const file of event.currentTarget.files) {
-			const entry = add(c, file);
-			if (entry) startRename(entry);
-		}
-		event.currentTarget.value = '';
-	}
-	// An image or PDF copied to the clipboard, named by when it was pasted: pasted 2026-11-14 18.05.png
-	const isFile = (type) => type.startsWith('image/') || type === 'application/pdf';
-	// Keeps the file's own name when it has one (a PDF from Mail), else names it by the time
-	function addPasted(c, blob, type) {
-		const stamp = new Date().toLocaleString('sv').slice(0, 16).replace(':', '.');
-		const ext = type === 'application/pdf' ? 'pdf' : type.split('/')[1].replace('jpeg', 'jpg');
-		const own = blob.name && !/^image\.\w+$/.test(blob.name) ? blob.name : '';
-		const entry = add(c, new File([blob], own || `pasted ${stamp}.${ext}`, { type }));
-		if (entry) startRename(entry);
-	}
-	// Right after a file is added or pasted: a small popup to name it, one file after another; the
-	// extension stays as it is
-	let renaming = $state(null); // { entry, base, ext }
-	let renameOpen = $state(false);
-	const waiting = []; // files added together, named one after another
-	function startRename(entry) {
-		if (renameOpen) return void waiting.push(entry);
-		const dot = entry.name.lastIndexOf('.');
-		renaming = { entry, base: dot > 0 ? entry.name.slice(0, dot) : entry.name, ext: dot > 0 ? entry.name.slice(dot) : '' };
-		renameOpen = true;
-	}
-	function rename(event) {
-		event.preventDefault();
-		const base = renaming.base.trim();
-		if (base) renaming.entry.name = base + renaming.ext;
-		renameOpen = false;
-	}
 	// A text area as tall as its text: after every change, and when it comes into view (in a popup
 	// still closed it has no height to measure)
 	const grow = (area) => {
@@ -190,47 +141,13 @@
 			destroy: () => (seen.disconnect(), area.removeEventListener('input', fit))
 		};
 	};
-	// The name field opens with its text selected, so typing replaces it; after the popup has taken
-	// the focus on opening
-	// The focus comes at once, while still in the tap or paste that opened the popup: an iPhone
+	// The amount field opens with its text selected, so typing replaces it. The focus comes at once, while still in the tap or paste that opened the popup: an iPhone
 	// only brings up the keyboard then (or keeps it, when it is already up)
 	const selectAll = (input) => {
 		const select = () => (input.focus(), input.setSelectionRange(0, input.value.length));
 		select();
 		requestAnimationFrame(select); // again once the popup is open, which moves the focus to itself
 	};
-	// Once this popup has closed, named or not: the file is uploaded, and the next one named
-	$effect(() => {
-		if (renameOpen || !renaming) return;
-		const { entry } = renaming;
-		renaming = null;
-		uploadEntry(entry);
-		if (waiting.length) setTimeout(() => startRename(waiting.shift()));
-	});
-	// What a file really is, from its first bytes, when the clipboard doesn't say (an iPhone can give
-	// a PDF from Mail no type at all)
-	async function sniff(blob) {
-		if (isFile(blob.type)) return blob.type;
-		const b = new Uint8Array(await blob.slice(0, 12).arrayBuffer());
-		const text = String.fromCharCode(...b);
-		if (text.startsWith('%PDF')) return 'application/pdf';
-		if (b[0] === 0x89 && text.slice(1, 4) === 'PNG') return 'image/png';
-		if (b[0] === 0xff && b[1] === 0xd8) return 'image/jpeg';
-		if (text.slice(4, 8) === 'ftyp') return 'image/heic';
-		if (/\.pdf$/i.test(blob.name ?? '')) return 'application/pdf';
-		return '';
-	}
-	async function pasted(c, event) {
-		event.preventDefault();
-		const files = [...(event.clipboardData?.items ?? [])].filter((i) => i.kind === 'file').map((i) => i.getAsFile()).filter(Boolean);
-		let found = false;
-		for (const f of files) {
-			const type = await sniff(f);
-			if (type) (addPasted(c, f, type), (found = true));
-		}
-		if (!found) return (error = `The clipboard has no image or PDF${files.length ? ` (it has: ${files.map((f) => f.type || 'no type').join(', ')})` : ''}.`);
-	}
-	const preview = (f) => ((shown = f), (previewOpen = true));
 
 
 	// Returns the costs for the data file, or an error message
@@ -265,6 +182,17 @@
 		if (section === 'costs') saveCosts();
 	});
 
+	// The apartment's documents: saved as they go, whatever happens to the rest of the page
+	let documents = $state([...(data.documents ?? [])]);
+	function saveDocuments() {
+		const kept = documents.filter((f) => f.id).map(({ id, name, type }) => ({ id, name, type }));
+		const ids = new Set(kept.map((f) => f.id));
+		const gone = (data.documents ?? []).filter((f) => !ids.has(f.id));
+		data.documents = kept;
+		changed();
+		for (const f of gone) remove(f.id).catch(() => {});
+	}
+
 	// The names page saves as it goes too: a name once it isn't empty, an animal when picked
 	$effect(() => {
 		if (section !== 'names') return;
@@ -283,21 +211,6 @@
 		}
 		changed();
 	});
-	async function uploadEntry(entry) {
-		if (session.demo) return void (error = 'Attachments are not kept in the demo.');
-		entry.uploading = true;
-		try {
-			const saved = await upload(entry.file, entry.name);
-			for (const c of costs) {
-				const i = c.files.indexOf(entry);
-				if (i >= 0) c.files[i] = saved;
-			}
-			saveCosts(); // also when the popup was closed during the upload
-		} catch (e) {
-			entry.uploading = false;
-			error = `${entry.name} could not be saved: ${e.message}`;
-		}
-	}
 
 	async function submit(event) {
 		event.preventDefault();
@@ -382,6 +295,10 @@
 			</div>
 		{/each}
 	{:else if section === 'apartment'}
+		<!-- The apartment's documents (contracts, plans…), saved as they are added or removed -->
+		<div class="documents">
+			<Files bind:files={documents} onchange={saveDocuments} tags />
+		</div>
 		<label>
 			total price (kr)
 			<span class="field">
@@ -456,7 +373,7 @@
 					<p class="split">
 						{#each PEOPLE as p, k (p)}
 							{#if k}•{/if}
-							{@render initial(p)} {wholeKr(split[p])} kr ({formatPercent(split.total ? (split[p] / split.total) * 100 : 0)}<Pct />)
+							{@render initial(p)} {formatKr(split[p])} kr ({formatPercent(split.total ? (split[p] / split.total) * 100 : 0)}<Pct />)
 						{/each}
 					</p>
 					<ul class="entries">
@@ -490,45 +407,12 @@
 						bind:value={c.note}
 						placeholder="description…"
 						aria-label="description"
-						onpaste={(e) => [...(e.clipboardData?.items ?? [])].some((i) => i.kind === 'file') && pasted(c, e)}
+						onpaste={(e) => [...(e.clipboardData?.items ?? [])].some((item) => item.kind === 'file') && filesOf[i]?.paste(e)}
 						use:grow={c.note}
 					></textarea>
 				</label>
 				<!-- Receipts, invoices, photos: tap one to see it -->
-				{#if c.files.length}
-					<ul class="entries files">
-						{#each c.files as f, j (f.id ?? f.name + j)}
-							<li class:uploading={!f.id} title={f.id ? f.name : 'saving…'}>
-							<button type="button" class="name" onclick={() => preview(f)}>
-								{#if f.type?.startsWith('image/')}<ImageIcon size={14} />{:else if f.type === 'application/pdf'}<FileText size={14} />{:else}<FileIcon size={14} />{/if}
-								<span>{f.name}</span>
-							</button>
-							<button type="button" class="icon-button" onclick={() => c.files.splice(j, 1)} aria-label="remove {f.name}">
-								<X size={16} />
-							</button>
-							</li>
-						{/each}
-					</ul>
-				{/if}
-				<div class="chips">
-					<label class="attach">
-						<Paperclip size={16} />+ attachment
-						<input type="file" accept="application/pdf,image/*" multiple onchange={(e) => attach(c, e)} />
-					</label>
-					<!-- An empty field to paste a file into with the keyboard's Paste, as in a chat: the
-					     system hands it the file. Nothing can be typed into it. -->
-					<label class="attach paste">
-						<ClipboardPaste size={16} />
-						<input
-							placeholder="+ paste"
-							aria-label="paste an image or PDF"
-							autocomplete="off"
-							onpaste={(e) => pasted(c, e)}
-							onbeforeinput={(e) => e.inputType !== 'insertFromPaste' && e.preventDefault()}
-							oninput={(e) => (e.currentTarget.value = '')}
-						/>
-					</label>
-				</div>
+				<Files bind:files={c.files} onchange={saveCosts} bind:this={filesOf[i]} />
 			</fieldset>
 		{/each}
 		<div class="add">
@@ -551,8 +435,6 @@
 		</p>
 	{/if}
 </form>
-
-<Attachment file={shown} bind:open={previewOpen} />
 
 <Sheet title={entry?.who !== undefined ? 'payment' : entry ? transfer(entry) : ''} bind:open={entryOpen}>
 	{#if entry}
@@ -584,20 +466,6 @@
 	{/if}
 </Sheet>
 
-<Sheet title="file name" bind:open={renameOpen}>
-	{#if renaming}
-		{#key renaming}
-		<form class="rename" onsubmit={rename}>
-			<span class="field-name">
-				<!-- svelte-ignore a11y_autofocus -->
-				<input bind:value={renaming.base} aria-label="file name" autocomplete="off" autofocus use:selectAll />
-				<span class="ext">{renaming.ext}</span>
-			</span>
-			<button class="primary" type="submit"><Check size={20} />ok</button>
-		</form>
-		{/key}
-	{/if}
-</Sheet>
 
 <style>
 	.animals {
@@ -896,12 +764,20 @@
 	.initial.mint::before {
 		background: var(--mint);
 	}
-	/* One line: whole kroner and a slightly smaller text */
+	/* One line, the amounts with their øre: a small text */
+	.documents {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+		padding: 0.5rem 0.6rem 0.6rem;
+		border: 1px solid var(--border);
+		border-radius: 12px;
+	}
 	.split {
 		margin: 0;
 		text-align: center;
 		white-space: nowrap;
-		font-size: 0.68rem;
+		font-size: 0.62rem;
 		color: var(--muted);
 		font-variant-numeric: tabular-nums;
 	}
