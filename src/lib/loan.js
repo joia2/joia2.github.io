@@ -119,14 +119,18 @@ export function compute(data, today = currentMonth()) {
 
 	const balance = (p) => Math.max(0, own[p] - equity[p]);
 
-	// Costs are counted from their month on (earlier ones from the first month), as a record only
-	const costs = [...(data.costs ?? [])].sort((a, b) => (a.month < b.month ? -1 : 1));
+	// Each cost's payments and transfers count from their month on (earlier ones from the first month)
+	const costs = (data.costs ?? [])
+		.flatMap((c) => (c.entries ?? []).map((e) => ({ ...e, kind: c.kind, month: e.date.slice(0, 7) })))
+		.sort((a, b) => (a.month < b.month ? -1 : 1));
 	let costsApplied = 0;
 	const covered = { cyan: 0, mint: 0 }; // in total: above 0, paid for the other; below 0, paid by the other
 	const costsPaid = { cyan: { maintenance: 0, improvement: 0, object: 0 }, mint: { maintenance: 0, improvement: 0, object: 0 } };
 	function applyCosts(month) {
 		for (; costsApplied < costs.length && !(costs[costsApplied].month > month); costsApplied++) {
-			for (const p of PEOPLE) costsPaid[p][costs[costsApplied].kind] += toOre(costs[costsApplied][p] || 0);
+			const e = costs[costsApplied];
+			if (e.who) costsPaid[e.who][e.kind] += toOre(e.amount);
+			else (costsPaid[e.from][e.kind] += toOre(e.amount)), (costsPaid[e.to][e.kind] -= toOre(e.amount));
 		}
 	}
 	const lastEntered = months.filter((m) => PEOPLE.some((p) => isEntered(payments[m][p]))).pop();
@@ -410,6 +414,18 @@ export function taxShares(result, today = currentMonth()) {
 	const sum = paid.cyan + paid.mint;
 	if (!sum) return null;
 	return { year, estimate: paid.estimate, cyan: (paid.cyan / sum) * 100, mint: (paid.mint / sum) * 100 };
+}
+
+// A cost's total and what each has paid of it in the end (øre): their payments to the store or
+// provider ({ who }), plus what they gave the other, less what they got ({ from, to })
+export function costSplit(entries) {
+	const split = { total: 0, cyan: 0, mint: 0 };
+	for (const e of entries) {
+		const ore = toOre(e.amount);
+		if (e.who) (split.total += ore), (split[e.who] += ore);
+		else (split[e.from] += ore), (split[e.to] -= ore);
+	}
+	return split;
 }
 
 // Changes one value in the data file. Empty values are removed, so the file only holds what was

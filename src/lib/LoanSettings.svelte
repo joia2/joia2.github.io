@@ -7,6 +7,7 @@
 	import Wrench from '@lucide/svelte/icons/wrench';
 	import Paintbrush from '@lucide/svelte/icons/paintbrush';
 	import Sofa from '@lucide/svelte/icons/sofa';
+	import Receipt from '@lucide/svelte/icons/receipt';
 	import Paperclip from '@lucide/svelte/icons/paperclip';
 	import ClipboardPaste from '@lucide/svelte/icons/clipboard-paste';
 	import X from '@lucide/svelte/icons/x';
@@ -23,7 +24,7 @@
 	import RefreshCcw from '@lucide/svelte/icons/refresh-ccw';
 	import { loan, changed } from '#lib/loan.svelte.js';
 	import Hourglass from '@lucide/svelte/icons/hourglass';
-	import { addMonths, currentMonth, formatAmount, formatPercent, parseAmount, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
+	import { addMonths, costSplit, currentMonth, formatAmount, formatKr, formatPercent, parseAmount, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
 
 	// section: 'names' | 'apartment' (the apartment and its mortgage) | 'costs' (maintenance, improvements and objects)
 	let { section, onclose } = $props();
@@ -79,20 +80,46 @@
 	const lengthLabel = (n) => `${n}\u00a0m${n % 12 ? '' : `\u00a0(${n / 12}\u00a0y)`}`; // kept on one line
 	let error = $state('');
 
-	// Maintenance and improvement costs, as text while editing. A total splits 50/50; changing one
-	// person's part instead keeps the other and updates the total.
-	const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+	// Maintenance, improvements and objects: each with its payments to the store or provider
+	// ({ date, amount, who }) and transfers between the two ({ date, amount, from, to })
 	const asFields = (c) => ({
 		kind: c.kind,
-		month: c.month,
 		note: c.note ?? '',
-		total: formatAmount((c.cyan || 0) + (c.mint || 0)),
-		cyan: formatAmount(c.cyan || 0),
-		mint: formatAmount(c.mint || 0),
+		entries: [...(c.entries ?? [])],
 		files: [...(c.files ?? [])] // saved ones { id, name, type }; new ones { name, type, file } until saved
 	});
 	let costs = $state((data.costs ?? []).map(asFields));
-	const addCost = (kind) => costs.push({ kind, month: currentMonth(), note: '', total: '', cyan: '', mint: '', files: [] });
+	const label = (c) => (c.kind === 'object' ? 'object' : `${c.kind} cost`);
+	// A new cost starts with its first payment
+	function addCost(kind) {
+		costs.push({ kind, note: '', entries: [], files: [] });
+		editEntry(costs.at(-1), { who: 'cyan' });
+	}
+
+	// The small popup for one payment or transfer: its date and amount (and, for a payment, who paid)
+	const today = () => new Date().toLocaleDateString('sv'); // YYYY-MM-DD
+	let entry = $state(null); // { cost, index (−1: new), who | from + to, date, amount (text) }
+	let entryOpen = $state(false);
+	function editEntry(cost, kind, index = -1) {
+		const e = cost.entries[index] ?? { date: today(), ...kind };
+		entry = { cost, index, ...e, amount: e.amount ? formatAmount(e.amount) : '' };
+		entryOpen = true;
+	}
+	let entryError = $state('');
+	function saveEntry(event) {
+		event.preventDefault();
+		const amount = parseAmount(entry.amount);
+		if (!amount || amount < 0) return (entryError = 'Enter the amount in kroner.');
+		if (!/^\d{4}-\d{2}-\d{2}$/.test(entry.date)) return (entryError = 'Enter the date.');
+		const { cost, index, date, who, from, to } = entry;
+		const saved = { date, amount, ...(who ? { who } : { from, to }) };
+		if (index < 0) cost.entries.push(saved);
+		else cost.entries[index] = saved;
+		cost.entries.sort((a, b) => (a.date < b.date ? -1 : 1));
+		entryError = '';
+		entryOpen = false;
+	}
+	const dateLabel = (d) => new Date(`${d}T12:00:00`).toLocaleDateString('en', { day: '2-digit', month: 'short', year: 'numeric' }).toLowerCase();
 
 	// Attachments: picked files wait here, and are uploaded (encrypted) when the page is saved
 	let shown = $state(null); // the attachment in the preview
@@ -186,44 +213,23 @@
 		}
 		if (!found) return (error = `The clipboard has no image or PDF${files.length ? ` (it has: ${files.map((f) => f.type || 'no type').join(', ')})` : ''}.`);
 	}
-	// What one person paid of a cost, in percent of what both paid
-	const paidShare = (c, p) => {
-		const [cyan, mint] = PEOPLE.map((q) => parseAmount(c[q]) ?? 0);
-		const sum = (cyan ?? 0) + (mint ?? 0);
-		return formatPercent(sum ? ((p === 'cyan' ? cyan : mint) / sum) * 100 : 0);
-	};
 	const preview = (f) => ((shown = f), (previewOpen = true));
 	let saving = $state(false);
 
-	function totalChanged(c) {
-		const total = parseAmount(c.total);
-		if (total == null) return;
-		const cyan = Math.floor(toOre(total) / 2);
-		c.cyan = formatAmount(cyan / 100);
-		c.mint = formatAmount((toOre(total) - cyan) / 100);
-	}
-	function partChanged(c) {
-		const [cyan, mint] = PEOPLE.map((p) => parseAmount(c[p]));
-		if (cyan !== undefined && mint !== undefined) c.total = formatAmount((cyan ?? 0) + (mint ?? 0));
-	}
 
 	// Returns the costs for the data file, or an error message
 	function parseCosts() {
 		const parsed = [];
 		for (const c of costs) {
-			const [cyan, mint] = PEOPLE.map((p) => parseAmount(c[p]));
-			if (cyan === undefined || mint === undefined || !(cyan || mint)) return `Enter what each paid for the ${c.kind === 'object' ? 'object' : `${c.kind} cost`}.`;
-			if (!MONTH.test(c.month)) return `Enter the month of the ${c.kind === 'object' ? 'object' : `${c.kind} cost`} as YYYY-MM.`;
+			if (!c.entries.some((e) => e.who)) return `Add a payment to the ${label(c)}.`;
 			parsed.push({
 				kind: c.kind,
-				month: c.month,
-				cyan: cyan ?? 0,
-				mint: mint ?? 0,
 				...(c.note.trim() && { note: c.note.trim() }),
+				entries: c.entries,
 				...(c.files.length && { files: c.files })
 			});
 		}
-		return parsed.sort((a, b) => (a.month < b.month ? -1 : 1));
+		return parsed.sort((a, b) => (a.entries[0].date < b.entries[0].date ? -1 : 1));
 	}
 
 	async function submit(event) {
@@ -394,7 +400,7 @@
 		<!-- What each paid for maintenance and improvements (a record, not ownership: 4.3), and for
 		     objects bought for the home, owned by what each paid (the register of household items, 6.1) -->
 		{#each costs as c, i (i)}
-			<fieldset>
+			<fieldset class="cost">
 				<legend>
 					{#if c.kind === 'maintenance'}<Wrench size={18} />{:else if c.kind === 'object'}<Sofa size={18} />{:else}<Paintbrush size={18} />{/if}
 					{c.kind === 'object' ? 'object' : `${c.kind} cost`}
@@ -402,26 +408,37 @@
 						<Trash size={18} />
 					</button>
 				</legend>
-				<div class="pair">
-					<label>
-						month
-						<MonthInput bind:value={c.month} label="{c.kind} cost" />
-					</label>
-					<label>
-						total (kr)
-						<input bind:value={c.total} oninput={() => totalChanged(c)} inputmode="decimal" placeholder="0,00" />
-					</label>
-				</div>
-				<div class="pair">
-					{#each PEOPLE as p (p)}
-						<label>
-							<span>{data.names[p]} (kr) <span class="share">{paidShare(c, p)}<Pct /></span></span>
-							<span class="field">
-								<Face person={p} size={18} />
-								<input bind:value={c[p]} oninput={() => partChanged(c)} inputmode="decimal" placeholder="0,00" />
-							</span>
-						</label>
-					{/each}
+				<!-- Payments to the store or provider, and transfers between the two: tap one to change it -->
+				{#if c.entries.length}
+					<ul class="entries">
+						{#each c.entries as e, j (j)}
+							<li>
+								<button type="button" class="entry" onclick={() => editEntry(c, {}, j)}>
+									<span class="date">{dateLabel(e.date)}</span>
+									<span class="what">
+										{#if e.who}<Face person={e.who} size={16} />{data.names[e.who]} paid
+										{:else}<Face person={e.from} size={16} />{data.names[e.from]} → {data.names[e.to]}{/if}
+									</span>
+									<span class="amount">{formatAmount(e.amount)}</span>
+								</button>
+								<button type="button" class="icon-button" onclick={() => c.entries.splice(j, 1)} aria-label="remove this entry">
+									<X size={16} />
+								</button>
+							</li>
+						{/each}
+					</ul>
+					{@const split = costSplit(c.entries)}
+					<p class="split">
+						total {formatKr(split.total)} kr
+						{#each PEOPLE as p (p)}
+							<span>· {data.names[p]} {formatKr(split[p])} ({formatPercent(split.total ? (split[p] / split.total) * 100 : 0)}<Pct />)</span>
+						{/each}
+					</p>
+				{/if}
+				<div class="chips">
+					<button type="button" class="attach" onclick={() => editEntry(c, { who: 'cyan' })}><Receipt size={16} />+ payment</button>
+					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'cyan', to: 'mint' })}>{data.names.cyan} → {data.names.mint}</button>
+					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}>{data.names.mint} → {data.names.cyan}</button>
 				</div>
 				<label>
 					note
@@ -484,6 +501,35 @@
 </form>
 
 <Attachment file={shown} bind:open={previewOpen} />
+
+<Sheet title={entry?.who !== undefined ? 'payment' : entry ? `${data.names[entry.from]} → ${data.names[entry.to]}` : ''} bind:open={entryOpen}>
+	{#if entry}
+		{#key entry}
+			<form class="rename" onsubmit={saveEntry}>
+				{#if entry.who !== undefined}
+					<!-- Who paid the store or provider -->
+					<div class="payer" role="radiogroup" aria-label="paid by">
+						{#each PEOPLE as p (p)}
+							<button type="button" role="radio" aria-checked={entry.who === p} class:chosen={entry.who === p} class={p} onclick={() => (entry.who = p)}>
+								<Face person={p} size={22} />{data.names[p]}
+							</button>
+						{/each}
+					</div>
+				{/if}
+				<label>
+					date
+					<input type="date" bind:value={entry.date} />
+				</label>
+				<label>
+					amount (kr)
+					<input bind:value={entry.amount} inputmode="decimal" placeholder="0,00" use:selectAll />
+				</label>
+				{#if entryError}<p class="error" role="alert"><CircleAlert size={18} />{entryError}</p>{/if}
+				<button class="primary" type="submit"><Check size={20} />ok</button>
+			</form>
+		{/key}
+	{/if}
+</Sheet>
 
 <Sheet title="file name" bind:open={renameOpen}>
 	{#if renaming}
@@ -666,6 +712,110 @@
 	.share {
 		font-variant-numeric: tabular-nums;
 		opacity: 0.8;
+	}
+	/* The costs: compact, so more of them fit on the screen */
+	fieldset.cost {
+		gap: 0.4rem;
+		padding: 0.4rem 0.7rem 0.6rem;
+		border-radius: 12px;
+	}
+	.cost legend {
+		font-size: 0.8rem;
+	}
+	.cost label {
+		gap: 0.2rem;
+		font-size: 0.75rem;
+	}
+	.cost .note-field {
+		font-size: 0.8rem;
+		padding: 0.35rem 0.6rem;
+		border-radius: 8px;
+		min-height: calc(1.4em + 0.7rem + 2px);
+	}
+	.cost .attach,
+	.cost .file .name {
+		font-size: 0.75rem;
+	}
+	form .cost .attach {
+		padding: 0.15rem 0.5rem;
+		border-radius: 8px;
+	}
+	.cost .remove {
+		width: 30px;
+		height: 30px;
+	}
+	.entries {
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.entries li {
+		display: flex;
+		align-items: center;
+	}
+	.entry {
+		display: grid;
+		grid-template-columns: auto 1fr auto;
+		align-items: center;
+		gap: 0.6rem;
+		flex: 1;
+		min-width: 0;
+		padding: 0.15rem 0.3rem;
+		border: 0;
+		background: transparent;
+		font-size: 0.78rem;
+		text-align: left;
+	}
+	.entry .date {
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+	}
+	.entry .what {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		min-width: 0;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+	.entry .amount {
+		font-variant-numeric: tabular-nums;
+	}
+	.entries .icon-button {
+		width: 28px;
+		height: 28px;
+	}
+	.split {
+		margin: 0;
+		font-size: 0.72rem;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+	}
+	.chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+	.payer {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.5rem;
+	}
+	.payer button {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.4rem;
+		border: 2px solid transparent;
+	}
+	.payer button.chosen.cyan {
+		border-color: var(--cyan);
+	}
+	.payer button.chosen.mint {
+		border-color: var(--mint);
 	}
 	.files {
 		display: flex;

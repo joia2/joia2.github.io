@@ -46,6 +46,12 @@ export async function loadLoan() {
 		delete loan.data.debtRate;
 		delete loan.data.member;
 		for (const entry of Object.values(loan.data.payments ?? {})) delete entry.lofavor;
+		// Costs from before payments and transfers: what each paid, on the 1st of its month
+		for (const c of loan.data.costs ?? []) {
+			if (c.entries) continue;
+			c.entries = ['cyan', 'mint'].filter((p) => c[p]).map((p) => ({ date: `${c.month}-01`, amount: c[p], who: p }));
+			delete c.month, delete c.cyan, delete c.mint;
+		}
 	} catch (e) {
 		loan.status = 'error';
 		loan.error = e.message;
