@@ -11,6 +11,9 @@
 	import BanknoteArrowUp from '@lucide/svelte/icons/banknote-arrow-up';
 	import BanknoteArrowDown from '@lucide/svelte/icons/banknote-arrow-down';
 	import Paperclip from '@lucide/svelte/icons/paperclip';
+	import ImageIcon from '@lucide/svelte/icons/image';
+	import FileText from '@lucide/svelte/icons/file-text';
+	import FileIcon from '@lucide/svelte/icons/file';
 	import ClipboardPaste from '@lucide/svelte/icons/clipboard-paste';
 	import X from '@lucide/svelte/icons/x';
 	import Attachment from '#lib/Attachment.svelte';
@@ -489,7 +492,10 @@
 				<div class="files">
 					{#each c.files as f, j (f.id ?? f.name + j)}
 						<span class="file" class:uploading={!f.id} title={f.id ? f.name : 'saving…'}>
-							<button type="button" class="name" onclick={() => preview(f)}>{f.name}</button>
+							<button type="button" class="name" onclick={() => preview(f)}>
+								{#if f.type?.startsWith('image/')}<ImageIcon size={14} />{:else if f.type === 'application/pdf'}<FileText size={14} />{:else}<FileIcon size={14} />{/if}
+								<span>{f.name}</span>
+							</button>
 							<button type="button" class="icon-button" onclick={() => c.files.splice(j, 1)} aria-label="remove {f.name}">
 								<X size={16} />
 							</button>
@@ -928,14 +934,25 @@
 		opacity: 0.55;
 		border-style: dashed;
 	}
+	/* The kind's icon (image, PDF, other) and the name, cut with … when too long */
 	.file .name {
-		overflow: hidden;
-		padding: 0.3rem 0.2rem 0.3rem 0.6rem;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		min-width: 0;
+		padding: 0.3rem 0.2rem 0.3rem 0.5rem;
 		border: 0;
 		background: transparent;
 		font-size: 0.82rem;
+	}
+	.file .name span {
+		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+	.file .name :global(svg) {
+		flex-shrink: 0;
+		color: var(--muted);
 	}
 	.file .icon-button {
 		width: 28px;
