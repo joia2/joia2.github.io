@@ -362,9 +362,11 @@
 			</fieldset>
 		{/each}
 		<div class="add">
-			<button type="button" onclick={() => addCost('maintenance')}><Wrench size={18} />+ maintenance</button>
-			<button type="button" onclick={() => addCost('improvement')}><Paintbrush size={18} />+ improvement</button>
-			<button type="button" onclick={() => addCost('object')}><Sofa size={18} />+ object</button>
+			<div class="add-row">
+				<button type="button" onclick={() => addCost('maintenance')}><Wrench size={18} />+ maintenance</button>
+				<button type="button" onclick={() => addCost('improvement')}><Paintbrush size={18} />+ improvement</button>
+				<button type="button" onclick={() => addCost('object')}><Sofa size={18} />+ object</button>
+			</div>
 		</div>
 	{/if}
 
@@ -533,16 +535,30 @@
 	.attach input {
 		display: none;
 	}
+	/* The three on one row; when the row is too narrow for icon and text side by side, every
+	   button puts its icon above its text */
 	.add {
-		display: flex;
-		flex-wrap: wrap;
+		container-type: inline-size;
+	}
+	.add-row {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
 		gap: 0.5rem;
 	}
 	.add button {
 		display: inline-flex;
 		align-items: center;
+		justify-content: center;
 		gap: 0.4rem;
-		padding: 0.5rem 0.9rem;
+		padding: 0.5rem 0.6rem;
 		font-size: 0.875rem;
+		white-space: nowrap;
+	}
+	@container (max-width: 30rem) {
+		.add button {
+			flex-direction: column;
+			gap: 0.2rem;
+			font-size: 0.8rem;
+		}
 	}
 </style>
