@@ -683,7 +683,8 @@
 		overflow: hidden;
 	}
 	form .description:focus {
-		box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+		outline: none;
+		box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
 	}
 	.total {
 		color: var(--text);
