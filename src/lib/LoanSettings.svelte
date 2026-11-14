@@ -303,7 +303,7 @@
 
 <!-- A person as a small circle in their color with their initial -->
 {#snippet initial(p)}
-	<span class="initial {p}" title={data.names[p]}>{data.names[p].slice(0, 1)}</span>
+	<span class="initial {p}" title={data.names[p]}>{data.names[p].slice(0, 1).toLowerCase()}</span>
 {/snippet}
 
 <form class="settings" onsubmit={submit}>
@@ -824,7 +824,6 @@
 		font-weight: 600;
 		line-height: 1;
 		color: #0b2a2e;
-		font-variant-caps: all-small-caps;
 		vertical-align: middle;
 	}
 	.initial.cyan {
