@@ -252,9 +252,11 @@
 	.empty p {
 		margin: 0;
 	}
+	/* Three columns of equal sides: the instalment button stays in the middle whatever the numbers */
 	.people {
-		display: flex;
-		justify-content: space-between;
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
+		gap: 0.5rem;
 		max-width: 44rem;
 		margin: 0 auto;
 	}
@@ -266,6 +268,8 @@
 		min-width: 0;
 	}
 	.person.mint {
+		grid-column: 3;
+		justify-self: end;
 		flex-direction: row-reverse;
 	}
 	.who {
@@ -290,6 +294,7 @@
 		flex-direction: row-reverse;
 	}
 	.instalment {
+		grid-column: 2;
 		align-self: center;
 		flex-shrink: 0;
 		width: 44px;
