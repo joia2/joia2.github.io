@@ -63,13 +63,18 @@ export async function getRawFile(token, path) {
 }
 
 // Creates the file when sha is null, otherwise replaces that exact version. Returns the new sha.
+// GitHub answers 409 also when another save (an upload, loan.json) moved the branch at the same
+// moment: tried again a few times, as only a real change of the file keeps failing. A new file has
+// nothing to conflict with, so its 422 is GitHub's own complaint (too large, say), shown as is.
 export async function putFile(token, path, text, sha, message) {
-	const response = await request(token, 'PUT', contentsPath(path), {
-		message,
-		content: new TextEncoder().encode(text).toBase64(),
-		...(sha && { sha })
-	});
-	throwIfConflict(response, path);
+	const body = { message, content: new TextEncoder().encode(text).toBase64(), ...(sha && { sha }) };
+	let response;
+	for (const wait of [1000, 2000, 4000, 0]) {
+		response = await request(token, 'PUT', contentsPath(path), body);
+		if (response.status !== 409 || !wait) break;
+		await new Promise((done) => setTimeout(done, wait));
+	}
+	if (sha || response.status === 409) throwIfConflict(response, path);
 	if (response.status === 403 || response.status === 404) {
 		throw new TokenError('This token is not allowed to write to joia2data.');
 	}
