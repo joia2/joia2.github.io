@@ -11,8 +11,7 @@
 	import MonthInput from '#lib/MonthInput.svelte';
 	import { loan, changed } from '#lib/loan.svelte.js';
 	import Hourglass from '@lucide/svelte/icons/hourglass';
-	import Users from '@lucide/svelte/icons/users';
-	import { addMonths, currentMonth, formatAmount, parseAmount, setValue, toOre, PEOPLE, TERM, UNION_LIMIT } from '#lib/loan.js';
+	import { addMonths, currentMonth, formatAmount, parseAmount, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
 
 	// section: 'names' | 'apartment' (the apartment and its mortgage)
 	let { section, onclose } = $props();
@@ -52,10 +51,6 @@
 		changes = changes.slice(0, -1);
 		term = termOf(changes, from);
 	}
-	// The union fee the LO member pays a month (3.9); a change counts from this month on
-	const lofavorOf = (month) => months.filter((m) => m <= month && data.payments[m].lofavor != null).map((m) => data.payments[m].lofavor).at(-1) ?? 0;
-	let lofavor = $state(lofavorOf(from) ? formatAmount(lofavorOf(from)) : '');
-	let member = $state(data.member === 'mint' ? 'mint' : 'cyan');
 	const lengths = Array.from({ length: TERM }, (_, i) => i + 1);
 	const lengthLabel = (n) => `${n}\u00a0m${n % 12 ? '' : `\u00a0(${n / 12}\u00a0y)`}`; // kept on one line
 	let error = $state('');
@@ -116,8 +111,6 @@
 			const [cyan, mint] = PEOPLE.map((p) => parseAmount(egenkapital[p]));
 			if (cyan === undefined || mint === undefined) return (error = 'Enter egenkapital in kroner.');
 			if (price / 2 < Math.max(cyan ?? 0, mint ?? 0)) return (error = "Egenkapital can't be more than half the price.");
-			const membership = parseAmount(lofavor);
-			if (membership === undefined) return (error = 'Enter the union fee in kroner.');
 			const parsed = parseCosts();
 			if (typeof parsed === 'string') return (error = parsed);
 			data.total = price;
@@ -127,14 +120,6 @@
 			data.egenkapital = { cyan: cyan ?? 0, mint: mint ?? 0 };
 			for (const m of Object.keys(data.payments)) setValue(data, m, 'term', null);
 			for (const c of changes) setValue(data, c.month, 'term', c.months);
-			// The union fee, from this month on (from the first payment while before it)
-			data.member = member;
-			const first = Object.keys(data.payments).sort()[0];
-			const since = currentMonth() < first ? first : currentMonth();
-			if ((membership ?? 0) !== lofavorOf(from)) {
-				for (const m of Object.keys(data.payments)) if (m >= since) setValue(data, m, 'lofavor', null);
-				setValue(data, since, 'lofavor', membership ?? 0);
-			}
 		}
 		changed();
 		onclose();
@@ -216,28 +201,6 @@
 				</span>
 			</label>
 		{/each}
-		<label>
-			union fee (kr a month)
-			<span class="field">
-				<Users size={20} />
-				<input bind:value={lofavor} inputmode="decimal" placeholder="0,00" />
-			</span>
-		</label>
-		<label>
-			LO member
-			<span class="field">
-				<Face person={member} size={20} />
-				<select bind:value={member}>
-					{#each PEOPLE as p (p)}<option value={p}>{data.names[p]}</option>{/each}
-				</select>
-			</span>
-		</label>
-		<p class="note">
-			The LO membership gives the mortgage its LO Favør terms (3.9). Enter the fee as on the payslip, without insurance, fund
-			and other deductions. The other pays the member a part of it each month, less the 22<Pct /> tax it saves (on up to
-			{formatAmount(UNION_LIMIT)} kr of fees a year), by how much of the loan each has left after that month's payment. A change
-			counts from {monthLabel(from)} on.
-		</p>
 
 		<!-- What each paid for maintenance and improvements: a record, not ownership (4.3) -->
 		{#each costs as c, i (i)}

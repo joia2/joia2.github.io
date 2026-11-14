@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addMonths, compute, monthsLeft, instalmentFor, netUnionFee, saleSplit, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
+import { addMonths, compute, monthsLeft, instalmentFor, saleSplit, taxShares, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
 
 const START = '2026-12';
 const base = (payments = {}, extra = {}) => ({
@@ -425,23 +425,15 @@ test("each one's instalment is their exact part of the bank's, to the øre", () 
 	}
 });
 
-test('union fee (3.9): the other pays the member a part, less the tax saved, by what each has left after the payment', () => {
-	const data = { total: 8770310, egenkapital: { cyan: 0, mint: 944310 }, takeover: '2026-12-08', payments: { '2027-01': { interest: 5.03, fee: 60, lofavor: 500 } } };
+test("LO (3.9): the fee entered, less 22 %, times mint's part of the principal left after the payment", () => {
+	const data = { total: 8770310, egenkapital: { cyan: 0, mint: 944310 }, takeover: '2026-12-08', payments: { '2027-01': { interest: 5.03, fee: 60, lo: 500 } } };
 	const r = compute(data, '2027-01');
 	const jan = row(r, '2027-01');
 	const feb = row(r, '2027-02');
-	assert.equal(jan.membership.member, 'cyan');
-	assert.equal(jan.membership.cost, 39000); // 500 kr less 22 %: the year's 6 000 kr is under the limit
-	// Mint's part of it, by the parts as February starts: after January's payment
-	const after = { cyan: feb.people.cyan.balance, mint: feb.people.mint.balance };
-	assert.equal(jan.membership.owed, 39000 - Math.round((39000 * after.cyan) / (after.cyan + after.mint)));
-	assert.equal(r.membershipOwed['2027'], r.rows.filter((x) => x.month.startsWith('2027')).reduce((s, x) => s + x.membership.owed, 0));
-	assert.equal(compute({ ...data, member: 'mint' }, '2027-01').rows[0].membership.owed, 39000 - jan.membership.owed);
-	// A year of fees over the limit: only 8 700 kr of it lowers the tax
-	assert.equal(netUnionFee(100000, 1200000), 100000 - Math.round(0.22 * 870000 / 12));
-	const high = compute({ ...data, payments: { '2027-01': { interest: 5.03, fee: 60, lofavor: 1000 } } }, '2027-01');
-	assert.equal(high.rows.slice(0, 12).reduce((s, x) => s + x.membership.cost, 0), 1200000 - 0.22 * 870000);
-	// Nothing once the other has repaid their part
-	const paidOff = compute({ ...data, payments: { '2027-01': { interest: 5.03, fee: 60, lofavor: 500, mint: 4000000 } } }, '2027-01');
-	assert.equal(row(paidOff, '2027-01').membership.owed, 0);
+	const share = feb.people.mint.balance / (feb.people.cyan.balance + feb.people.mint.balance);
+	assert.equal(jan.lo.share, share);
+	assert.equal(jan.lo.owed, Math.round(50000 * 0.78 * share));
+	// Only the month it is entered in
+	assert.equal(feb.lo.owed, 0);
+	assert.ok(feb.lo.share > 0);
 });

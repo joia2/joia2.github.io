@@ -14,7 +14,6 @@
 export const PEOPLE = ['cyan', 'mint'];
 export const TERM = 360; // 30 years
 export const TAX_DEDUCTION = 0.22; // rentefradrag: interest and fees lower the tax by 22 %
-export const UNION_LIMIT = 8700; // fagforeningsfradrag: the most of a year's union fee that lowers the tax (2026), in kroner
 const LIMIT = TERM + 1200; // stops a debt that is never repaid from producing rows forever
 
 export const other = (person) => (person === 'cyan' ? 'mint' : 'cyan');
@@ -62,10 +61,6 @@ function yearDays(month) {
 	return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0 ? 366 : 365;
 }
 
-// The union fee the member pays in a month, less the tax it saves (samboerkontrakt 3.9): 22 % of it,
-// or of the deductible part when the year's fees pass the limit. `fee`: øre; `year`: that year's fees.
-export const netUnionFee = (fee, year) => fee - Math.round(TAX_DEDUCTION * fee * Math.min(1, toOre(UNION_LIMIT) / (year || 1)));
-
 // The monthly payment (annuity) that repays a balance in some months, not rounded
 function annuity(balance, rate, months) {
 	const r = rate / 1200;
@@ -88,14 +83,6 @@ function interests(balance, rate, days, yearDays) {
 	const bank = interestFor(balance.cyan + balance.mint, rate, days, yearDays);
 	const cyan = balance.mint ? interestFor(balance.cyan, rate, days, yearDays) : bank;
 	return { cyan, mint: bank - cyan };
-}
-
-// One person's part of an amount, by what each has left of the loan; the second takes the rest
-function byBalance(amount, balance, p) {
-	const sum = balance.cyan + balance.mint;
-	if (!sum) return 0;
-	const cyan = Math.round((amount * balance.cyan) / sum);
-	return p === 'cyan' ? cyan : amount - cyan;
 }
 
 const isEntered = (value) => value !== undefined && value !== null && value !== '';
@@ -128,13 +115,6 @@ export function compute(data, today = currentMonth()) {
 	let rate = 0;
 	let fee = 0;
 	let term = TERM;
-	let membership = 0; // the union fee the LO member pays a month, for the mortgage's LO Favør terms (3.9)
-	const member = data.member === 'mint' ? 'mint' : 'cyan';
-	const membershipOwed = {}; // per year: what the other owes the member for it
-	// The fee in any month (the last one entered up to it), and a calendar year's fees
-	const feeMonths = months.filter((m) => isEntered(payments[m].lofavor));
-	const feeIn = (month) => toOre(payments[feeMonths.findLast((m) => m <= month)]?.lofavor ?? 0);
-	const yearFees = (year) => Array.from({ length: 12 }, (_, i) => feeIn(`${year}-${String(i + 1).padStart(2, '0')}`)).reduce((a, b) => a + b);
 	const firstPayment = { cyan: 0, mint: 0 }; // each one's instalment for the original 30 years, without the fee
 
 	const balance = (p) => Math.max(0, own[p] - equity[p]);
@@ -282,7 +262,6 @@ export function compute(data, today = currentMonth()) {
 			payment.cyan = payment.mint = null; // a new rate means new payments, same end
 		}
 		if (isEntered(entry.fee)) fee = toOre(entry.fee);
-		membership = feeIn(month);
 		if (isEntered(entry.term) && Number(entry.term) !== term) {
 			term = Number(entry.term);
 			end.cyan = end.mint = term - 1; // past the end already: the rest is due now
@@ -328,12 +307,12 @@ export function compute(data, today = currentMonth()) {
 			...(loan ? loanMonth(k, month, entry, days) : debtMonth(entry))
 		};
 		row.debt = debt;
-		if (loan && membership) {
-			// The other's part of the fee less the tax it saves, by what each has left after this payment
-			const cost = netUnionFee(membership, yearFees(month.slice(0, 4)));
-			const owed = byBalance(cost, { cyan: balance('cyan'), mint: balance('mint') }, other(member));
-			row.membership = { cost, member, owed };
-			membershipOwed[month.slice(0, 4)] = (membershipOwed[month.slice(0, 4)] ?? 0) + owed;
+		if (loan) {
+			// LO (3.9): the fee cyan entered, less 22 %, times mint's part of the principal left
+			const left = { cyan: balance('cyan'), mint: balance('mint') };
+			const sum = left.cyan + left.mint;
+			const share = sum ? left.mint / sum : 0;
+			row.lo = { share, owed: Math.round(toOre(entry.lo ?? 0) * (1 - TAX_DEDUCTION) * share) };
 		}
 		rows.push(row);
 		// After the December payment the balances stand until 1 January: they are the debt on 31 December
@@ -349,7 +328,7 @@ export function compute(data, today = currentMonth()) {
 		state = snapshot();
 	}
 
-	return { half, rows, state, interestPaid, yearEnd, firstPayment, member, membershipOwed };
+	return { half, rows, state, interestPaid, yearEnd, firstPayment };
 }
 
 // How many months one person still pays from `today`, at the instalment they started with
@@ -433,7 +412,7 @@ export function taxShares(result, today = currentMonth()) {
 }
 
 // Changes one value in the data file. Empty values are removed, so the file only holds what was
-// typed; `interest`, `fee`, `term` and `lofavor` carry forward to the following months.
+// typed; `interest`, `fee` and `term` carry forward to the following months.
 export function setValue(data, month, key, value, person) {
 	const payments = (data.payments ??= {});
 	const entry = { ...payments[month] };

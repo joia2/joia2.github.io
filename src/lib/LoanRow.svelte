@@ -16,7 +16,7 @@
 	);
 
 	// Saves a field when it loses focus. Text that isn't an amount puts the field back as it was.
-	// key: a person ('cyan', 'mint'), 'interest' or 'fee'
+	// key: a person ('cyan', 'mint'), 'interest', 'fee' or 'lo'
 	const edited = (key) => (event) => {
 		const input = event.currentTarget;
 		const value = parseAmount(input.value);
@@ -200,9 +200,23 @@
 						<p class="minus">still owes {formatKr(Math.abs(row.debt))} kr</p>
 					{/if}
 				{/if}
-				{#if row.membership?.owed && p !== row.membership.member}
-					<p class="minus" title="{names[p]}'s part of the union fee less the tax it saves, by what each has left of the loan after this payment (3.9)">
-						union fee: owes {names[row.membership.member]} {formatKr(row.membership.owed)} kr
+				{#if p === 'cyan'}
+					<!-- The LO fee as on the payslip (3.9) -->
+					<span class="affix lo">
+						<span class="prefix" aria-hidden="true">LO</span>
+						<input
+							class="prefixed suffixed"
+							inputmode="decimal"
+							value={formatAmount(entry.lo)}
+							aria-label="LO fee in kroner"
+							oninput={typing}
+							onchange={edited('lo')}
+						/>
+						<span class="suffix" aria-hidden="true">kr</span>
+					</span>
+				{:else}
+					<p class="lo-share" title="{names[p]}'s part of the principal left, and of the LO fee less 22%">
+						{formatPercent(row.lo.share * 100)}<Pct /> LO {formatKr(row.lo.owed)} kr
 					</p>
 				{/if}
 				{#if s.uncovered}
@@ -471,6 +485,31 @@
 	input.checkable {
 		padding-block: 0.22rem;
 		padding-left: 2rem;
+	}
+	/* The LO fee: as small as the rate and fee fields in the middle */
+	.lo {
+		margin: 0.15rem 0.6rem 0;
+	}
+	.lo input {
+		width: 100%;
+		background: transparent;
+		border-color: color-mix(in srgb, var(--border) 50%, transparent);
+		text-align: right;
+		padding: 0.05rem 1.25rem 0.05rem 1.6rem;
+		line-height: 1.25;
+		border-radius: 8px;
+		font-size: 0.75rem;
+	}
+	.lo input:focus {
+		border-color: var(--accent);
+	}
+	.lo .prefix {
+		left: 0.45rem;
+	}
+	.lo-share {
+		margin: 0.15rem 0.6rem 0;
+		font-size: 0.75rem;
+		color: var(--muted);
 	}
 	.mid input.prefixed {
 		padding-left: 1.6rem;

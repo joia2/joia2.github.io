@@ -40,7 +40,10 @@ export async function loadLoan() {
 		loan.data = { ...empty(), ...file?.value };
 		loan.sha = file?.sha ?? null;
 		loan.status = 'idle';
-		delete loan.data.debtRate; // no longer used: a debt between the two bears the mortgage's rate
+		// No longer used: the debt between the two bears the mortgage's rate; LO is entered each month
+		delete loan.data.debtRate;
+		delete loan.data.member;
+		for (const entry of Object.values(loan.data.payments ?? {})) delete entry.lofavor;
 	} catch (e) {
 		loan.status = 'error';
 		loan.error = e.message;

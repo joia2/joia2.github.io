@@ -4,8 +4,7 @@
 
 	// A year at a glance, after the next March, when the skattemelding opens: what each paid, and the two numbers for the skattemelding.
 	// rows: that year's months from compute(); paid: result.interestPaid[year]; end: result.yearEnd[year]
-	// membership: { member, owed }: what the other owes the LO member for the union fee that year (3.9)
-	let { year, rows, paid, end, names, membership } = $props();
+	let { year, rows, paid, end, names } = $props();
 
 	const loanRows = $derived(rows.filter((r) => r.loan));
 	const total = (p, key) => loanRows.reduce((s, r) => s + r.people[p][key], 0);
@@ -41,15 +40,6 @@
 				{:else if owes === other(p)}
 					<dt class="plus">owed</dt>
 					<dd class="plus">{formatKr(Math.abs(end.debt))}</dd>
-				{/if}
-			{/if}
-			{#if membership?.owed}
-				{#if p === membership.member}
-					<dt class="plus">union fee owed</dt>
-					<dd class="plus">{formatKr(membership.owed)}</dd>
-				{:else}
-					<dt class="minus">union fee owes {names[membership.member]}</dt>
-					<dd class="minus">{formatKr(membership.owed)}</dd>
 				{/if}
 			{/if}
 		</dl>
