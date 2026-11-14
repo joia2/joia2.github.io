@@ -156,13 +156,14 @@
 	{#snippet taxShare(p)}
 		<span class="tax {p}">
 			{#if tax}
-				<span class="tax-value">
-					<span title="{names[p]}'s share of the {tax.year} interest, for the tax return">{formatPercent(tax[p])}<Pct /></span>
+				<!-- Like the paid share: number, % and icon each a flex item, so on the right the % comes first -->
+				<span class="tax-value" title="{names[p]}'s share of the {tax.year} interest, for the tax return{tax.estimate ? ' (estimate)' : ''}">
+					{tax.estimate ? '~' : ''}{formatPercent(tax[p])}<Pct />
 					<button class="icon-button info" onclick={() => (yearsOpen = true)} aria-label="interest paid per year">
 						<Info size={16} />
 					</button>
 				</span>
-				<span class="label">tax return</span>
+				<span class="label">{tax.year} tax return</span>
 			{/if}
 		</span>
 	{/snippet}
@@ -458,7 +459,7 @@
 	.tax-value {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.3rem;
+		gap: 0.15rem;
 	}
 	.label {
 		font-size: 0.68rem;

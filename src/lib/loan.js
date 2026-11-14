@@ -409,7 +409,7 @@ export function taxShares(result, today = currentMonth()) {
 	const paid = result.interestPaid[year];
 	const sum = paid.cyan + paid.mint;
 	if (!sum) return null;
-	return { year, cyan: (paid.cyan / sum) * 100, mint: (paid.mint / sum) * 100 };
+	return { year, estimate: paid.estimate, cyan: (paid.cyan / sum) * 100, mint: (paid.mint / sum) * 100 };
 }
 
 // Changes one value in the data file. Empty values are removed, so the file only holds what was
