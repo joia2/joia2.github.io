@@ -15,9 +15,9 @@
 
 	// A computer (no touch screen): its browser shows any PDF, all pages, in its own viewer, and has
 	// the memory for large files. A phone or tablet: PDFs drawn here page by page (its viewer in a
-	// frame shows only the first page), and files over 10 MB opened instead of shown.
+	// frame shows only the first page), and files over 40 MB opened instead of shown.
 	const computer = typeof navigator !== 'undefined' && navigator.maxTouchPoints === 0;
-	const PREVIEW_MAX = computer ? 200 * 1000 * 1000 : 10 * 1000 * 1000;
+	const PREVIEW_MAX = computer ? 200 * 1000 * 1000 : 40 * 1000 * 1000;
 	let url = $state('');
 	let blob = $state(null);
 	let error = $state('');

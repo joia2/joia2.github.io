@@ -24,7 +24,7 @@
 	let error = $state('');
 
 	// Files too large to show in the preview (Attachment.svelte): opened instead, and marked so
-	const LARGE = 10 * 1000 * 1000;
+	const LARGE = 40 * 1000 * 1000;
 	// 512 kB, 3,4 MB
 	const sizeLabel = (bytes) =>
 		bytes < 1e6 ? `${Math.max(1, Math.round(bytes / 1e3))} kB` : `${(bytes / 1e6).toFixed(1).replace('.', ',')} MB`;
