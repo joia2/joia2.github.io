@@ -2,7 +2,7 @@
 // encrypted like loan.json with their name and type inside, so the repo shows neither. loan.json
 // lists them as { id, name, type, size } (size in bytes). A password change re-encrypts them with the rest.
 //
-// A small file is one file: files/<random id>.json. A larger one is cut into parts of 2 MB, as
+// A small file is one file: files/<random id>.json. A larger one is cut into parts of 5 MB, as
 // GitHub refuses requests far below its 100 MB file limit (a whole 38 MB PDF failed):
 // files/<id>.json holds its name, type and number of parts, files/<id>.1.json, .2.json… the parts.
 // Each part is its own encrypted file, and a part's upload is small enough to go through.
@@ -10,7 +10,7 @@ import { session } from '#lib/session.svelte.js';
 import { getFile, getRawFile, putFile, deleteFile } from '#lib/github.js';
 import { encryptJSON, decryptJSON } from '#lib/crypto.js';
 
-const PART = 2 * 1024 * 1024; // about 5 MB a request once encrypted
+const PART = 5 * 1024 * 1024; // about 12 MB a request once encrypted
 export const MAX_SIZE = 200 * 1024 * 1024; // the whole file has to fit in a phone's memory twice
 const path = (id, part) => `files/${id}${part ? `.${part}` : ''}.json`;
 const encrypt = (value) => encryptJSON(session.key, value);
@@ -43,8 +43,13 @@ export async function upload(file, name = file.name, onprogress) {
 export async function download(id) {
 	const { type, data, parts } = await read(path(id));
 	if (!parts) return new Blob([Uint8Array.fromBase64(data)], { type });
-	const chunks = [];
-	for (let k = 1; k <= parts; k++) chunks.push(Uint8Array.fromBase64((await read(path(id, k))).data));
+	// Four parts at a time: much faster than one after another, without flooding GitHub
+	const chunks = new Array(parts);
+	let next = 1;
+	const worker = async () => {
+		for (let k = next++; k <= parts; k = next++) chunks[k - 1] = Uint8Array.fromBase64((await read(path(id, k))).data);
+	};
+	await Promise.all(Array.from({ length: Math.min(4, parts) }, worker));
 	return new Blob(chunks, { type });
 }
 
