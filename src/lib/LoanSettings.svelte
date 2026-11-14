@@ -458,7 +458,7 @@
 									<span class="what">
 										{#if e.who}<Wallet size={15} />{:else if e.from === 'cyan'}<BanknoteArrowDown size={15} class="turn" />{:else}<BanknoteArrowUp size={15} class="turn" />{/if}
 										{#if e.who}{@render initial(e.who)} paid
-										{:else}{@render initial('cyan')} {e.from === 'cyan' ? '→' : '←'} {@render initial('mint')}{/if}
+										{:else}{@render initial('cyan')}<span class="arrow">{e.from === 'cyan' ? '→' : '←'}</span>{@render initial('mint')}{/if}
 									</span>
 									<span class="amount">{formatAmount(e.amount)}</span>
 								</button>
@@ -471,8 +471,8 @@
 				{/if}
 				<div class="chips">
 					<button type="button" class="attach" onclick={() => editEntry(c, { who: 'cyan' })}><Wallet size={16} />+ pay</button>
-					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'cyan', to: 'mint' })}><BanknoteArrowDown size={16} class="turn" />{@render initial('cyan')} → {@render initial('mint')}</button>
-					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}><BanknoteArrowUp size={16} class="turn" />{@render initial('cyan')} ← {@render initial('mint')}</button>
+					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'cyan', to: 'mint' })}><BanknoteArrowDown size={16} class="turn" />{@render initial('cyan')}<span class="arrow">→</span>{@render initial('mint')}</button>
+					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}><BanknoteArrowUp size={16} class="turn" />{@render initial('cyan')}<span class="arrow">←</span>{@render initial('mint')}</button>
 				</div>
 				<label>
 					<textarea
@@ -840,6 +840,10 @@
 	.entries .icon-button {
 		width: 28px;
 		height: 28px;
+	}
+	/* Close to the two names it joins */
+	.arrow {
+		margin-inline: -0.12rem;
 	}
 	.initial {
 		display: inline-grid;
