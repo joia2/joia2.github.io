@@ -314,13 +314,14 @@
 	/* Big screens with a mouse: the row gets a 50 px button at each end, as tall as the row */
 	@media (min-width: 720px) and (hover: hover) {
 		.row {
-			grid-template-columns: 50px 1fr 6.25rem 1fr 50px;
+			--room: calc(max(0.75rem, var(--space)) - 0.4rem);
+			grid-template-columns: 50px 1fr calc(6.25rem + 2 * var(--room)) 1fr 50px;
 			column-gap: 0.4rem; /* the buttons close to the content */
 			padding-inline: 0.4rem;
 		}
 		/* …while the middle keeps its usual room from the two sides */
 		.mid {
-			padding-inline: calc(max(0.75rem, var(--space)) - 0.4rem);
+			padding-inline: var(--room);
 		}
 		.tick {
 			display: grid;
