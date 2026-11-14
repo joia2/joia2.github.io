@@ -190,9 +190,13 @@
 	const selectAll = (input) => {
 		setTimeout(() => (input.focus(), input.setSelectionRange(0, input.value.length)), 50);
 	};
-	// The next one once this popup has closed, saved or not
+	// Once this popup has closed, named or not: the file is uploaded, and the next one named
 	$effect(() => {
-		if (!renameOpen && waiting.length) setTimeout(() => startRename(waiting.shift()));
+		if (renameOpen || !renaming) return;
+		const { entry } = renaming;
+		renaming = null;
+		uploadEntry(entry);
+		if (waiting.length) setTimeout(() => startRename(waiting.shift()));
 	});
 	// What a file really is, from its first bytes, when the clipboard doesn't say (an iPhone can give
 	// a PDF from Mail no type at all)
@@ -218,27 +222,57 @@
 		if (!found) return (error = `The clipboard has no image or PDF${files.length ? ` (it has: ${files.map((f) => f.type || 'no type').join(', ')})` : ''}.`);
 	}
 	const preview = (f) => ((shown = f), (previewOpen = true));
-	let saving = $state(false);
 
 
 	// Returns the costs for the data file, or an error message
+	// The costs as the data file keeps them: attachments only once uploaded
 	function parseCosts() {
-		const parsed = [];
-		for (const c of costs) {
-			if (!c.entries.some((e) => e.who)) return `Add a payment to the ${label(c)}.`;
-			parsed.push({
+		return costs.map((c) => {
+			const files = c.files.filter((f) => f.id).map(({ id, name, type }) => ({ id, name, type }));
+			return {
 				kind: c.kind,
 				...(c.note.trim() && { note: c.note.trim() }),
-				entries: c.entries,
-				...(c.files.length && { files: c.files })
-			});
+				entries: $state.snapshot(c.entries),
+				...(files.length && { files })
+			};
+		});
+	}
+
+	// The costs page saves as it goes, with no save button: every change is written to the data
+	// (saved shortly after, like the payments), and attachments are uploaded as soon as named
+	let lastSaved = JSON.stringify(section === 'costs' ? parseCosts() : null);
+	function saveCosts() {
+		const parsed = parseCosts();
+		const text = JSON.stringify(parsed);
+		if (text === lastSaved) return;
+		const kept = new Set(parsed.flatMap((c) => (c.files ?? []).map((f) => f.id)));
+		const gone = (data.costs ?? []).flatMap((c) => c.files ?? []).filter((f) => !kept.has(f.id));
+		lastSaved = text;
+		data.costs = parsed;
+		changed();
+		for (const f of gone) remove(f.id).catch(() => {}); // a file left behind is only unused space
+	}
+	$effect(() => {
+		if (section === 'costs') saveCosts();
+	});
+	async function uploadEntry(entry) {
+		if (session.demo) return void (error = 'Attachments are not kept in the demo.');
+		entry.uploading = true;
+		try {
+			const saved = await upload(entry.file, entry.name);
+			for (const c of costs) {
+				const i = c.files.indexOf(entry);
+				if (i >= 0) c.files[i] = saved;
+			}
+			saveCosts(); // also when the popup was closed during the upload
+		} catch (e) {
+			entry.uploading = false;
+			error = `${entry.name} could not be saved: ${e.message}`;
 		}
-		return parsed.sort((a, b) => (a.entries[0].date < b.entries[0].date ? -1 : 1));
 	}
 
 	async function submit(event) {
 		event.preventDefault();
-		if (saving) return;
 		if (section === 'names') {
 			const cyan = names.cyan.trim();
 			const mint = names.mint.trim();
@@ -253,25 +287,7 @@
 				data[k] = v;
 			}
 		}
-		if (section === 'costs') {
-			let parsed = parseCosts();
-			if (typeof parsed === 'string') return (error = parsed);
-			if (session.demo && costs.some((c) => c.files.some((f) => f.file))) return (error = 'Attachments are not kept in the demo.');
-			// New attachments are uploaded first, then loan.json lists them; removed ones are deleted after
-			saving = true;
-			try {
-				for (const c of costs) c.files = await Promise.all(c.files.map((f) => (f.file ? upload(f.file, f.name) : f)));
-			} catch (e) {
-				saving = false;
-				return (error = `The attachments could not be saved: ${e.message}`);
-			}
-			saving = false;
-			parsed = parseCosts();
-			const kept = new Set(parsed.flatMap((c) => (c.files ?? []).map((f) => f.id)));
-			const gone = (data.costs ?? []).flatMap((c) => c.files ?? []).filter((f) => !kept.has(f.id));
-			data.costs = parsed; // always there, empty when there are none
-			for (const f of gone) remove(f.id).catch(() => {}); // a file left behind is only unused space
-		}
+		if (section === 'costs') return; // saved as it goes
 		if (section === 'apartment') {
 			const price = parseAmount(total);
 			if (!price) return (error = 'Enter the apartment price.');
@@ -466,7 +482,7 @@
 				<!-- Receipts, invoices, photos: tap one to see it -->
 				<div class="files">
 					{#each c.files as f, j (f.id ?? f.name + j)}
-						<span class="file">
+						<span class="file" class:uploading={!f.id} title={f.id ? f.name : 'saving…'}>
 							<button type="button" class="name" onclick={() => preview(f)}>{f.name}</button>
 							<button type="button" class="icon-button" onclick={() => c.files.splice(j, 1)} aria-label="remove {f.name}">
 								<X size={16} />
@@ -506,10 +522,12 @@
 		<p class="error" role="alert"><CircleAlert size={18} />{error}</p>
 	{/if}
 
-	<p class="actions">
-		<button class="primary" type="submit" disabled={saving}><Check size={20} />{saving ? 'saving…' : 'save'}</button>
-		<button type="button" onclick={onclose}>cancel</button>
-	</p>
+	{#if section !== 'costs'}
+		<p class="actions">
+			<button class="primary" type="submit"><Check size={20} />save</button>
+			<button type="button" onclick={onclose}>cancel</button>
+		</p>
+	{/if}
 </form>
 
 <Attachment file={shown} bind:open={previewOpen} />
@@ -883,6 +901,11 @@
 		max-width: 100%;
 		border: 1px solid var(--border);
 		border-radius: 10px;
+	}
+	/* Not uploaded yet */
+	.file.uploading {
+		opacity: 0.55;
+		border-style: dashed;
 	}
 	.file .name {
 		overflow: hidden;
