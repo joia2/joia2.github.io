@@ -585,11 +585,17 @@
 		min-width: 0;
 		box-sizing: border-box;
 	}
+	/* Not the page's card: the popup is the card */
 	.rename {
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
+		max-width: none;
+		margin: 0;
 		padding: 0 1.5rem 1.5rem;
+		background: none;
+		border-radius: 0;
+		box-shadow: none;
 	}
 	.field-name {
 		display: flex;
