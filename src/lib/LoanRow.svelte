@@ -343,12 +343,12 @@
 		/* Paid: the side's full color, as the swipe shows it */
 		.tick.paid.cyan,
 		.tick.paid.cyan:hover:not(:disabled) {
-			background: var(--cyan);
+			background: color-mix(in srgb, var(--cyan) 70%, var(--muted)); /* softer than the swipe's */
 			color: var(--bg);
 		}
 		.tick.paid.mint,
 		.tick.paid.mint:hover:not(:disabled) {
-			background: var(--mint);
+			background: color-mix(in srgb, var(--mint) 70%, var(--muted)); /* softer than the swipe's */
 			color: var(--bg);
 		}
 	}
