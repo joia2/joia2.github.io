@@ -145,9 +145,23 @@
 		{#each PEOPLE as p (p)}
 			<label>
 				{p === 'cyan' ? 'left' : 'right'}
-				<span class="field">
-					<Face person={p} size={20} animal={animals[p]} />
-					<input bind:value={names[p]} autocomplete="off" />
+				<span class="name-row">
+					<span class="field">
+						<Face person={p} size={20} animal={animals[p]} />
+						<input bind:value={names[p]} autocomplete="off" />
+					</span>
+					<!-- Each animal in turn; turning toward the middle: counter-clockwise on the left, clockwise on the right -->
+					<button
+						type="button"
+						role="switch"
+						aria-checked={animals[p] === 'rotate'}
+						aria-label="each animal in turn, a new one every minute"
+						class:chosen={animals[p] === 'rotate'}
+						class="{p} rotate"
+						onclick={() => (animals[p] = animals[p] === 'rotate' ? undefined : 'rotate')}
+					>
+						{#if p === 'cyan'}<RefreshCcw size={22} />{:else}<RefreshCw size={22} />{/if}
+					</button>
 				</span>
 			</label>
 			<!-- The icon: one of the animals, in this person's color; picking the chosen one again goes back to the face -->
@@ -165,19 +179,6 @@
 						<Face person={p} size={44} animal={a} />
 					</button>
 				{/each}
-				<button
-					type="button"
-					role="radio"
-					aria-checked={animals[p] === 'rotate'}
-					aria-label="each animal in turn, a new one every minute"
-					class:chosen={animals[p] === 'rotate'}
-					class="{p} rotate"
-					onclick={() => (animals[p] = animals[p] === 'rotate' ? undefined : 'rotate')}
-				>
-					<!-- Turning toward the middle: counter-clockwise on the left, clockwise on the right -->
-					{#if p === 'cyan'}<RefreshCcw size={30} />{:else}<RefreshCw size={30} />{/if}
-					<span>rotate</span>
-				</button>
 			</div>
 		{/each}
 	{:else if section === 'apartment'}
@@ -304,21 +305,35 @@
 		border-radius: 14px;
 		background: transparent;
 	}
-	.animals .rotate {
-		gap: 0.2rem;
-		font-size: 0.75rem;
-		color: var(--muted);
+	/* The name field, and the rotate button beside it at the same height */
+	.name-row {
+		display: flex;
+		gap: 0.5rem;
 	}
-	.animals .rotate.cyan :global(svg) {
+	.name-row .field {
+		flex: 1;
+		min-width: 0;
+	}
+	.rotate {
+		display: grid;
+		place-items: center;
+		padding: 0 0.85rem;
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		background: var(--surface);
+	}
+	.rotate.cyan {
 		color: var(--cyan);
 	}
-	.animals .rotate.mint :global(svg) {
+	.rotate.mint {
 		color: var(--mint);
 	}
+	.rotate.chosen.cyan,
 	.animals button.chosen.cyan {
 		border-color: var(--cyan);
 		background: color-mix(in srgb, var(--cyan) 15%, transparent);
 	}
+	.rotate.chosen.mint,
 	.animals button.chosen.mint {
 		border-color: var(--mint);
 		background: color-mix(in srgb, var(--mint) 15%, transparent);
