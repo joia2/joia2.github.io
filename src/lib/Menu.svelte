@@ -133,12 +133,6 @@
 	aside.open {
 		transform: none;
 	}
-	/* In line with the top bar, a little lower when installed (iOS 27 blurs the top edge) */
-	@media (display-mode: standalone) {
-		aside {
-			padding-top: calc(env(safe-area-inset-top) + 14px);
-		}
-	}
 	.top {
 		height: 48px;
 		margin-right: -1rem;
