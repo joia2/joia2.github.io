@@ -19,6 +19,7 @@
 		['principal left', (p) => formatKr(state.balance[p])],
 		['ownership share', () => formatPercent(50), true],
 		['covered', (p) => signed(state.covered[p])],
+		['overdue', (p) => formatKr(state.overdue?.[p] ?? 0)],
 		['maintain', (p) => formatKr(state.costs[p].maintenance)],
 		['improve', (p) => formatKr(state.costs[p].improvement)],
 		['objects', (p) => formatKr(state.costs[p].object)]

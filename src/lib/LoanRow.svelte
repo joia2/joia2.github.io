@@ -40,9 +40,9 @@
 	};
 
 	// The checkbox inside a paid field: checked when any amount is entered. Ticking stores today's
-	// minimum as the amount paid; unticking clears it.
+	// minimum, with anything overdue, as the amount paid; unticking clears it.
 	const paidMinimum = (s) => s.typed;
-	const toggleMinimum = (p) => onedit(p, paidMinimum(row.people[p]) ? null : row.people[p].min / 100);
+	const toggleMinimum = (p) => onedit(p, paidMinimum(row.people[p]) ? null : row.people[p].owed / 100);
 
 	// What a paid field shows: the amount typed
 	const shown = (key) => formatAmount(entry[key]);
@@ -75,7 +75,7 @@
 	};
 	const swipeEnd = (e) => {
 		const p = PEOPLE[dx > 0 ? 0 : 1];
-		if (e.type === 'pointerup' && Math.abs(dx) > SWIPE && row.people[p].min) toggleMinimum(p);
+		if (e.type === 'pointerup' && Math.abs(dx) > SWIPE && row.people[p].owed) toggleMinimum(p);
 		startX = null;
 		dx = 0;
 	};
@@ -147,7 +147,7 @@
 						role="checkbox"
 						aria-checked={paidMinimum(s)}
 						aria-label="{names[p]} paid"
-						disabled={!s.min}
+						disabled={!s.owed}
 						onclick={() => toggleMinimum(p)}
 					>
 						{#if paidMinimum(s)}<Check size={14} />{/if}
@@ -156,7 +156,7 @@
 						class="checkable"
 						inputmode="decimal"
 						value={shown(p)}
-						placeholder={formatKr(s.min)}
+						placeholder={formatKr(s.owed)}
 						aria-label="paid by {names[p]}"
 						oninput={typing}
 						onchange={edited(p)}
@@ -221,8 +221,12 @@
 						<span class="suffix" aria-hidden="true">kr</span>
 					</span>
 				{/if}
-				{#if s.uncovered}
-					<p class="warn"><TriangleAlert size={14} />{formatKr(s.uncovered)} kr unpaid</p>
+				{#if s.overdueIn}
+					<!-- Paid first this month: what was overdue, with its late-payment interest -->
+					<p class="minus">incl. {formatKr(s.overdueIn)} kr overdue (late interest {formatKr(s.late)})</p>
+				{/if}
+				{#if s.overdue}
+					<p class="warn"><TriangleAlert size={14} />{formatKr(s.overdue)} kr overdue</p>
 				{/if}
 				{#if s.surplus}
 					<p class="warn"><TriangleAlert size={14} />{formatKr(s.surplus)} kr more than owed</p>
@@ -260,12 +264,12 @@
 		type="button"
 		class="tick {p}"
 		class:paid={s && paidMinimum(s)}
-		disabled={!s?.min}
+		disabled={!s?.owed}
 		onclick={() => toggleMinimum(p)}
 		aria-label="{names[p]} paid"
 		aria-pressed={Boolean(s && paidMinimum(s))}
 	>
-		{#if s?.min}<Check size={20} />{/if}
+		{#if s?.owed}<Check size={20} />{/if}
 	</button>
 {/snippet}
 

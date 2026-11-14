@@ -86,10 +86,6 @@ export async function loadLoan() {
 		delete loan.data.debtRate;
 		delete loan.data.member;
 		for (const entry of Object.values(loan.data.payments ?? {})) delete entry.lofavor;
-		// The conversion's mark on each attachment: no longer read, removed and saved once
-		const marked = [...(loan.data.costs ?? []).flatMap((c) => c.files ?? []), ...(loan.data.documents ?? [])].filter((f) => 'bin' in f);
-		for (const f of marked) delete f.bin;
-		if (marked.length && loan.status === 'idle') changed();
 		// Unused attachment files left by an upload or removal that stopped halfway: removed in the
 		// background (failing quietly: it tries again on the next opening)
 		if (!cleaned) cleanUp(session.token, $state.snapshot(loan.data)).catch(() => {});

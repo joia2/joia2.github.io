@@ -1,6 +1,6 @@
 <script>
 	import Sheet from '#lib/Sheet.svelte';
-	import { addMonths, currentMonth, formatKr, formatPercent, toOre, TAX_DEDUCTION } from '#lib/loan.js';
+	import { addMonths, currentMonth, formatKr, formatPercent, toOre, LATE_RATE, TAX_DEDUCTION } from '#lib/loan.js';
 
 	// The formulas behind the app's numbers, with the samboerkontrakt's sections, and the values
 	// they use in the chosen month. rows: from compute() with a loan; result: compute()'s result
@@ -71,7 +71,7 @@
 				],
 				[
 					'principal left after',
-					'own principal left − own principal (− any extra payment)',
+					'own principal left − own principal paid (also an overdue one, or an extra)',
 					[`${a} = ${kr(after('cyan'))}`, `${b} = ${kr(after('mint'))}`, `total = ${kr(totalAfter)}`]
 				]
 			]
@@ -85,6 +85,16 @@
 					[`${a} = ${kr(r.people.cyan.extra)}`, `${b} = ${kr(r.people.mint.extra)}`]
 				],
 				['covered payment', 'counts as paid by the one short, and becomes their debt to the other', []],
+				[
+					'overdue',
+					'a month paid short and not covered: owed to the bank, paid first the next month; the instalment stays',
+					[`${a} = ${kr(r.people.cyan.overdue)}`, `${b} = ${kr(r.people.mint.overdue)}`]
+				],
+				[
+					'late-payment interest',
+					`overdue × max(${pct(LATE_RATE)}, rate) × days ÷ (days in the year × 100)`,
+					[`${a}: ${kr(r.people.cyan.overdueIn - r.people.cyan.late)} → ${kr(r.people.cyan.late)}`, `${b}: ${kr(r.people.mint.overdueIn - r.people.mint.late)} → ${kr(r.people.mint.late)}`]
+				],
 				[
 					'debt interest',
 					'amount covered × rate × days ÷ (days in the year × 100); none if repaid the next month (40 days)',
@@ -119,7 +129,7 @@
 				],
 				[
 					`tax return share (${year})`,
-					`own (interest + fees) in ${year} ÷ total (interest + fees) in ${year}; a payment on 1 January counts in the year before; the loan’s set-up costs, half each, in the take-over year`,
+					`own (interest + fees) in ${year} ÷ total (interest + fees) in ${year}; interest as charged (late-payment interest included), in the year it built up: a payment on 1 January counts in the year before; the loan’s set-up costs, half each, in the take-over year`,
 					paidYear
 						? [
 								...both((p) => `interest + fees = ${kr(paidYear[p])}`),

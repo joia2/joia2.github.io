@@ -6,7 +6,8 @@
 // egenkapital. The bank's monthly payment stays fixed, rounded up to whole kroner; each person's is
 // their exact part of it, to the øre, so the two always add up to the bank's. Interest for the actual
 // days of the month only changes how much of it is principal, and the last payment settles what is left. The payment is worked out again when the rate or the mortgage's
-// length changes, or when a month's payment differs from it (extra, or short and not covered).
+// length changes, or after an extra payment. A month paid short (and not covered by the other) is
+// overdue, as at the bank: it bears late-payment interest and is paid first the next month.
 //
 // The mortgage's length (`term` in a month's entry: months from the first payment, 360 until set)
 // carries forward like the rate. An extra lowers the next payments; the end stays.
@@ -14,6 +15,9 @@
 export const PEOPLE = ['cyan', 'mint'];
 export const TERM = 360; // 30 years
 export const TAX_DEDUCTION = 0.22; // rentefradrag: interest and fees lower the tax by 22 %
+// Forsinkelsesrente, set by the state twice a year (12,25 % since 1 July 2026); the bank's terms:
+// never less than the loan's own rate
+export const LATE_RATE = 12.25;
 const LIMIT = TERM + 1200; // stops a debt that is never repaid from producing rows forever
 
 export const other = (person) => (person === 'cyan' ? 'mint' : 'cyan');
@@ -118,6 +122,12 @@ export function compute(data, today = currentMonth()) {
 	const firstPayment = { cyan: 0, mint: 0 }; // each one's instalment for the original 30 years, without the fee
 
 	const balance = (p) => Math.max(0, own[p] - equity[p]);
+	// Overdue from months paid short: its principal (still part of the balance), the interest and fees
+	// not paid, and the late-payment interest on those two (none on itself)
+	const overdue = { cyan: { principal: 0, unpaid: 0, late: 0 }, mint: { principal: 0, unpaid: 0, late: 0 } };
+	const overdueTotal = (p) => overdue[p].principal + overdue[p].unpaid + overdue[p].late;
+	// The part on schedule: the balance without its overdue principal
+	const scheduled = (p) => balance(p) - overdue[p].principal;
 
 	// Each cost's payments and transfers count from their month on (earlier ones from the first month)
 	const costs = (data.costs ?? [])
@@ -139,15 +149,17 @@ export function compute(data, today = currentMonth()) {
 		own: { ...own },
 		equity: { ...equity },
 		balance: { cyan: balance('cyan'), mint: balance('mint') },
+		// interest, fees and late-payment interest overdue (its principal is in the balance)
+		overdue: { cyan: overdue.cyan.unpaid + overdue.cyan.late, mint: overdue.mint.unpaid + overdue.mint.late },
 		costs: { cyan: { ...costsPaid.cyan }, mint: { ...costsPaid.mint } },
 		covered: { ...covered },
 		debt
 	});
 
 	function loanMonth(k, month, entry, days) {
-		const active = PEOPLE.filter((p) => balance(p) > 0);
+		const active = PEOPLE.filter((p) => scheduled(p) > 0);
 		const people = {};
-		const left = { cyan: balance('cyan'), mint: balance('mint') };
+		const left = { cyan: scheduled('cyan'), mint: scheduled('mint') };
 		const monthInterest = interests(left, rate, days, yearDays(month));
 		const whole = k === 0 ? interests(left, rate, monthDays(month), yearDays(month)) : monthInterest;
 		// Both payments are worked out together, so they add up to the bank's
@@ -156,35 +168,46 @@ export function compute(data, today = currentMonth()) {
 		if (k === 0) Object.assign(firstPayment, instalments(left, rate, TERM)); // as first set: 30 years
 
 		for (const p of PEOPLE) {
-			const b = balance(p);
+			const b = left[p];
 			const i = active.indexOf(p);
 			const feeShare = i < 0 ? 0 : i === 0 ? Math.ceil(fee / active.length) : Math.floor(fee / active.length);
 			const interest = monthInterest[p];
 			const monthsLeft = Math.max(1, end[p] - k + 1);
+			// What is overdue bears late-payment interest for the month
+			const o = overdue[p];
+			const late = interestFor(o.principal + o.unpaid, Math.max(LATE_RATE, rate), days, yearDays(month));
+			o.late += late;
 			// The last payment settles whatever is left, so the part ends at exactly 0
 			// A first month shorter than a whole one: the bank charges interest for the days only, and
 			// takes the principal as if the month were whole, so the first payment is smaller
 			const fewer = whole[p] - interest;
 			const due = !b ? 0 : monthsLeft === 1 ? b + interest : Math.min(payment[p] - Math.max(0, fewer), b + interest);
 			const min = due + feeShare;
+			const overdueIn = overdueTotal(p);
+			const owed = min + overdueIn; // this month's minimum and what is overdue
 			const typed = isEntered(entry[p]);
-			const paid = typed ? toOre(entry[p]) : min;
+			const paid = typed ? toOre(entry[p]) : owed;
 			people[p] = {
-				balance: b, // the part at the start of the month
+				balance: balance(p), // the part at the start of the month (with any overdue principal)
+				scheduled: b, // the same without it
 				monthsLeft,
 				min,
+				owed,
+				overdueIn, // overdue from earlier months, with this month's late-payment interest
+				late,
 				paid,
 				typed,
 				due, // the bank's part of the minimum, without the fee
 				feeDue: feeShare,
 				interestDue: interest,
 				principalDue: due - interest,
-				short: Math.max(0, min - paid),
-				extra: Math.max(0, paid - min),
+				short: Math.max(0, owed - paid),
+				extra: Math.max(0, paid - owed),
 				covered: 0, // below 0: covered by the other; above 0: covered for the other
 				principal: 0,
 				interest: 0,
-				uncovered: 0,
+				overduePaid: 0, // overdue interest, fees and late-payment interest paid
+				overdue: 0, // overdue after this month
 				surplus: 0 // paid beyond everything this person owed: not applied anywhere
 			};
 		}
@@ -203,17 +226,33 @@ export function compute(data, today = currentMonth()) {
 		let created = 0; // debt created this month, signed like `debt`
 		for (const p of PEOPLE) {
 			const s = people[p];
-			const expected = balance(p) - s.principalDue; // where the part would be after the minimum
-			// A covered amount counts as paid by the one it was paid for, in the usual order (3.4.1)
+			const o = overdue[p];
+			// A covered amount counts as paid by the one it was paid for (3.4.1): what is overdue first,
+			// then the month's fee, interest and principal, then any extra
 			let rest = s.paid - s.covered;
-			const feePaid = Math.min(rest, s.feeDue);
-			s.feePaid = feePaid;
-			rest -= feePaid;
-			s.interest = Math.min(rest, s.interestDue);
-			rest -= s.interest;
-			s.principal = Math.min(rest, balance(p));
-			s.surplus = rest - s.principal;
+			const take = (amount) => {
+				const x = Math.min(rest, amount);
+				rest -= x;
+				return x;
+			};
+			const latePaid = take(o.late);
+			const unpaidPaid = take(o.unpaid);
+			const overduePrincipal = take(o.principal);
+			o.late -= latePaid;
+			o.unpaid -= unpaidPaid;
+			o.principal -= overduePrincipal;
+			s.overduePaid = latePaid + unpaidPaid;
+			s.feePaid = take(s.feeDue);
+			s.interest = take(s.interestDue);
+			const principal = take(s.principalDue);
+			const extra = take(s.scheduled - s.principalDue);
+			s.surplus = rest;
+			s.principal = overduePrincipal + principal + extra;
 			equity[p] += s.principal;
+			// Not paid now: overdue, paid first next month
+			o.unpaid += s.feeDue - s.feePaid + (s.interestDue - s.interest);
+			o.principal += s.principalDue - principal;
+			s.overdue = overdueTotal(p);
 
 			// ...and becomes their personal debt to the one who paid it
 			if (s.covered < 0) {
@@ -221,22 +260,20 @@ export function compute(data, today = currentMonth()) {
 				covered[other(p)] -= s.covered;
 				created += (p === 'cyan' ? 1 : -1) * -s.covered;
 			}
-			s.uncovered = s.short + Math.min(0, s.covered);
-			// Unpaid interest and fees are added to what this person owes the bank (3.5)
-			equity[p] -= s.feeDue - feePaid + (s.interestDue - s.interest);
 
-			// Off schedule (extra, or short and not covered): the payment is worked out again, same end
-			if (balance(p) > 0 && balance(p) !== expected) payment[p] = null;
+			// An extra: the payment is worked out again, same end
+			if (extra > 0 && scheduled(p) > 0) payment[p] = null;
 		}
 
-		// Interest counts in the year it built up (påløpt), as the tax return wants: a payment on
-		// 1 January is December's, so it belongs to the year before. Fees are deductible as well.
+		// Interest counts in the year it built up (påløpt), as the tax return wants, paid on time or
+		// not: a payment on 1 January is December's, so it belongs to the year before. Fees and
+		// late-payment interest are deductible as well.
 		const year = addMonths(month, -1).slice(0, 4);
 		const paid = (interestPaid[year] ??= { cyan: 0, mint: 0, estimate: false });
 		for (const p of PEOPLE) {
-			paid[p] += people[p].interest + people[p].feePaid;
+			paid[p] += people[p].interestDue + people[p].feeDue + people[p].late;
 			// Not entered yet, so counted at the minimum: the year's numbers are an estimate
-			if (!people[p].typed && people[p].min > 0) paid.estimate = true;
+			if (!people[p].typed && people[p].owed > 0) paid.estimate = true;
 		}
 
 		addDebt(created);
@@ -272,7 +309,7 @@ export function compute(data, today = currentMonth()) {
 			payment.cyan = payment.mint = null;
 		}
 		const days = interestDays(month, k === 0 && data.takeover);
-		const loan = balance('cyan') + balance('mint') > 0;
+		const loan = balance('cyan') + balance('mint') + overdueTotal('cyan') + overdueTotal('mint') > 0;
 		if (!loan && (debt === 0 || month > until)) break;
 
 		// The debt between the two bears interest at the mortgage's rate, on the amounts covered only
@@ -322,7 +359,8 @@ export function compute(data, today = currentMonth()) {
 		rows.push(row);
 		// After the December payment the balances stand until 1 January: they are the debt on 31 December
 		if (month.endsWith('-12')) {
-			yearEnd[month.slice(0, 4)] = { loan: { cyan: balance('cyan'), mint: balance('mint') }, debt };
+			// (with what is overdue: owed to the bank as well)
+			yearEnd[month.slice(0, 4)] = { loan: { cyan: balance('cyan') + overdue.cyan.unpaid + overdue.cyan.late, mint: balance('mint') + overdue.mint.unpaid + overdue.mint.late }, debt };
 		}
 		if (month <= until) state = snapshot();
 	}
@@ -356,7 +394,7 @@ export function monthsLeft(data, result, today, p) {
 	const first = rows.values().next().value;
 	if (!first) return 0;
 	const start = result.rows[0].month; // the loan's first payment
-	let left = first.people[p].balance;
+	let left = first.people[p].scheduled; // what is overdue is paid on its own, not over the years
 	let rate = first.rate;
 	let n = 0;
 	for (let month = first.month; left > 0; month = addMonths(month, 1), n++) {
@@ -370,7 +408,7 @@ export function monthsLeft(data, result, today, p) {
 		// Only an extra shortens it: a short month is overdue, not more time, and an amount the other
 		// covered counts as paid by this one (3.4.1)
 		const s = row?.people[p];
-		const beyond = s?.typed ? Math.max(0, s.paid - s.covered - (s.due + half)) : 0;
+		const beyond = s?.typed ? Math.max(0, s.paid - s.covered - (s.owed - s.feeDue + half)) : 0;
 		const paid = result.firstPayment[p] - Math.max(0, fewer) + beyond;
 		if (!beyond && paid <= interest) return null; // the instalment doesn't even cover the interest
 		left += interest - paid;
@@ -382,11 +420,12 @@ export function monthsLeft(data, result, today, p) {
 // from compute()'s state, all in øre. Each gets half of the price less the costs of sale, less their
 // own loan left (their Settlement Amount); the debt between the two is then set off against it.
 export function saleSplit(state, price, costs) {
-	const loanLeft = state.balance.cyan + state.balance.mint;
+	const owes = (p) => state.balance[p] + (state.overdue?.[p] ?? 0); // with what is overdue at the bank
+	const loanLeft = owes('cyan') + owes('mint');
 	const net = price - costs - loanLeft;
 	const half = { cyan: Math.floor((price - costs) / 2) };
 	half.mint = price - costs - half.cyan;
-	const proceeds = { cyan: half.cyan - state.balance.cyan, mint: half.mint - state.balance.mint };
+	const proceeds = { cyan: half.cyan - owes('cyan'), mint: half.mint - owes('mint') };
 	// Above 0, cyan owes mint
 	const settled = { cyan: -state.debt, mint: state.debt };
 	const gets = { cyan: proceeds.cyan + settled.cyan, mint: proceeds.mint + settled.mint };

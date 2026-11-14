@@ -20,12 +20,12 @@ const sumPrincipal = (r, p, from, to) => loanRows(r).filter((x) => x.month >= fr
 
 // Checks that must hold for every scenario
 function invariants(r, label) {
-	// The interest table is exactly the interest each row says was paid, year by year
+	// The interest table is exactly the interest, fees and late-payment interest each row says was charged, year by year
 	for (const p of PEOPLE) {
 		const fromRows = {};
 		for (const x of loanRows(r)) {
 			const y = addMonths(x.month, -1).slice(0, 4); // the year the interest built up
-			fromRows[y] = (fromRows[y] ?? 0) + x.people[p].interest + x.people[p].feePaid;
+			fromRows[y] = (fromRows[y] ?? 0) + x.people[p].interestDue + x.people[p].feeDue + x.people[p].late;
 		}
 		for (const [y, v] of Object.entries(r.interestPaid)) assert.equal(v[p], fromRows[y] ?? 0, `${label}: ${p} ${y}`);
 	}
@@ -120,7 +120,7 @@ test('short covered by the other: counts as paid by the one short, and becomes t
 	invariants(r, 'covered');
 	const x = row(r, '2027-01');
 	assert.equal(x.people.cyan.covered, -x.people.cyan.short);
-	assert.equal(x.people.cyan.uncovered, 0);
+	assert.equal(x.people.cyan.overdue, 0);
 	// Cyan's part goes down as if cyan had paid, and cyan owes mint the whole amount
 	assert.deepEqual(r.state.balance, compute(base(), '2027-01').state.balance);
 	assert.equal(x.debt, jan.people.cyan.min);
@@ -130,14 +130,31 @@ test('short covered by the other: counts as paid by the one short, and becomes t
 	assert.equal(r.state.covered.mint, jan.people.cyan.min);
 });
 
-test('short and not covered: interest added to what that person owes', () => {
-	const r = run({ '2027-01': { cyan: 0 } }, {}, '2027-01');
-	invariants(r, 'uncovered');
-	const x = row(r, '2027-01').people.cyan;
-	assert.equal(x.uncovered, x.short);
-	assert.equal(x.interest, 0);
-	// Balance grew by the unpaid interest + fee
-	assert.equal(r.state.balance.cyan, row(r, '2027-01').people.cyan.interestDue + x.feeDue + toOre(8700000 / 2 - 500000) - row(r, '2026-12').people.cyan.principal);
+test('short and not covered: overdue with late-payment interest, paid first the next month; the schedule stays', () => {
+	const plain = run({}, {}, '2027-02');
+	const r = run({ '2027-01': { cyan: 0 } }, {}, '2027-02');
+	invariants(r, 'overdue');
+	const jan = row(r, '2027-01').people.cyan;
+	const feb = row(r, '2027-02').people.cyan;
+	assert.equal(jan.overdue, jan.min); // all of January's minimum
+	assert.equal(jan.interest, 0);
+	// February: late-payment interest on it, at 12,25 % for February's days, and it is paid first
+	assert.equal(feb.late, Math.round((jan.min * 12.25 * 31) / 36500));
+	assert.equal(feb.owed, feb.min + jan.min + feb.late);
+	assert.equal(feb.overdue, 0);
+	// Paid by then, everything is as if January had been paid on time; the payment stays the same
+	assert.deepEqual(r.state.balance, plain.state.balance);
+	assert.equal(feb.min, row(plain, '2027-02').people.cyan.min);
+	// The late-payment interest counts for the tax return, with the rest; January's interest in the year it built up
+	assert.equal(r.interestPaid[2027].cyan - plain.interestPaid[2027].cyan, feb.late);
+});
+
+test('overdue left at the take-over of a sale: counts in what that person owes', () => {
+	const r = run({ '2027-01': { cyan: 0 }, '2027-02': { cyan: 0 } }, {}, '2027-02');
+	const feb = row(r, '2027-02').people.cyan;
+	assert.equal(r.state.overdue.cyan, feb.overdue - (r.state.balance.cyan - row(r, '2027-02').people.cyan.scheduled + feb.principalDue - feb.principal));
+	const sale = saleSplit(r.state, toOre(9000000), 0);
+	assert.equal(sale.proceeds.cyan, sale.half.cyan - r.state.balance.cyan - r.state.overdue.cyan);
 });
 
 test('a covered amount repaid in money with the next month is free of interest (40 days)', () => {

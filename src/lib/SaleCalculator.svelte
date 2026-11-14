@@ -51,7 +51,7 @@
 				</tr>
 				<tr>
 					<td>− own loan left</td>
-					{#each PEOPLE as p (p)}<td class="num">{formatKr(now.balance[p])}</td>{/each}
+					{#each PEOPLE as p (p)}<td class="num">{formatKr(now.balance[p] + (now.overdue?.[p] ?? 0))}</td>{/each}
 				</tr>
 				<tr>
 					<td>settlement amount</td>
