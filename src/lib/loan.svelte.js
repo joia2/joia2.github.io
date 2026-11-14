@@ -49,6 +49,8 @@ export const loan = $state({ data: null, sha: null, status: 'idle', error: '' })
 
 let timer;
 let cleaned = false;
+const CLEANED = 'joia2.cleaned'; // when this device last cleaned up
+const WEEK = 7 * 24 * 60 * 60 * 1000;
 let queue = Promise.resolve(); // saves run one after another, each on top of the previous version
 
 export async function loadLoan() {
@@ -83,8 +85,14 @@ export async function loadLoan() {
 		for (const entry of Object.values(loan.data.payments ?? {})) delete entry.lofavor;
 		// Unused attachment files left by an upload or removal that stopped halfway: removed in the
 		// background (failing quietly: it tries again on the next opening)
-		if (!cleaned) cleanUp(session.token, $state.snapshot(loan.data)).catch(() => {});
-		cleaned = true; // once per opening of the app
+		// At most once a week on this device (the menu's "clean up" does it at any time)
+		const last = Number(storage()?.getItem(CLEANED) ?? 0);
+		if (!cleaned && Date.now() - last > WEEK) {
+			cleanUp(session.token, $state.snapshot(loan.data))
+				.then(() => storage()?.setItem(CLEANED, String(Date.now())))
+				.catch(() => {});
+		}
+		cleaned = true; // once per opening of the app at most
 	} catch (e) {
 		loan.status = 'error';
 		// A key that no longer opens the data: the password was most likely changed on another device
