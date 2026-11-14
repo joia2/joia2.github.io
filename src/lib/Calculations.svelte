@@ -194,7 +194,13 @@
 		overflow: auto;
 		padding: 0 1.5rem 1.5rem;
 	}
+	/* The month stays at the top while the formulas scroll under it */
 	label {
+		position: sticky;
+		top: 0;
+		z-index: 1;
+		padding-bottom: 0.5rem;
+		background: var(--surface);
 		display: flex;
 		flex-direction: column;
 		gap: 0.3rem;
