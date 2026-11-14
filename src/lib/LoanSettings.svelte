@@ -491,9 +491,10 @@
 					></textarea>
 				</label>
 				<!-- Receipts, invoices, photos: tap one to see it -->
-				<div class="files">
-					{#each c.files as f, j (f.id ?? f.name + j)}
-						<span class="file" class:uploading={!f.id} title={f.id ? f.name : 'saving…'}>
+				{#if c.files.length}
+					<ul class="entries files">
+						{#each c.files as f, j (f.id ?? f.name + j)}
+							<li class:uploading={!f.id} title={f.id ? f.name : 'saving…'}>
 							<button type="button" class="name" onclick={() => preview(f)}>
 								{#if f.type?.startsWith('image/')}<ImageIcon size={14} />{:else if f.type === 'application/pdf'}<FileText size={14} />{:else}<FileIcon size={14} />{/if}
 								<span>{f.name}</span>
@@ -501,8 +502,11 @@
 							<button type="button" class="icon-button" onclick={() => c.files.splice(j, 1)} aria-label="remove {f.name}">
 								<X size={16} />
 							</button>
-						</span>
-					{/each}
+							</li>
+						{/each}
+					</ul>
+				{/if}
+				<div class="chips">
 					<label class="attach">
 						<Paperclip size={16} />+ attachment
 						<input type="file" accept="application/pdf,image/*" multiple onchange={(e) => attach(c, e)} />
@@ -792,7 +796,7 @@
 		min-height: calc(1.4em + 0.7rem + 2px);
 	}
 	.cost .attach,
-	.cost .file .name {
+	.cost .files .name {
 		font-size: 0.75rem;
 	}
 	form .cost .attach {
@@ -815,6 +819,13 @@
 	.entries li {
 		display: flex;
 		align-items: center;
+	}
+	/* Each payment, transfer or attachment as a line of a list */
+	.entries li::before {
+		content: '•';
+		margin-right: 0.15rem;
+		color: var(--muted);
+		font-size: 0.75rem;
 	}
 	.entry {
 		display: grid;
@@ -920,26 +931,12 @@
 	.payer button.chosen.mint {
 		border-color: var(--mint);
 	}
-	.files {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.4rem;
-	}
-	.file {
-		display: inline-flex;
-		align-items: center;
-		min-width: 0;
-		max-width: 100%;
-		border: 1px solid var(--border);
-		border-radius: 10px;
-	}
 	/* Not uploaded yet */
-	.file.uploading {
+	.files .uploading {
 		opacity: 0.55;
-		border-style: dashed;
 	}
 	/* The kind's icon (image, PDF, other) and the name, cut with … when too long */
-	.file .name {
+	.files .name {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
@@ -949,16 +946,16 @@
 		background: transparent;
 		font-size: 0.82rem;
 	}
-	.file .name span {
+	.files .name span {
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
-	.file .name :global(svg) {
+	.files .name :global(svg) {
 		flex-shrink: 0;
 		color: var(--muted);
 	}
-	.file .icon-button {
+	.files .icon-button {
 		width: 28px;
 		height: 28px;
 	}
