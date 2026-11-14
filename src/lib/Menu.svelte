@@ -7,6 +7,7 @@
 	import House from '@lucide/svelte/icons/house';
 	import FileBraces from '@lucide/svelte/icons/file-braces';
 	import Calculator from '@lucide/svelte/icons/calculator';
+	import Receipt from '@lucide/svelte/icons/receipt';
 	import { ui } from '#lib/ui.svelte.js';
 	import { lock, session } from '#lib/session.svelte.js';
 	import { save, hasUnsavedChanges } from '#lib/loan.svelte.js';
@@ -61,7 +62,8 @@
 	<nav>
 		<button bind:this={first} onclick={choose(show('names'))}><Users size={20} />names</button>
 		<button onclick={choose(show('apartment'))}><House size={20} />apartment</button>
-		<button onclick={choose(() => ((ui.view = 'home'), (ui.saleOpen = true)))}><Calculator size={20} />sale</button>
+		<button onclick={choose(() => ((ui.view = 'home'), (ui.saleOpen = true)))}><Receipt size={20} />sale</button>
+		<button onclick={choose(() => ((ui.view = 'home'), (ui.calcOpen = true)))}><Calculator size={20} />calculations</button>
 		<button onclick={choose(() => (ui.rawOpen = true))}><FileBraces size={20} />data</button>
 		<hr />
 		{#if !session.demo}

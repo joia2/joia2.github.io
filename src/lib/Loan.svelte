@@ -14,6 +14,7 @@
 	import Instalment from '#lib/Instalment.svelte';
 	import Owned from '#lib/Owned.svelte';
 	import SaleCalculator from '#lib/SaleCalculator.svelte';
+	import Calculations from '#lib/Calculations.svelte';
 	import { loan, changed } from '#lib/loan.svelte.js';
 	import { compute, currentMonth, formatKr, monthsLeft as left, formatPercent, other, setValue, taxShares, PEOPLE } from '#lib/loan.js';
 	import { ui } from '#lib/ui.svelte.js';
@@ -183,6 +184,7 @@
 
 	<Owned state={result.state} egenkapital={loan.data.egenkapital} {names} bind:open={ownedOpen} />
 	<SaleCalculator state={result.state} {names} bind:open={ui.saleOpen} />
+	<Calculations {names} bind:open={ui.calcOpen} />
 	{#if thisRow}<Instalment rows={result.rows.filter((r) => r.loan)} start={thisRow.month} {names} bind:open={instalmentOpen} />{/if}
 	<InterestYears interestPaid={result.interestPaid} yearEnd={result.yearEnd} {names} highlight={tax?.year} bind:open={yearsOpen} />
 
