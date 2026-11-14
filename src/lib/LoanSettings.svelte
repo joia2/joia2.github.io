@@ -106,8 +106,8 @@
 
 	// The small popup for one payment or transfer: its date and amount (and, for a payment, who paid)
 	const today = () => new Date().toLocaleDateString('sv'); // YYYY-MM-DD
-	// A transfer as written: cyan on the left, the arrow showing the way (John → Iago, John ← Iago)
-	const transfer = (e) => (e.from === 'cyan' ? `${data.names.cyan} → ${data.names.mint}` : `${data.names.cyan} ← ${data.names.mint}`);
+	// A transfer as written: John → Iago, Iago → John
+	const transfer = (e) => `${data.names[e.from]} → ${data.names[e.to]}`;
 	let entry = $state(null); // { cost, index (−1: new), who | from + to, date, amount (text) }
 	let entryOpen = $state(false);
 	function editEntry(cost, kind, index = -1) {
@@ -463,7 +463,7 @@
 									<span class="what">
 										{#if e.who}<Wallet size={15} />{:else if e.from === 'cyan'}<BanknoteArrowDown size={15} class="turn" />{:else}<BanknoteArrowUp size={15} class="turn" />{/if}
 										{#if e.who}{@render initial(e.who)} paid
-										{:else}{@render initial('cyan')}<span class="arrow">{e.from === 'cyan' ? '→' : '←'}</span>{@render initial('mint')}{/if}
+										{:else}{@render initial(e.from)}<span class="arrow">→</span>{@render initial(e.to)}{/if}
 									</span>
 									<span class="amount">{formatAmount(e.amount)}</span>
 								</button>
@@ -477,7 +477,7 @@
 				<div class="chips">
 					<button type="button" class="attach" onclick={() => editEntry(c, { who: 'cyan' })}><Wallet size={16} />+pay</button>
 					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'cyan', to: 'mint' })}><BanknoteArrowDown size={16} class="turn" />{@render initial('cyan')}<span class="arrow">→</span>{@render initial('mint')}</button>
-					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}><BanknoteArrowUp size={16} class="turn" />{@render initial('cyan')}<span class="arrow">←</span>{@render initial('mint')}</button>
+					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}><BanknoteArrowUp size={16} class="turn" />{@render initial('mint')}<span class="arrow">→</span>{@render initial('cyan')}</button>
 				</div>
 				<label>
 					<textarea
