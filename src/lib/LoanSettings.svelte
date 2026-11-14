@@ -796,6 +796,7 @@
 	}
 	.split {
 		margin: 0;
+		text-align: center;
 		font-size: 0.72rem;
 		color: var(--muted);
 		font-variant-numeric: tabular-nums;
