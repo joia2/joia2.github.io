@@ -361,7 +361,8 @@
 			<div class="cost">
 				<!-- At a glance: the kind's icon, and the description, the total and what each paid -->
 				<div class="head">
-					<span class="kind">
+					<!-- Behind the icon, a pie of who owns how much: cyan from the top, clockwise, mint the rest -->
+					<span class="kind" class:empty={!split.total} style:--share={split.total ? Math.min(100, Math.max(0, (split.cyan / split.total) * 100)) : 0}>
 						{#if c.kind === 'maintenance'}<Wrench size={22} />{:else if c.kind === 'object'}<Sofa size={22} />{:else}<Paintbrush size={22} />{/if}
 					</span>
 					<div class="lines">
@@ -657,7 +658,22 @@
 		flex-shrink: 0;
 		width: 50px;
 		height: 50px;
-		color: var(--muted);
+		color: #0b2a2e;
+	}
+	.kind::before {
+		content: '';
+		grid-area: 1 / 1;
+		width: 44px;
+		height: 44px;
+		border-radius: 50%;
+		background: conic-gradient(var(--cyan) 0 calc(var(--share) * 1%), var(--mint) 0);
+	}
+	.kind.empty::before {
+		background: color-mix(in srgb, var(--border) 60%, transparent);
+	}
+	.kind > :global(svg) {
+		grid-area: 1 / 1;
+		position: relative;
 	}
 	.lines {
 		display: flex;

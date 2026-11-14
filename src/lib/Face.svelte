@@ -7,7 +7,7 @@
 	// animal in turn, a new one every minute: on the left backwards from the last (camel, horse…), on
 	// the right forwards from the first (fish, chicken…). The two never show the same animal.
 	let { person, size = 56, animal } = $props();
-	const color = $derived(person === 'cyan' ? '#22d3ee' : '#2dd4bf');
+	const color = $derived(person === 'cyan' ? '#22d3ee' : '#5bb98b');
 	const chosen = $derived(animal ?? loan.data?.animals?.[person]);
 	const n = ANIMAL_NAMES.length;
 	const turn = $derived(ANIMAL_NAMES[person === 'mint' ? clock.minute % n : n - 1 - (clock.minute % n)]);
