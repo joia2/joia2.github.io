@@ -154,7 +154,7 @@
 	// The costs as the data file keeps them: attachments only once uploaded
 	function parseCosts() {
 		return costs.map((c) => {
-			const files = c.files.filter((f) => f.id).map(({ id, name, type }) => ({ id, name, type }));
+			const files = c.files.filter((f) => f.id).map(({ id, name, type, size }) => ({ id, name, type, ...(size && { size }) }));
 			return {
 				kind: c.kind,
 				...(c.note.trim() && { note: c.note.trim() }),
@@ -185,7 +185,7 @@
 	// The apartment's documents: saved as they go, whatever happens to the rest of the page
 	let documents = $state([...(data.documents ?? [])]);
 	function saveDocuments() {
-		const kept = documents.filter((f) => f.id).map(({ id, name, type }) => ({ id, name, type }));
+		const kept = documents.filter((f) => f.id).map(({ id, name, type, size }) => ({ id, name, type, ...(size && { size }) }));
 		const ids = new Set(kept.map((f) => f.id));
 		const gone = (data.documents ?? []).filter((f) => !ids.has(f.id));
 		data.documents = kept;

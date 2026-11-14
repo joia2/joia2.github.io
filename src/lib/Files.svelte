@@ -4,6 +4,7 @@
 	import FileIcon from '@lucide/svelte/icons/file';
 	import FileText from '@lucide/svelte/icons/file-text';
 	import ImageIcon from '@lucide/svelte/icons/image';
+	import FileBox from '@lucide/svelte/icons/file-box';
 	import Paperclip from '@lucide/svelte/icons/paperclip';
 	import X from '@lucide/svelte/icons/x';
 	import Attachment from '#lib/Attachment.svelte';
@@ -19,6 +20,13 @@
 	let { files = $bindable([]), onchange, tags = false } = $props();
 
 	let error = $state('');
+
+	// Files too large to show in the preview (Attachment.svelte): opened instead, and marked so
+	const LARGE = 10 * 1000 * 1000;
+	// 512 kB, 3,4 MB
+	const sizeLabel = (bytes) =>
+		bytes < 1e6 ? `${Math.max(1, Math.round(bytes / 1e3))} kB` : `${(bytes / 1e6).toFixed(1).replace('.', ',')} MB`;
+	// A file saved before sizes were kept learns its size when opened
 
 	// Listed by name; each keeps its place in `files` for removing
 	const listed = $derived(files.map((f, i) => ({ f, i })).sort((a, b) => a.f.name.localeCompare(b.f.name, 'nb')));
@@ -146,11 +154,12 @@
 			<li class:uploading={!f.id} title={f.id ? f.name : 'saving…'}>
 				<span class="num">{n + 1}</span>
 				<button type="button" class="name" onclick={() => preview(f)}>
-					{#if f.type?.startsWith('image/')}<ImageIcon size={14} />{:else if f.type === 'application/pdf'}<FileText size={14} />{:else}<FileIcon size={14} />{/if}
+					{#if f.size > LARGE}<FileBox size={14} />{:else if f.type?.startsWith('image/')}<ImageIcon size={14} />{:else if f.type === 'application/pdf'}<FileText size={14} />{:else}<FileIcon size={14} />{/if}
 					{#if tags}<span class="tag" style:--hue={hue(parts.tag)}>{parts.tag}</span>{/if}
 					<span class="text">{tags ? parts.name : f.name}</span>
 					{#if f.progress}<span class="progress">{f.progress}</span>{/if}
 				</button>
+				{#if f.size ?? f.file?.size}<span class="size">{sizeLabel(f.size ?? f.file.size)}</span>{/if}
 				<button type="button" class="icon-button" onclick={() => removeAt(i)} aria-label="remove {f.name}">
 					<X size={16} />
 				</button>
@@ -180,7 +189,12 @@
 </div>
 {#if error}<p class="error" role="alert">{error}</p>{/if}
 
-<Attachment file={shown} bind:open={previewOpen} onrename={shown?.id ? () => startRename(shown) : undefined} />
+<Attachment
+	file={shown}
+	bind:open={previewOpen}
+	onrename={shown?.id ? () => startRename(shown) : undefined}
+	onsize={(bytes) => shown?.id && !shown.size && ((shown.size = bytes), onchange?.())}
+/>
 
 <Sheet title="file name" bind:open={renameOpen}>
 	{#if renaming}
@@ -226,6 +240,13 @@
 		font-size: 0.65rem;
 		color: var(--muted);
 		font-variant-numeric: tabular-nums;
+	}
+	.size {
+		flex-shrink: 0;
+		font-size: 0.65rem;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
 	}
 	/* How many parts of a large file are uploaded */
 	.progress {

@@ -10,7 +10,8 @@
 	// An attachment shown inside the app: an image, or a PDF in the browser's own viewer.
 	// file: { name, type, id } once saved, or { name, type, file } (a File) before
 	// onrename: when given, a pencil to rename the file
-	let { file, open = $bindable(false), onrename } = $props();
+	// onsize(bytes): once the file is fetched, for a list that didn't know its size yet
+	let { file, open = $bindable(false), onrename, onsize } = $props();
 
 	const PREVIEW_MAX = 10 * 1000 * 1000; // larger files are opened, not shown in the popup
 	let url = $state('');
@@ -26,6 +27,7 @@
 			.then((got) => {
 				if (cancelled) return;
 				blob = got;
+				onsize?.(got.size);
 				blobUrl = URL.createObjectURL(got);
 				url = blobUrl;
 			})

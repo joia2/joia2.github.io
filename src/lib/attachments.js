@@ -1,6 +1,6 @@
 // Files attached to the costs and the apartment (PDFs, images), kept in joia2data's files/ folder,
 // encrypted like loan.json with their name and type inside, so the repo shows neither. loan.json
-// lists them as { id, name, type }. A password change re-encrypts them with the rest.
+// lists them as { id, name, type, size } (size in bytes). A password change re-encrypts them with the rest.
 //
 // A small file is one file: files/<random id>.json. A larger one is cut into parts of 2 MB, as
 // GitHub refuses requests far below its 100 MB file limit (a whole 38 MB PDF failed):
@@ -22,9 +22,10 @@ export async function upload(file, name = file.name, onprogress) {
 	const id = crypto.randomUUID();
 	const bytes = new Uint8Array(await file.arrayBuffer());
 	const type = file.type;
+	const size = bytes.length;
 	if (bytes.length <= PART) {
 		await putFile(session.token, path(id), await encrypt({ name, type, data: bytes.toBase64() }), null, 'Add a file');
-		return { id, name, type };
+		return { id, name, type, size };
 	}
 	// The parts first, one after another; the file that lists them last, so it never points to a
 	// part that isn't there
@@ -35,7 +36,7 @@ export async function upload(file, name = file.name, onprogress) {
 		onprogress?.(k, parts);
 	}
 	await putFile(session.token, path(id), await encrypt({ name, type, parts }), null, 'Add a file');
-	return { id, name, type };
+	return { id, name, type, size };
 }
 
 // Returns the attachment as a Blob, decrypted
