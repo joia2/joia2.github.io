@@ -5,11 +5,16 @@
 	import ChangePassword from '#lib/ChangePassword.svelte';
 	import Loan from '#lib/Loan.svelte';
 	import LoanSettings from '#lib/LoanSettings.svelte';
+	import Sheet from '#lib/Sheet.svelte';
 	import { isUnlocked, session } from '#lib/session.svelte.js';
 	import { loan, loadLoan, unloadLoan, hasUnsavedChanges } from '#lib/loan.svelte.js';
 	import { ui } from '#lib/ui.svelte.js';
 
 	const home = () => (ui.view = 'home');
+
+	// The settings show as a popup over the main page, like the sale and the calculations
+	const SETTINGS = { names: 'names', apartment: 'apartment', costs: 'costs/ownership' };
+	const settings = $derived(SETTINGS[ui.view] ? ui.view : null);
 
 	// The loan file is read after login and dropped from memory when the app locks
 	$effect(() => {
@@ -42,10 +47,13 @@
 			<LoaderCircle size={24} class="spin" />
 		{/if}
 	</p>
-{:else if ui.view === 'home'}
-	<Loan />
 {:else}
-	<LoanSettings section={ui.view} onclose={home} />
+	<Loan />
+	<Sheet title={SETTINGS[settings] ?? ''} bind:open={() => Boolean(settings), (open) => !open && home()}>
+		{#if settings}
+			{#key settings}<LoanSettings section={settings} onclose={home} />{/key}
+		{/if}
+	</Sheet>
 {/if}
 
 <style>

@@ -281,8 +281,7 @@
 	}
 </script>
 
-<form onsubmit={submit}>
-	<h1>{section === 'costs' ? 'costs/ownership' : section}</h1>
+<form class="settings" onsubmit={submit}>
 
 	{#if section === 'names'}
 		{#each PEOPLE as p (p)}
@@ -601,6 +600,17 @@
 		box-sizing: border-box;
 	}
 	/* Not the page's card: the popup is the card */
+	/* Inside its popup (+page.svelte), which is the card: the form scrolls under the popup's title */
+	.settings {
+		max-width: none;
+		min-height: 0;
+		margin: 0;
+		padding: 0.25rem 1.5rem 1.5rem;
+		overflow: auto;
+		background: none;
+		border-radius: 0;
+		box-shadow: none;
+	}
 	/* Like the other fields, a bit smaller, growing with its text */
 	.note-field {
 		font: inherit;

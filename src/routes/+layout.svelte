@@ -20,7 +20,7 @@
 	<nav>
 		<a href="/" onclick={(e) => (e.preventDefault(), goHome())}><img src="/favicon.svg" alt="" width="22" height="22" />joia2</a>
 		{#if isUnlocked()}
-			{#if ui.view === 'home'}<YearJump />{/if}
+			{#if ui.view !== 'password'}<YearJump />{/if}
 			<span class="end">
 				<SaveStatus />
 				<button id="menu-button" class="icon-button menu" onclick={() => (ui.menuOpen = true)} aria-label="Open menu" aria-expanded={ui.menuOpen}>
