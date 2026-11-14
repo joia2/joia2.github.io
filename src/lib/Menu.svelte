@@ -93,7 +93,7 @@
 		<button onclick={choose(lockApp)}><Lock size={20} />lock</button>
 	</nav>
 	<!-- With the seconds until the next check for data saved elsewhere -->
-	<p class="version">v {version}{ui.check == null ? '' : ui.check === '…' ? ' (updating…)' : ` (sync in ${ui.check})`}</p>
+	<p class="version">v {version}{ui.check == null ? '' : ui.check === '…' ? ' (sync…)' : ` (sync in ${ui.check})`}</p>
 </aside>
 
 <style>
