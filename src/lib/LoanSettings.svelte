@@ -117,6 +117,13 @@
 			if (!cyan || !mint) return (error = 'Enter both names.');
 			data.names = { cyan, mint };
 			data.animals = { ...animals };
+			// The animals right after the names in the file: every other field moves after them
+			for (const k of Object.keys(data)) {
+				if (k === 'names' || k === 'animals') continue;
+				const v = data[k];
+				delete data[k];
+				data[k] = v;
+			}
 		}
 		if (section === 'apartment') {
 			const price = parseAmount(total);
