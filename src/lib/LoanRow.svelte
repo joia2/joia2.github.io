@@ -315,24 +315,18 @@
 	@media (min-width: 720px) and (hover: hover) {
 		.row {
 			grid-template-columns: 50px 1fr 6.25rem 1fr 50px;
-			padding-inline: 0;
+			padding-inline: 0.4rem;
 		}
 		.tick {
 			display: grid;
 			place-items: center;
 			align-self: stretch;
-			margin-block: -0.9rem; /* over the row's own padding: its whole height */
+			margin-block: -0.5rem; /* most of the row's height, with a little room around */
 			padding: 0;
 			border: 0;
-			border-radius: 0;
+			border-radius: 12px;
 			background: transparent;
 			color: var(--muted);
-		}
-		.row.now .tick.cyan {
-			border-radius: 14px 0 0 14px;
-		}
-		.row.now .tick.mint {
-			border-radius: 0 14px 14px 0;
 		}
 		.tick.cyan:hover:not(:disabled) {
 			background: color-mix(in srgb, var(--cyan) 22%, transparent);
