@@ -189,7 +189,7 @@
 	<div class="rows">
 		{#if earlier}
 			<button class="more" onclick={() => (ui.earlier = !ui.earlier)}>
-				{ui.earlier ? 'hide' : 'show'} {earlier} earlier months
+				{ui.earlier ? '–' : '+'} {earlier} months
 			</button>
 		{/if}
 		{#each visible as row (row.month)}
@@ -213,7 +213,7 @@
 		{/each}
 		{#if later}
 			<button class="more after" onclick={() => (ui.later = !ui.later)}>
-				{ui.later ? 'hide' : 'show'} {later} later months
+				{ui.later ? '–' : '+'} {later} months
 			</button>
 		{/if}
 	</div>
