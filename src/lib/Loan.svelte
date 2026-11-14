@@ -221,7 +221,7 @@
 
 	<!-- Each one's time left at their instalment, the instalment, and their loan left -->
 	<nav class="bottom" aria-label="time left" hidden={typing} bind:offsetHeight={barHeight}>
-		<!-- Costs and ownership: on the bar's top edge, in the middle, over everything -->
+		<!-- Costs and ownership: in the middle of the bar, over everything -->
 		<button class="icon-button costs" onclick={() => (ui.view = 'costs')} aria-label="costs/ownership"><ChartPie size={22} /></button>
 		{#each PEOPLE as p (p)}
 			<div class="left-for {p}">
@@ -415,22 +415,16 @@
 		backdrop-filter: saturate(180%) blur(20px);
 		border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
 	}
-	/* Centered with margins, as the shared button press style changes transforms */
+	/* In the middle of the bar, over the two sides, like the instalment button at the top: centered
+	   with margins, as the shared button press style changes transforms */
 	.costs {
 		position: absolute;
-		top: -22px;
-		left: 0;
-		right: 0;
+		inset: 0;
 		z-index: 11;
 		width: 44px;
 		height: 44px;
-		margin-inline: auto;
-		border: 1px solid var(--border);
-		background: var(--surface);
-		box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
-	}
-	.costs:hover:not(:disabled) {
-		background: var(--surface);
+		margin: auto;
+		color: var(--muted);
 	}
 	.left-for {
 		display: flex;
