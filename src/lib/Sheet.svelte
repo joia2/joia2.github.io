@@ -46,8 +46,11 @@
 		display: flex;
 		flex-direction: column;
 	}
+	/* The page behind: dark and blurred, so the popup stands out */
 	dialog::backdrop {
-		background: rgb(0 0 0 / 0.3);
+		background: rgb(0 0 0 / 0.55);
+		-webkit-backdrop-filter: blur(3px);
+		backdrop-filter: blur(3px);
 	}
 	.top {
 		display: flex;
