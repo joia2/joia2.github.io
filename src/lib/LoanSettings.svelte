@@ -427,6 +427,7 @@
 								<button type="button" class="entry" onclick={() => editEntry(c, {}, j)}>
 									<span class="date">{e.date}</span>
 									<span class="what">
+										{#if e.who}<Wallet size={15} />{:else if e.from === 'cyan'}<BanknoteArrowDown size={15} class="turn" />{:else}<BanknoteArrowUp size={15} class="turn" />{/if}
 										{#if e.who}<Face person={e.who} size={16} />{data.names[e.who]} paid
 										{:else}<Face person={e.from} size={16} />{transfer(e)}{/if}
 									</span>
@@ -799,7 +800,8 @@
 		font-variant-numeric: tabular-nums;
 	}
 	/* The transfer icons on their side: the arrow points along the → */
-	.chips :global(.turn) {
+	.chips :global(.turn),
+	.entries :global(.turn) {
 		transform: rotate(-90deg);
 	}
 	.chips {
