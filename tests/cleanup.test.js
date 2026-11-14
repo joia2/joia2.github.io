@@ -53,10 +53,10 @@ function fakeGitHub(history, { moveBranchMeanwhile = false } = {}) {
 const data = { costs: [{ files: [{ id: 'kept' }] }], documents: [{ id: 'doc' }] };
 const listed = ['salt.json', 'data.json', 'files/kept.json', 'files/doc.json', 'files/doc.1.json', 'files/doc.2.json'];
 
-test('clean-up: removes unlisted files older than a day, parts included; keeps the rest', async () => {
+test('clean-up: removes unlisted files older than a week, parts included; keeps the rest', async () => {
 	const now = fakeGitHub([
-		{ date: new Date(NOW - 2 * DAY), files: [...listed, 'files/old.1.json', 'files/old.2.json', 'files/gone.json'] },
-		{ date: new Date(NOW - 0.5 * DAY), files: [...listed, 'files/old.1.json', 'files/old.2.json', 'files/gone.json', 'files/new.1.json'] }
+		{ date: new Date(NOW - 8 * DAY), files: [...listed, 'files/old.1.json', 'files/old.2.json', 'files/gone.json'] },
+		{ date: new Date(NOW - 3 * DAY), files: [...listed, 'files/old.1.json', 'files/old.2.json', 'files/gone.json', 'files/new.1.json'] }
 	]);
 	assert.equal(await cleanUp('token', data, NOW), 3);
 	assert.deepEqual(now(), [...listed, 'files/new.1.json']); // the recent one may be an upload going on
