@@ -118,12 +118,7 @@
 	</div>
 {:else}
 	<section class="people">
-		{#each PEOPLE as p, i (p)}
-			{#if i === 1 && thisRow}
-				<button class="icon-button instalment" onclick={() => (ui.instalmentOpen = true)} aria-label="this month's instalment">
-					<BanknoteArrowUp size={22} />
-				</button>
-			{/if}
+		{#each PEOPLE as p (p)}
 			<div class="person {p}">
 				<Face person={p} size={64} />
 				<span class="who">
@@ -221,8 +216,15 @@
 
 	<!-- Each one's time left at their instalment, the instalment, and their loan left -->
 	<nav class="bottom" aria-label="time left" hidden={typing} bind:offsetHeight={barHeight}>
-		<!-- Costs and ownership: in the middle of the bar, over everything -->
-		<button class="icon-button costs" onclick={() => (ui.view = 'costs')} aria-label="costs/ownership"><ChartPie size={22} /><span>split</span></button>
+		<!-- Costs and ownership, and this month's instalment: at the top of the bar, in the middle, over everything -->
+		<span class="actions">
+			<button class="icon-button" onclick={() => (ui.view = 'costs')} aria-label="costs/ownership"><ChartPie size={22} /><span>split</span></button>
+			{#if thisRow}
+				<button class="icon-button" onclick={() => (ui.instalmentOpen = true)} aria-label="this month's instalment">
+					<BanknoteArrowUp size={22} /><span>pay</span>
+				</button>
+			{/if}
+		</span>
 		{#each PEOPLE as p (p)}
 			<div class="left-for {p}">
 				<Face person={p} size={24} />
@@ -292,18 +294,6 @@
 	}
 	.person.mint .share {
 		flex-direction: row-reverse;
-	}
-	/* Over everything in the middle, taking no room from the two sides: centered with margins, as the
-	   shared button press style changes transforms */
-	.instalment {
-		position: absolute;
-		inset: 0;
-		z-index: 5;
-		margin: auto;
-		flex-shrink: 0;
-		width: 44px;
-		height: 44px;
-		color: var(--muted);
 	}
 	.info.small {
 		width: 22px;
@@ -415,21 +405,25 @@
 		backdrop-filter: saturate(180%) blur(20px);
 		border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
 	}
-	/* At the top of the bar, in the middle, over the two sides, like the instalment button at the top: centered
-	   with margins, as the shared button press style changes transforms */
-	.costs {
+	/* At the top of the bar, in the middle, over the two sides: centered with margins, as the shared
+	   button press style changes transforms */
+	.actions {
 		position: absolute;
 		top: 0.25rem;
 		left: 0;
 		right: 0;
 		z-index: 11;
 		display: flex;
-		align-items: center;
 		width: fit-content;
-		height: 44px;
 		margin-inline: auto;
-		padding: 0 0.5rem;
+	}
+	.actions button {
+		display: flex;
+		align-items: center;
 		gap: 0.3rem;
+		width: auto;
+		height: 44px;
+		padding: 0 0.5rem;
 		border-radius: 22px;
 		font-size: 0.75rem;
 		color: var(--muted);
