@@ -9,7 +9,7 @@
 	import Trash from '@lucide/svelte/icons/trash';
 	import Face from '#lib/Face.svelte';
 	import MonthInput from '#lib/MonthInput.svelte';
-	import { ANIMAL_NAMES } from '#lib/animals.js';
+	import { ANIMAL_NAMES, killedThisYear } from '#lib/animals.js';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import RefreshCcw from '@lucide/svelte/icons/refresh-ccw';
 	import { loan, changed } from '#lib/loan.svelte.js';
@@ -26,6 +26,13 @@
 
 	let names = $state({ ...data.names });
 	let animals = $state({ ...data.animals });
+	// The counters under the animals: killed for food so far this year, updated every second
+	let now = $state(new Date());
+	$effect(() => {
+		const timer = setInterval(() => (now = new Date()), 1000);
+		return () => clearInterval(timer);
+	});
+	const count = (a) => new Intl.NumberFormat('nb-NO').format(killedThisYear(a, now));
 	let total = $state(data.total ? formatAmount(data.total) : '');
 	// The take-over day: the loan is paid out then, and the first payment is on the 1st of the next
 	// month. Older data without one counts from the 1st of the month before the first payment.
@@ -164,6 +171,7 @@
 					</button>
 				</span>
 			</label>
+			<p class="honour">in honour of…</p>
 			<!-- The icon: one of the animals, in this person's color; picking the chosen one again goes back to the face -->
 			<div class="animals" role="radiogroup" aria-label="{names[p] || p}'s icon">
 				{#each ANIMAL_NAMES as a (a)}
@@ -177,6 +185,7 @@
 						onclick={() => (animals[p] = animals[p] === a ? undefined : a)}
 					>
 						<Face person={p} size={44} animal={a} />
+						<span class="killed" title="killed for food worldwide so far this year">{count(a)}</span>
 					</button>
 				{/each}
 			</div>
@@ -297,9 +306,22 @@
 		gap: 0.4rem;
 		margin: -0.25rem 0 0.5rem;
 	}
+	.honour {
+		margin: -0.25rem 0 0;
+		font-size: 0.85rem;
+		font-style: italic;
+		color: var(--muted);
+	}
+	.killed {
+		font-size: 0.65rem;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
 	.animals button {
 		display: grid;
 		place-items: center;
+		gap: 0.15rem;
 		padding: 0.4rem;
 		border: 2px solid transparent;
 		border-radius: 14px;

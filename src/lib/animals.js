@@ -103,3 +103,28 @@ export const ANIMALS = Object.fromEntries(
 );
 
 export const ANIMAL_NAMES = Object.keys(ANIMALS);
+
+// How many of each are killed for food worldwide in a year: FAOSTAT 2024, from christiankoeder.com/2026/02/FAO2024.html
+// (the pigeon: "other birds"; the rat: "rodents"); fish: fishcount.org.uk, the midpoint of
+// 1.1–2.2 trillion caught from the wild a year (2000–2019) and about 124 billion farmed (2019)
+export const KILLED_A_YEAR = {
+	fish: 1_650_000_000_000 + 124_000_000_000,
+	chicken: 78_500_000_000,
+	duck: 4_200_000_000,
+	pig: 1_500_000_000,
+	rabbit: 604_000_000,
+	turkey: 504_000_000,
+	sheep: 704_000_000,
+	cow: 305_000_000,
+	rat: 69_000_000,
+	pigeon: 49_000_000,
+	horse: 4_000_000,
+	camel: 3_000_000
+};
+
+// So far this year, at that yearly pace
+export function killedThisYear(name, now = new Date()) {
+	const start = Date.UTC(now.getUTCFullYear(), 0, 1);
+	const end = Date.UTC(now.getUTCFullYear() + 1, 0, 1);
+	return Math.floor((KILLED_A_YEAR[name] * (now.getTime() - start)) / (end - start));
+}
