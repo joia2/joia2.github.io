@@ -163,7 +163,7 @@
 						<Info size={16} />
 					</button>
 				</span>
-				<span class="label">{tax.year} tax return</span>
+				<span class="label">{p === 'cyan' ? `tax return ${tax.year}` : `${tax.year} tax return`}</span>
 			{/if}
 		</span>
 	{/snippet}

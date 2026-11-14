@@ -9,6 +9,7 @@
 	import Trash from '@lucide/svelte/icons/trash';
 	import Face from '#lib/Face.svelte';
 	import MonthInput from '#lib/MonthInput.svelte';
+	import { ANIMAL_NAMES } from '#lib/animals.js';
 	import { loan, changed } from '#lib/loan.svelte.js';
 	import Hourglass from '@lucide/svelte/icons/hourglass';
 	import { addMonths, currentMonth, formatAmount, parseAmount, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
@@ -22,6 +23,7 @@
 	const startLocked = months.some((m) => PEOPLE.some((p) => data.payments[m][p] != null));
 
 	let names = $state({ ...data.names });
+	let animals = $state({ ...data.animals });
 	let total = $state(data.total ? formatAmount(data.total) : '');
 	// The take-over day: the loan is paid out then, and the first payment is on the 1st of the next
 	// month. Older data without one counts from the 1st of the month before the first payment.
@@ -100,6 +102,7 @@
 			const mint = names.mint.trim();
 			if (!cyan || !mint) return (error = 'Enter both names.');
 			data.names = { cyan, mint };
+			data.animals = { ...animals };
 		}
 		if (section === 'apartment') {
 			const price = parseAmount(total);
@@ -141,10 +144,26 @@
 			<label>
 				{p === 'cyan' ? 'left' : 'right'}
 				<span class="field">
-					<Face person={p} size={20} />
+					<Face person={p} size={20} animal={animals[p]} />
 					<input bind:value={names[p]} autocomplete="off" />
 				</span>
 			</label>
+			<!-- The icon: one of the animals, in this person's color; picking the chosen one again goes back to the face -->
+			<div class="animals" role="radiogroup" aria-label="{names[p] || p}'s icon">
+				{#each ANIMAL_NAMES as a (a)}
+					<button
+						type="button"
+						role="radio"
+						aria-checked={animals[p] === a}
+						aria-label={a}
+						class:chosen={animals[p] === a}
+						class={p}
+						onclick={() => (animals[p] = animals[p] === a ? undefined : a)}
+					>
+						<Face person={p} size={44} animal={a} />
+					</button>
+				{/each}
+			</div>
 		{/each}
 	{:else if section === 'apartment'}
 		<label>
@@ -256,6 +275,28 @@
 </form>
 
 <style>
+	.animals {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 0.4rem;
+		margin: -0.25rem 0 0.5rem;
+	}
+	.animals button {
+		display: grid;
+		place-items: center;
+		padding: 0.4rem;
+		border: 2px solid transparent;
+		border-radius: 14px;
+		background: transparent;
+	}
+	.animals button.chosen.cyan {
+		border-color: var(--cyan);
+		background: color-mix(in srgb, var(--cyan) 15%, transparent);
+	}
+	.animals button.chosen.mint {
+		border-color: var(--mint);
+		background: color-mix(in srgb, var(--mint) 15%, transparent);
+	}
 	fieldset {
 		display: flex;
 		flex-direction: column;
