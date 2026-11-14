@@ -694,9 +694,13 @@
 		border-radius: 4px;
 		background: transparent;
 		font: inherit;
+		font-weight: 600;
 		color: var(--text);
 		resize: none;
 		overflow: hidden;
+	}
+	form .description::placeholder {
+		font-weight: 400;
 	}
 	form .description:focus {
 		outline: none;
