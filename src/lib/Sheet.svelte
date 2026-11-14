@@ -4,8 +4,8 @@
 	// A popup: a glass card over the dimmed page, closed with Escape, the × or a click outside.
 	// actions: optional buttons next to the ×. Every button here is type="button": a popup can sit
 	// inside a page's form (a file's preview in the apartment popup), and must not submit it
-	// wide: nearly the whole window (a file's preview on a computer)
-	let { title, open = $bindable(false), actions, children, wide = false } = $props();
+	// wide: nearly the whole window (a file's preview on a computer); after: shown beside the title
+	let { title, open = $bindable(false), actions, children, wide = false, after } = $props();
 
 	let dialog = $state();
 
@@ -24,7 +24,7 @@
 	onclick={(e) => e.target === dialog && dialog.close()}
 >
 	<div class="top">
-		<h1>{title}</h1>
+		<h1>{title}{@render after?.()}</h1>
 		{@render actions?.()}
 		<button type="button" class="icon-button" onclick={() => dialog.close()} aria-label="close"><X size={22} /></button>
 	</div>
