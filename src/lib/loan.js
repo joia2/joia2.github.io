@@ -123,7 +123,7 @@ export function compute(data, today = currentMonth()) {
 	const costs = [...(data.costs ?? [])].sort((a, b) => (a.month < b.month ? -1 : 1));
 	let costsApplied = 0;
 	const covered = { cyan: 0, mint: 0 }; // in total: above 0, paid for the other; below 0, paid by the other
-	const costsPaid = { cyan: { maintenance: 0, improvement: 0 }, mint: { maintenance: 0, improvement: 0 } };
+	const costsPaid = { cyan: { maintenance: 0, improvement: 0, object: 0 }, mint: { maintenance: 0, improvement: 0, object: 0 } };
 	function applyCosts(month) {
 		for (; costsApplied < costs.length && !(costs[costsApplied].month > month); costsApplied++) {
 			for (const p of PEOPLE) costsPaid[p][costs[costsApplied].kind] += toOre(costs[costsApplied][p] || 0);

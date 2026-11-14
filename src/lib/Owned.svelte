@@ -20,7 +20,8 @@
 		['ownership share', () => formatPercent(50), true],
 		['covered', (p) => signed(state.covered[p])],
 		['maintenances', (p) => formatKr(state.costs[p].maintenance)],
-		['improvements', (p) => formatKr(state.costs[p].improvement)]
+		['improvements', (p) => formatKr(state.costs[p].improvement)],
+		['objects', (p) => formatKr(state.costs[p].object)]
 	]);
 </script>
 
@@ -50,7 +51,7 @@
 			is paid (4.1); what you have paid in lowers your own loan left, and so raises your settlement
 			amount on a sale (4.2). Covered: what one of you paid for the other's instalment, + for the one
 			who paid and − for the one it was paid for. It counts as paid by the one it was paid for, and is
-			their debt to the other (3.4). Maintenance and improvement costs are a record only (4.3).
+			their debt to the other (3.4). Maintenance and improvement costs are a record only (4.3). Objects belong to each of you by what each paid for them (6.1).
 		</p>
 	</div>
 </Sheet>

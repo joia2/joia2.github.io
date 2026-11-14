@@ -6,6 +6,7 @@
 	import Calendar from '@lucide/svelte/icons/calendar';
 	import Wrench from '@lucide/svelte/icons/wrench';
 	import Paintbrush from '@lucide/svelte/icons/paintbrush';
+	import Sofa from '@lucide/svelte/icons/sofa';
 	import Trash from '@lucide/svelte/icons/trash';
 	import Face from '#lib/Face.svelte';
 	import MonthInput from '#lib/MonthInput.svelte';
@@ -17,7 +18,7 @@
 	import Hourglass from '@lucide/svelte/icons/hourglass';
 	import { addMonths, currentMonth, formatAmount, parseAmount, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
 
-	// section: 'names' | 'apartment' (the apartment and its mortgage) | 'costs' (maintenance and improvement)
+	// section: 'names' | 'apartment' (the apartment and its mortgage) | 'costs' (maintenance, improvements and objects)
 	let { section, onclose } = $props();
 
 	const data = loan.data;
@@ -102,8 +103,8 @@
 		const parsed = [];
 		for (const c of costs) {
 			const [cyan, mint] = PEOPLE.map((p) => parseAmount(c[p]));
-			if (cyan === undefined || mint === undefined || !(cyan || mint)) return `Enter what each paid for the ${c.kind} cost.`;
-			if (!MONTH.test(c.month)) return `Enter the month of the ${c.kind} cost as YYYY-MM.`;
+			if (cyan === undefined || mint === undefined || !(cyan || mint)) return `Enter what each paid for the ${c.kind === 'object' ? 'object' : `${c.kind} cost`}.`;
+			if (!MONTH.test(c.month)) return `Enter the month of the ${c.kind === 'object' ? 'object' : `${c.kind} cost`} as YYYY-MM.`;
 			parsed.push({ kind: c.kind, month: c.month, cyan: cyan ?? 0, mint: mint ?? 0, ...(c.note.trim() && { note: c.note.trim() }) });
 		}
 		return parsed.sort((a, b) => (a.month < b.month ? -1 : 1));
@@ -160,7 +161,7 @@
 </script>
 
 <form onsubmit={submit}>
-	<h1>{section === 'costs' ? 'maintenance/improvement' : section}</h1>
+	<h1>{section === 'costs' ? 'costs/ownership' : section}</h1>
 
 	{#if section === 'names'}
 		{#each PEOPLE as p (p)}
@@ -260,12 +261,13 @@
 			</label>
 		{/each}
 	{:else if section === 'costs'}
-		<!-- What each paid for maintenance and improvements: a record, not ownership (4.3) -->
+		<!-- What each paid for maintenance and improvements (a record, not ownership: 4.3), and for
+		     objects bought for the home, owned by what each paid (the register of household items, 6.1) -->
 		{#each costs as c, i (i)}
 			<fieldset>
 				<legend>
-					{#if c.kind === 'maintenance'}<Wrench size={18} />{:else}<Paintbrush size={18} />{/if}
-					{c.kind} cost
+					{#if c.kind === 'maintenance'}<Wrench size={18} />{:else if c.kind === 'object'}<Sofa size={18} />{:else}<Paintbrush size={18} />{/if}
+					{c.kind === 'object' ? 'object' : `${c.kind} cost`}
 					<button type="button" class="icon-button remove" onclick={() => costs.splice(i, 1)} aria-label="remove {c.kind} cost">
 						<Trash size={18} />
 					</button>
@@ -293,13 +295,14 @@
 				</div>
 				<label>
 					note
-					<input bind:value={c.note} placeholder="new kitchen, roof…" autocomplete="off" />
+					<input bind:value={c.note} placeholder={c.kind === 'object' ? 'washing machine, sofa…' : 'new kitchen, roof…'} autocomplete="off" />
 				</label>
 			</fieldset>
 		{/each}
 		<div class="add">
 			<button type="button" onclick={() => addCost('maintenance')}><Wrench size={18} />+ maintenance</button>
 			<button type="button" onclick={() => addCost('improvement')}><Paintbrush size={18} />+ improvement</button>
+			<button type="button" onclick={() => addCost('object')}><Sofa size={18} />+ object</button>
 		</div>
 	{/if}
 

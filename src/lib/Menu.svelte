@@ -5,7 +5,7 @@
 	import Lock from '@lucide/svelte/icons/lock';
 	import Users from '@lucide/svelte/icons/users';
 	import House from '@lucide/svelte/icons/house';
-	import Wrench from '@lucide/svelte/icons/wrench';
+	import ChartPie from '@lucide/svelte/icons/chart-pie';
 	import FileBraces from '@lucide/svelte/icons/file-braces';
 	import Calculator from '@lucide/svelte/icons/calculator';
 	import Receipt from '@lucide/svelte/icons/receipt';
@@ -63,7 +63,7 @@
 	<nav>
 		<button bind:this={first} onclick={choose(show('names'))}><Users size={20} />names</button>
 		<button onclick={choose(show('apartment'))}><House size={20} />apartment</button>
-		<button onclick={choose(show('costs'))}><Wrench size={20} />maintenance/improvement</button>
+		<button onclick={choose(show('costs'))}><ChartPie size={20} />costs/ownership</button>
 		<button onclick={choose(() => ((ui.view = 'home'), (ui.saleOpen = true)))}><Receipt size={20} />sale</button>
 		<button onclick={choose(() => ((ui.view = 'home'), (ui.calcOpen = true)))}><Calculator size={20} />calculations</button>
 		<button onclick={choose(() => (ui.rawOpen = true))}><FileBraces size={20} />data</button>
