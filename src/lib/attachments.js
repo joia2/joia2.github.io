@@ -8,13 +8,13 @@ import { encryptJSON, decryptJSON } from '#lib/crypto.js';
 export const MAX_SIZE = 10 * 1024 * 1024; // GitHub takes files up to 100 MB; an encrypted one is about 1.8 times larger
 const path = (id) => `files/${id}.json`;
 
-// Uploads a File; returns what loan.json keeps of it
-export async function upload(file) {
+// Uploads a File, under its name or another; returns what loan.json keeps of it
+export async function upload(file, name = file.name) {
 	const id = crypto.randomUUID();
 	const data = new Uint8Array(await file.arrayBuffer()).toBase64();
-	const text = await encryptJSON(session.key, { name: file.name, type: file.type, data });
+	const text = await encryptJSON(session.key, { name, type: file.type, data });
 	await putFile(session.token, path(id), text, null, 'Add a file');
-	return { id, name: file.name, type: file.type };
+	return { id, name, type: file.type };
 }
 
 // Returns the attachment as a Blob, decrypted

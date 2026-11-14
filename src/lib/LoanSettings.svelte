@@ -11,6 +11,7 @@
 	import ClipboardPaste from '@lucide/svelte/icons/clipboard-paste';
 	import X from '@lucide/svelte/icons/x';
 	import Attachment from '#lib/Attachment.svelte';
+	import Sheet from '#lib/Sheet.svelte';
 	import { upload, remove, MAX_SIZE } from '#lib/attachments.js';
 	import { session } from '#lib/session.svelte.js';
 	import Trash from '@lucide/svelte/icons/trash';
@@ -96,9 +97,11 @@
 	// Attachments: picked files wait here, and are uploaded (encrypted) when the page is saved
 	let shown = $state(null); // the attachment in the preview
 	let previewOpen = $state(false);
+	// Returns the entry added, or nothing when the file is too large
 	function add(c, file) {
-		if (file.size > MAX_SIZE) error = `${file.name} is larger than ${MAX_SIZE / 1024 / 1024} MB.`;
-		else c.files.push({ name: file.name, type: file.type, file });
+		if (file.size > MAX_SIZE) return void (error = `${file.name} is larger than ${MAX_SIZE / 1024 / 1024} MB.`);
+		c.files.push({ name: file.name, type: file.type, file });
+		return c.files.at(-1);
 	}
 	function attach(c, event) {
 		for (const file of event.currentTarget.files) add(c, file);
@@ -111,7 +114,22 @@
 		const stamp = new Date().toLocaleString('sv').slice(0, 16).replace(':', '.');
 		const ext = type === 'application/pdf' ? 'pdf' : type.split('/')[1].replace('jpeg', 'jpg');
 		const own = blob.name && !/^image\.\w+$/.test(blob.name) ? blob.name : '';
-		add(c, new File([blob], own || `pasted ${stamp}.${ext}`, { type }));
+		const entry = add(c, new File([blob], own || `pasted ${stamp}.${ext}`, { type }));
+		if (entry) startRename(entry);
+	}
+	// Right after a paste: a small popup to name the file; the extension stays as it is
+	let renaming = $state(null); // { entry, base, ext }
+	let renameOpen = $state(false);
+	function startRename(entry) {
+		const dot = entry.name.lastIndexOf('.');
+		renaming = { entry, base: dot > 0 ? entry.name.slice(0, dot) : entry.name, ext: dot > 0 ? entry.name.slice(dot) : '' };
+		renameOpen = true;
+	}
+	function rename(event) {
+		event.preventDefault();
+		const base = renaming.base.trim();
+		if (base) renaming.entry.name = base + renaming.ext;
+		renameOpen = false;
 	}
 	// What a file really is, from its first bytes, when the clipboard doesn't say (an iPhone can give
 	// a PDF from Mail no type at all)
@@ -200,7 +218,7 @@
 			// New attachments are uploaded first, then loan.json lists them; removed ones are deleted after
 			saving = true;
 			try {
-				for (const c of costs) c.files = await Promise.all(c.files.map((f) => (f.file ? upload(f.file) : f)));
+				for (const c of costs) c.files = await Promise.all(c.files.map((f) => (f.file ? upload(f.file, f.name) : f)));
 			} catch (e) {
 				saving = false;
 				return (error = `The attachments could not be saved: ${e.message}`);
@@ -434,6 +452,19 @@
 
 <Attachment file={shown} bind:open={previewOpen} />
 
+<Sheet title="file name" bind:open={renameOpen}>
+	{#if renaming}
+		<form class="rename" onsubmit={rename}>
+			<span class="field-name">
+				<!-- svelte-ignore a11y_autofocus -->
+				<input bind:value={renaming.base} aria-label="file name" autocomplete="off" autofocus />
+				<span class="ext">{renaming.ext}</span>
+			</span>
+			<button class="primary" type="submit"><Check size={20} />ok</button>
+		</form>
+	{/if}
+</Sheet>
+
 <style>
 	.animals {
 		display: grid;
@@ -543,6 +574,24 @@
 		width: 100%;
 		min-width: 0;
 		box-sizing: border-box;
+	}
+	.rename {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		padding: 0 1.5rem 1.5rem;
+	}
+	.field-name {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+	.field-name input {
+		flex: 1;
+		min-width: 0;
+	}
+	.ext {
+		color: var(--muted);
 	}
 	.share {
 		font-variant-numeric: tabular-nums;
