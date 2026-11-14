@@ -356,12 +356,14 @@ export function monthsLeft(data, result, today, p) {
 		if (row) rate = row.rate;
 		const interest = row ? interestFor(left, rate, row.days, row.yearDays) : Math.round((left * rate) / 1200);
 		const fewer = month === start ? interestFor(left, rate, monthDays(month), yearDays(month)) - interest : 0;
-		const typed = data.payments?.[month]?.[p];
 		// The minimum with half the fee: what it would be whatever the other has paid off
 		const half = row && (p === 'cyan' ? Math.ceil(row.fee / 2) : Math.floor(row.fee / 2));
-		const beyond = row && isEntered(typed) ? toOre(typed) - (row.people[p].due + half) : 0;
+		// Only an extra shortens it: a short month is overdue, not more time, and an amount the other
+		// covered counts as paid by this one (3.4.1)
+		const s = row?.people[p];
+		const beyond = s?.typed ? Math.max(0, s.paid - s.covered - (s.due + half)) : 0;
 		const paid = result.firstPayment[p] - Math.max(0, fewer) + beyond;
-		if (beyond <= 0 && paid <= interest) return null;
+		if (!beyond && paid <= interest) return null; // the instalment doesn't even cover the interest
 		left += interest - paid;
 	}
 	return n;

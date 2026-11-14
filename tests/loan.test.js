@@ -437,3 +437,12 @@ test("LO (3.9): the fee entered, less 22 %, times mint's part of the principal l
 	assert.equal(feb.lo.owed, 0);
 	assert.ok(feb.lo.share > 0);
 });
+
+test('time left: a short or covered month is overdue, never more time or "never"', () => {
+	const plain = base();
+	const n = monthsLeft(plain, compute(plain, '2026-11'), '2026-11', 'cyan');
+	for (const payments of [{ '2027-02': { cyan: 0 } }, { '2027-02': { cyan: 0, mint: 60000 } }]) {
+		const d = base(payments);
+		assert.equal(monthsLeft(d, compute(d, '2026-11'), '2026-11', 'cyan'), n);
+	}
+});
