@@ -283,7 +283,8 @@
 	}
 	.tag {
 		flex-shrink: 0;
-		padding: 0.05rem 0.45rem;
+		padding: 0.05rem 0.4rem;
+		font-size: 0.66rem;
 		border-radius: 0.7rem;
 		background: hsl(var(--hue) 75% 50% / 0.22);
 		color: hsl(var(--hue) 60% 30%);
