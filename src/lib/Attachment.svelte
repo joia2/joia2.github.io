@@ -50,6 +50,11 @@
 		box.scrollLeft = px * k - (x - r.left);
 		box.scrollTop = py * k - (y - r.top);
 	}
+	// A button like the × beside it, saving the file through a link made for the moment
+	function save() {
+		const link = Object.assign(document.createElement('a'), { href: url, download: file.name });
+		link.click();
+	}
 	const fitted = (e) => (base = { w: e.currentTarget.clientWidth, h: e.currentTarget.clientHeight });
 
 	const pointers = new Map();
@@ -83,7 +88,7 @@
 <Sheet title={file?.name ?? ''} bind:open>
 	{#snippet actions()}
 		{#if url}
-			<a class="icon-button" href={url} download={file.name} aria-label="download"><Download size={22} /></a>
+			<button class="icon-button" onclick={save} aria-label="download"><Download size={22} /></button>
 		{/if}
 	{/snippet}
 	<div class="view" bind:this={box}>
