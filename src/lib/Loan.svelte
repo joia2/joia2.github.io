@@ -415,15 +415,17 @@
 		backdrop-filter: saturate(180%) blur(20px);
 		border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
 	}
-	/* In the middle of the bar, over the two sides, like the instalment button at the top: centered
+	/* At the top of the bar, in the middle, over the two sides, like the instalment button at the top: centered
 	   with margins, as the shared button press style changes transforms */
 	.costs {
 		position: absolute;
-		inset: 0;
+		top: 0.25rem;
+		left: 0;
+		right: 0;
 		z-index: 11;
 		width: 44px;
 		height: 44px;
-		margin: auto;
+		margin-inline: auto;
 		color: var(--muted);
 	}
 	.left-for {
