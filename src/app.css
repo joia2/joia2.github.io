@@ -199,6 +199,10 @@ form .field svg {
 	pointer-events: none;
 	transition: color 0.2s;
 }
+/* A mirrored animal icon (Face.svelte) keeps its place in the field */
+form .field svg.mirrored {
+	transform: translateY(-50%) scaleX(-1);
+}
 form .field:focus-within svg {
 	color: var(--accent);
 }
