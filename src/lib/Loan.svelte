@@ -54,9 +54,6 @@
 	const names = $derived(loan.data.names);
 	const first = $derived(Object.keys(loan.data.payments).sort()[0]);
 	const tax = $derived(result && taxShares(result, today));
-	let yearsOpen = $state(false);
-	let ownedOpen = $state(false);
-	let instalmentOpen = $state(false);
 	// This month's row, or the first one with a loan payment after it (before the take-over)
 	const thisRow = $derived(result?.rows.find((r) => r.loan && r.month >= today));
 	// What each person has paid in (egenkapital and principal), of the apartment's cost, in percent
@@ -122,7 +119,7 @@
 	<section class="people">
 		{#each PEOPLE as p, i (p)}
 			{#if i === 1 && thisRow}
-				<button class="icon-button instalment" onclick={() => (instalmentOpen = true)} aria-label="this month's instalment">
+				<button class="icon-button instalment" onclick={() => (ui.instalmentOpen = true)} aria-label="this month's instalment">
 					<BanknoteArrowUp size={22} />
 				</button>
 			{/if}
@@ -134,7 +131,7 @@
 					<span class="owned">{formatKr(Math.max(0, result.state.equity[p]))} kr</span>
 					<span class="owned share">
 						{formatPercent(ownedShare(p))}<Pct />
-						<button class="icon-button info small" onclick={() => (ownedOpen = true)} aria-label="what each has paid">
+						<button class="icon-button info small" onclick={() => (ui.ownedOpen = true)} aria-label="what each has paid">
 							<Info size={14} />
 						</button>
 					</span>
@@ -159,7 +156,7 @@
 				<!-- Like the paid share: number, % and icon each a flex item, so on the right the % comes first -->
 				<span class="tax-value" title="{names[p]}'s share of the {tax.year} interest, for the tax return{tax.estimate ? ' (estimate)' : ''}">
 					{tax.estimate ? '~' : ''}{formatPercent(tax[p])}<Pct />
-					<button class="icon-button info" onclick={() => (yearsOpen = true)} aria-label="interest paid per year">
+					<button class="icon-button info" onclick={() => (ui.yearsOpen = true)} aria-label="interest paid per year">
 						<Info size={16} />
 					</button>
 				</span>
@@ -183,11 +180,11 @@
 		</div>
 	{/if}
 
-	<Owned state={result.state} egenkapital={loan.data.egenkapital} {names} bind:open={ownedOpen} />
+	<Owned state={result.state} egenkapital={loan.data.egenkapital} {names} bind:open={ui.ownedOpen} />
 	<SaleCalculator state={result.state} {names} bind:open={ui.saleOpen} />
 	<Calculations rows={result.rows.filter((r) => r.loan)} {result} egenkapital={loan.data.egenkapital} {names} bind:open={ui.calcOpen} />
-	{#if thisRow}<Instalment rows={result.rows.filter((r) => r.loan)} start={thisRow.month} {names} bind:open={instalmentOpen} />{/if}
-	<InterestYears interestPaid={result.interestPaid} yearEnd={result.yearEnd} {names} highlight={tax?.year} bind:open={yearsOpen} />
+	{#if thisRow}<Instalment rows={result.rows.filter((r) => r.loan)} start={thisRow.month} {names} bind:open={ui.instalmentOpen} />{/if}
+	<InterestYears interestPaid={result.interestPaid} yearEnd={result.yearEnd} {names} highlight={tax?.year} bind:open={ui.yearsOpen} />
 
 	<div class="rows">
 		{#if earlier}

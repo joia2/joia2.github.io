@@ -6,7 +6,7 @@
 	import SaveStatus from '#lib/SaveStatus.svelte';
 	import RawData from '#lib/RawData.svelte';
 	import YearJump from '#lib/YearJump.svelte';
-	import { ui } from '#lib/ui.svelte.js';
+	import { ui, goHome } from '#lib/ui.svelte.js';
 	import { isUnlocked, session, startDemo } from '#lib/session.svelte.js';
 	import { version } from '$app/env';
 
@@ -18,7 +18,7 @@
 
 <header>
 	<nav>
-		<a href="/"><img src="/favicon.svg" alt="" width="22" height="22" />joia2</a>
+		<a href="/" onclick={(e) => (e.preventDefault(), goHome())}><img src="/favicon.svg" alt="" width="22" height="22" />joia2</a>
 		{#if isUnlocked()}
 			{#if ui.view === 'home'}<YearJump />{/if}
 			<span class="end">
