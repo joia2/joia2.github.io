@@ -3,9 +3,10 @@
 // the popups: rawOpen (data.json as plain text), saleOpen, calcOpen (calculations), ownedOpen (what
 // each has paid), instalmentOpen, yearsOpen (tax return)
 // earlier, later: whether the months collapsed before and after the visible ones are shown
+// check: seconds until the next check for data saved elsewhere, '…' during one, null when none runs
 const POPUPS = ['rawOpen', 'saleOpen', 'calcOpen', 'ownedOpen', 'instalmentOpen', 'yearsOpen'];
 
-export const ui = $state({ menuOpen: false, view: 'home', earlier: false, later: false, ...Object.fromEntries(POPUPS.map((k) => [k, false])) });
+export const ui = $state({ menuOpen: false, view: 'home', earlier: false, later: false, check: null, ...Object.fromEntries(POPUPS.map((k) => [k, false])) });
 
 // Back to the main page, with the menu and every popup closed (a settings page is left unsaved)
 export function goHome() {

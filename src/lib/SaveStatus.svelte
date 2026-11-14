@@ -12,11 +12,14 @@
 	// with its own copy of the data (names, apartment, costs) is open and no upload is going on, so
 	// nothing is ever lost.
 	const quiet = () => !session.demo && loan.data && ['idle', 'saved'].includes(loan.status) && ui.view === 'home' && !uploading();
-	// One check at a time: on a slow connection the next waits until the last has returned
-	let checking = $state(false);
+	// One check at a time: on a slow connection the next waits until the last has returned. The
+	// seconds until the next one show in the menu (ui.check): 5, 4… while checks can run
+	let checking = false;
+	let left = 5;
 	async function check() {
 		if (checking || document.visibilityState !== 'visible' || !quiet()) return;
 		checking = true;
+		ui.check = '…';
 		try {
 			if ((await changedElsewhere().catch(() => false)) && quiet()) await loadLoan();
 		} finally {
@@ -24,11 +27,11 @@
 			left = 5;
 		}
 	}
-	// The seconds until the next check, shown beside "saved": (5), (4)… counting while a check can run
-	let left = $state(5);
 	const tick = () => {
-		if (checking || !quiet() || document.visibilityState !== 'visible') return void (left = 5);
-		if (--left <= 0) check();
+		if (checking) return;
+		if (!quiet() || document.visibilityState !== 'visible') return void ((left = 5), (ui.check = null));
+		if (left > 0) ui.check = left--;
+		else check();
 	};
 	$effect(() => {
 		const timer = setInterval(tick, 1_000);
@@ -53,7 +56,7 @@
 	{:else if loan.data}
 		<!-- Everything here is saved: a click fetches what was saved elsewhere since (another device) -->
 		<button class="refresh" onclick={loadLoan} title="Saved. Click to get the latest data from joia2data.">
-			<CloudCheck size={18} />saved{#if quiet()}<span class="left">({checking ? '…' : Math.max(1, left)})</span>{/if}
+			<CloudCheck size={18} />saved
 		</button>
 	{:else}
 		<CloudDownload size={18} />loading…
@@ -78,11 +81,6 @@
 		background: transparent;
 		font-size: 0.78rem;
 		color: var(--muted);
-	}
-	.left {
-		min-width: 1.6em; /* the same width for every number, so "saved" doesn't move */
-		font-variant-numeric: tabular-nums;
-		opacity: 0.7;
 	}
 	.error {
 		display: flex;
