@@ -105,22 +105,37 @@
 		event.currentTarget.value = '';
 	}
 	// An image or PDF copied to the clipboard, named by when it was pasted: pasted 2026-11-14 18.05.png
+	const isFile = (type) => type.startsWith('image/') || type === 'application/pdf';
+	function addPasted(c, blob, type) {
+		const stamp = new Date().toLocaleString('sv').slice(0, 16).replace(':', '.');
+		const ext = type === 'application/pdf' ? 'pdf' : type.split('/')[1].replace('jpeg', 'jpg');
+		add(c, new File([blob], `pasted ${stamp}.${ext}`, { type }));
+	}
+	// The paste box: the way that also works where the button can't read the clipboard (an iPhone
+	// photo, say): the system's own Paste puts the photo in as a file
+	let pasteBox = $state(null); // the cost whose paste box shows
 	async function paste(c) {
 		error = '';
 		try {
 			let found = false;
 			for (const item of await navigator.clipboard.read()) {
-				const type = item.types.find((t) => t.startsWith('image/') || t === 'application/pdf');
+				const type = item.types.find(isFile);
 				if (!type) continue;
-				const stamp = new Date().toLocaleString('sv').slice(0, 16).replace(':', '.');
-				const ext = type === 'application/pdf' ? 'pdf' : type.split('/')[1].replace('jpeg', 'jpg');
-				add(c, new File([await item.getType(type)], `pasted ${stamp}.${ext}`, { type }));
+				addPasted(c, await item.getType(type), type);
 				found = true;
 			}
-			if (!found) error = 'The clipboard has no image or PDF.';
+			if (found) return (pasteBox = null);
 		} catch {
-			error = 'The clipboard could not be read: allow it in the browser, or use + attachment.';
+			// Not allowed, or not offered: the paste box below
 		}
+		pasteBox = c;
+	}
+	function pasted(c, event) {
+		event.preventDefault();
+		const files = [...(event.clipboardData?.items ?? [])].filter((i) => i.kind === 'file' && isFile(i.type)).map((i) => i.getAsFile());
+		if (!files.length) return (error = 'The clipboard has no image or PDF.');
+		for (const f of files) addPasted(c, f, f.type);
+		pasteBox = null;
 	}
 	// What one person paid of a cost, in percent of what both paid
 	const paidShare = (c, p) => {
@@ -379,6 +394,12 @@
 						<input type="file" accept="application/pdf,image/*" multiple onchange={(e) => attach(c, e)} />
 					</label>
 					<button type="button" class="attach" onclick={() => paste(c)}><ClipboardPaste size={16} />+ paste</button>
+					{#if pasteBox === c}
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<div class="paste-box" contenteditable="true" role="textbox" tabindex="0" aria-label="paste here" onpaste={(e) => pasted(c, e)} onbeforeinput={(e) => e.preventDefault()}>
+							tap and hold here, then Paste
+						</div>
+					{/if}
 				</div>
 			</fieldset>
 		{/each}
@@ -556,6 +577,17 @@
 		border-radius: 10px;
 		font-size: 0.82rem;
 		cursor: pointer;
+	}
+	.paste-box {
+		flex-basis: 100%;
+		padding: 0.8rem;
+		border: 1px dashed var(--accent);
+		border-radius: 10px;
+		font-size: 0.82rem;
+		color: var(--muted);
+		text-align: center;
+		-webkit-user-select: text;
+		user-select: text;
 	}
 	.attach input {
 		display: none;
