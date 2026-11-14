@@ -251,9 +251,12 @@
 		padding: 0;
 		list-style: none;
 	}
+	/* The whole line opens or closes the tag */
 	.group {
-		display: inline-flex;
+		display: flex;
+		width: 100%;
 		align-items: center;
+		text-align: left;
 		gap: 0.3rem;
 		padding: 0.15rem 0.2rem;
 		border: 0;
