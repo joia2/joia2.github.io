@@ -28,13 +28,15 @@ export async function keepExisting(token, data) {
 }
 
 // Returns how many files were removed
-export async function cleanUp(token, data, now = new Date()) {
+// grace: how long ago a file must already have been there (the automatic clean-up waits a day; the
+// menu's, asked for, only a few minutes: just enough to spare an upload going on right now)
+export async function cleanUp(token, data, now = new Date(), grace = GRACE) {
 	const listed = listedIds(data);
 	const state = await listFiles(token);
 	const unlisted = state.files.filter(({ path }) => idOf(path) && !listed.has(idOf(path)));
 	if (!unlisted.length) return 0;
-	const dayAgo = await filesAt(token, state.branch, new Date(now.getTime() - GRACE));
-	const old = unlisted.filter(({ path }) => dayAgo.has(path));
+	const before = await filesAt(token, state.branch, new Date(now.getTime() - grace));
+	const old = unlisted.filter(({ path }) => before.has(path));
 	if (!old.length) return 0;
 	await commitFiles(token, state, old.map(({ path }) => ({ path, remove: true })), 'Remove unused files');
 	return old.length;

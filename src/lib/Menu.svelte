@@ -8,10 +8,12 @@
 	import ChartPie from '@lucide/svelte/icons/chart-pie';
 	import FileBraces from '@lucide/svelte/icons/file-braces';
 	import Calculator from '@lucide/svelte/icons/calculator';
+	import MopSparkles from '@lucide/svelte/icons/mop-sparkles';
+	import { cleanUp } from '#lib/cleanup.js';
 	import Receipt from '@lucide/svelte/icons/receipt';
 	import { ui } from '#lib/ui.svelte.js';
 	import { lock, session } from '#lib/session.svelte.js';
-	import { save, hasUnsavedChanges } from '#lib/loan.svelte.js';
+	import { loan, save, hasUnsavedChanges } from '#lib/loan.svelte.js';
 	import { version } from '$app/env';
 
 	let first = $state();
@@ -29,6 +31,21 @@
 
 	const show = (view) => () => (ui.view = view);
 
+	// Removes attachment files the data doesn't list (cleanup.js), sparing any from the last 10
+	// minutes (an upload going on). The menu stays open to show how it went.
+	let cleaning = $state('');
+	async function cleanNow() {
+		cleaning = 'cleaning…';
+		try {
+			await save();
+			if (hasUnsavedChanges()) throw new Error('save your last change first');
+			const removed = await cleanUp(session.token, $state.snapshot(loan.data), new Date(), 10 * 60 * 1000);
+			cleaning = removed ? `removed ${removed} unused file${removed === 1 ? '' : 's'}` : 'nothing to clean';
+		} catch (e) {
+			cleaning = `not cleaned: ${e.message}`;
+		}
+	}
+
 	// Locking saves any waiting edit first, and the next login starts at home. If saving fails,
 	// locking would lose that edit, so it asks first.
 	async function lockApp() {
@@ -41,6 +58,7 @@
 
 	$effect(() => {
 		if (!ui.menuOpen) return;
+		if (cleaning !== 'cleaning…') cleaning = ''; // a fresh menu: the last clean-up's message is gone
 		// The page behind stays put while the menu is open
 		document.documentElement.style.overflow = 'hidden';
 		tick().then(() => first?.focus());
@@ -69,6 +87,7 @@
 		<button onclick={choose(() => (ui.rawOpen = true))}><FileBraces size={20} />data</button>
 		<hr />
 		{#if !session.demo}
+			<button onclick={cleanNow} disabled={cleaning === 'cleaning…'}><MopSparkles size={20} />{cleaning || 'clean up'}</button>
 			<button onclick={choose(show('password'))}><KeyRound size={20} />password</button>
 		{/if}
 		<button onclick={choose(lockApp)}><Lock size={20} />lock</button>
