@@ -17,7 +17,7 @@
 	import Hourglass from '@lucide/svelte/icons/hourglass';
 	import { addMonths, currentMonth, formatAmount, parseAmount, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
 
-	// section: 'names' | 'apartment' (the apartment and its mortgage)
+	// section: 'names' | 'apartment' (the apartment and its mortgage) | 'costs' (maintenance and improvement)
 	let { section, onclose } = $props();
 
 	const data = loan.data;
@@ -125,6 +125,11 @@
 				data[k] = v;
 			}
 		}
+		if (section === 'costs') {
+			const parsed = parseCosts();
+			if (typeof parsed === 'string') return (error = parsed);
+			data.costs = parsed; // always there, empty when there are none
+		}
 		if (section === 'apartment') {
 			const price = parseAmount(total);
 			if (!price) return (error = 'Enter the apartment price.');
@@ -135,11 +140,8 @@
 			const [cyan, mint] = PEOPLE.map((p) => parseAmount(egenkapital[p]));
 			if (cyan === undefined || mint === undefined) return (error = 'Enter egenkapital in kroner.');
 			if (price / 2 < Math.max(cyan ?? 0, mint ?? 0)) return (error = "Egenkapital can't be more than half the price.");
-			const parsed = parseCosts();
-			if (typeof parsed === 'string') return (error = parsed);
 			data.total = price;
 			data.takeover = takeover;
-			data.costs = parsed; // always there, empty when there are none
 			if (!startLocked && start !== months[0]) moveStart();
 			data.egenkapital = { cyan: cyan ?? 0, mint: mint ?? 0 };
 			for (const m of Object.keys(data.payments)) setValue(data, m, 'term', null);
@@ -158,7 +160,7 @@
 </script>
 
 <form onsubmit={submit}>
-	<h1>{section}</h1>
+	<h1>{section === 'costs' ? 'maintenance/improvement' : section}</h1>
 
 	{#if section === 'names'}
 		{#each PEOPLE as p (p)}
@@ -257,7 +259,7 @@
 				</span>
 			</label>
 		{/each}
-
+	{:else if section === 'costs'}
 		<!-- What each paid for maintenance and improvements: a record, not ownership (4.3) -->
 		{#each costs as c, i (i)}
 			<fieldset>
@@ -296,8 +298,8 @@
 			</fieldset>
 		{/each}
 		<div class="add">
-			<button type="button" onclick={() => addCost('maintenance')}><Wrench size={18} />maintenance cost</button>
-			<button type="button" onclick={() => addCost('improvement')}><Paintbrush size={18} />improvement cost</button>
+			<button type="button" onclick={() => addCost('maintenance')}><Wrench size={18} />+ maintenance</button>
+			<button type="button" onclick={() => addCost('improvement')}><Paintbrush size={18} />+ improvement</button>
 		</div>
 	{/if}
 
