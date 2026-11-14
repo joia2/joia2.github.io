@@ -76,7 +76,7 @@
 				node.append(canvas);
 				await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
 			}
-			task.destroy?.(); // frees the PDF's memory once drawn
+			task.destroy().catch(() => {}); // frees the PDF memory once drawn
 		})().catch((e) => (error = `This PDF could not be shown: ${e.message}`));
 		return { destroy: () => (stopped = true) };
 	}
