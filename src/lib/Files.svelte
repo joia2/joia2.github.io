@@ -5,6 +5,7 @@
 	import FileText from '@lucide/svelte/icons/file-text';
 	import ImageIcon from '@lucide/svelte/icons/image';
 	import FileBox from '@lucide/svelte/icons/file-box';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import Paperclip from '@lucide/svelte/icons/paperclip';
 	import X from '@lucide/svelte/icons/x';
 	import Attachment from '#lib/Attachment.svelte';
@@ -30,6 +31,17 @@
 
 	// Listed by name; each keeps its place in `files` for removing
 	const listed = $derived(files.map((f, i) => ({ f, i })).sort((a, b) => a.f.name.localeCompare(b.f.name, 'nb')));
+
+	// With tags: the files by tag, tags in order; which tags are open
+	const groups = $derived.by(() => {
+		const by = new Map();
+		for (const item of listed) {
+			const tag = split(item.f.name).tag;
+			by.set(tag, [...(by.get(tag) ?? []), item]);
+		}
+		return [...by].sort(([a], [b]) => a.localeCompare(b, 'nb'));
+	});
+	let opened = $state({});
 
 	// "Contract signed.pdf" → tag "Contract", name "signed.pdf"; a one-word name is both
 	function split(name) {
@@ -147,24 +159,43 @@
 	const preview = (f) => ((shown = f), (previewOpen = true));
 </script>
 
-{#if files.length}
-	<ul class="files">
-		{#each listed as { f, i }, n (f.id ?? f.name + i)}
-			{@const parts = split(f.name)}
-			<li class:uploading={!f.id} title={f.id ? f.name : 'saving…'}>
-				<span class="num">{n + 1}</span>
-				<button type="button" class="name" onclick={() => preview(f)}>
-					{#if f.size > LARGE}<FileBox size={14} />{:else if f.type?.startsWith('image/')}<ImageIcon size={14} />{:else if f.type === 'application/pdf'}<FileText size={14} />{:else}<FileIcon size={14} />{/if}
-					{#if tags}<span class="tag" style:--hue={hue(parts.tag)}>{parts.tag}</span>{/if}
-					<span class="text">{tags ? parts.name : f.name}</span>
-					{#if f.progress}<span class="progress">{f.progress}</span>{/if}
+<!-- One file: its place, kind, name (without its tag, in a tag's group), size and × -->
+{#snippet row(f, i, n)}
+	<li class:uploading={!f.id} title={f.id ? f.name : 'saving…'}>
+		<span class="num">{n + 1}</span>
+		<button type="button" class="name" onclick={() => preview(f)}>
+			{#if f.size > LARGE}<FileBox size={14} />{:else if f.type?.startsWith('image/')}<ImageIcon size={14} />{:else if f.type === 'application/pdf'}<FileText size={14} />{:else}<FileIcon size={14} />{/if}
+			<span class="text">{tags ? split(f.name).name : f.name}</span>
+			{#if f.progress}<span class="progress">{f.progress}</span>{/if}
+		</button>
+		{#if f.size ?? f.file?.size}<span class="size">{sizeLabel(f.size ?? f.file.size)}</span>{/if}
+		<button type="button" class="icon-button" onclick={() => removeAt(i)} aria-label="remove {f.name}">
+			<X size={16} />
+		</button>
+	</li>
+{/snippet}
+
+{#if files.length && tags}
+	<!-- Grouped by tag, closed at first: each tag with its count; tap one to see its files -->
+	<ul class="groups">
+		{#each groups as [tag, items] (tag)}
+			<li>
+				<button type="button" class="group" aria-expanded={Boolean(opened[tag])} onclick={() => (opened[tag] = !opened[tag])}>
+					<ChevronRight size={14} class="chevron" />
+					<span class="tag" style:--hue={hue(tag)}>{tag}</span>
+					<span class="count">{items.length}</span>
 				</button>
-				{#if f.size ?? f.file?.size}<span class="size">{sizeLabel(f.size ?? f.file.size)}</span>{/if}
-				<button type="button" class="icon-button" onclick={() => removeAt(i)} aria-label="remove {f.name}">
-					<X size={16} />
-				</button>
+				{#if opened[tag]}
+					<ul class="files">
+						{#each items as { f, i }, n (f.id ?? f.name + i)}{@render row(f, i, n)}{/each}
+					</ul>
+				{/if}
 			</li>
 		{/each}
+	</ul>
+{:else if files.length}
+	<ul class="files">
+		{#each listed as { f, i }, n (f.id ?? f.name + i)}{@render row(f, i, n)}{/each}
 	</ul>
 {/if}
 <div class="add">
@@ -212,6 +243,39 @@
 </Sheet>
 
 <style>
+	.groups {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.group {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		padding: 0.15rem 0.2rem;
+		border: 0;
+		background: transparent;
+		font-size: 0.78rem;
+	}
+	.group :global(.chevron) {
+		color: var(--muted);
+		transition: transform 0.15s;
+	}
+	.group[aria-expanded='true'] :global(.chevron) {
+		transform: rotate(90deg);
+	}
+	.count {
+		font-size: 0.68rem;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+	}
+	/* A tag's files, a little in from its tag */
+	.groups .files {
+		margin: 0.1rem 0 0.3rem 0.9rem;
+	}
 	.files {
 		display: flex;
 		flex-direction: column;
