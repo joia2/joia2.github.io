@@ -13,7 +13,7 @@
 	// nothing is ever lost.
 	const quiet = () => !session.demo && loan.data && ['idle', 'saved'].includes(loan.status) && ui.view === 'home' && !uploading();
 	// One check at a time: on a slow connection the next waits until the last has returned
-	let checking = false;
+	let checking = $state(false);
 	async function check() {
 		if (checking || document.visibilityState !== 'visible' || !quiet()) return;
 		checking = true;
@@ -21,10 +21,17 @@
 			if ((await changedElsewhere().catch(() => false)) && quiet()) await loadLoan();
 		} finally {
 			checking = false;
+			left = 5;
 		}
 	}
+	// The seconds until the next check, shown beside "saved": (5), (4)… counting while a check can run
+	let left = $state(5);
+	const tick = () => {
+		if (checking || !quiet() || document.visibilityState !== 'visible') return void (left = 5);
+		if (--left <= 0) check();
+	};
 	$effect(() => {
-		const timer = setInterval(check, 5_000);
+		const timer = setInterval(tick, 1_000);
 		document.addEventListener('visibilitychange', check);
 		return () => (clearInterval(timer), document.removeEventListener('visibilitychange', check));
 	});
@@ -46,7 +53,7 @@
 	{:else if loan.data}
 		<!-- Everything here is saved: a click fetches what was saved elsewhere since (another device) -->
 		<button class="refresh" onclick={loadLoan} title="Saved. Click to get the latest data from joia2data.">
-			<CloudCheck size={18} />saved
+			<CloudCheck size={18} />saved{#if quiet()}<span class="left">({checking ? '…' : Math.max(1, left)})</span>{/if}
 		</button>
 	{:else}
 		<CloudDownload size={18} />loading…
@@ -71,6 +78,11 @@
 		background: transparent;
 		font-size: 0.78rem;
 		color: var(--muted);
+	}
+	.left {
+		min-width: 1.6em; /* the same width for every number, so "saved" doesn't move */
+		font-variant-numeric: tabular-nums;
+		opacity: 0.7;
 	}
 	.error {
 		display: flex;
