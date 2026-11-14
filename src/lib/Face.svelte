@@ -1,5 +1,5 @@
 <script>
-	import { ANIMALS, ANIMAL_NAMES } from '#lib/animals.js';
+	import { ANIMALS, ANIMAL_NAMES, FACING } from '#lib/animals.js';
 	import { clock } from '#lib/clock.svelte.js';
 	import { loan } from '#lib/loan.svelte.js';
 	// A person's icon: the animal they picked, or the logo's face. cyan for person A, mint for person B.
@@ -11,11 +11,14 @@
 	const chosen = $derived(animal ?? loan.data?.animals?.[person]);
 	const n = ANIMAL_NAMES.length;
 	const turn = $derived(ANIMAL_NAMES[person === 'mint' ? clock.minute % n : n - 1 - (clock.minute % n)]);
-	const icon = $derived(ANIMALS[chosen === 'rotate' ? turn : chosen]);
+	const name = $derived(chosen === 'rotate' ? turn : chosen);
+	const icon = $derived(ANIMALS[name]);
+	// Each looks toward the middle: the left one to the right, the right one to the left
+	const mirrored = $derived(FACING[name] === (person === 'cyan' ? 'left' : 'right'));
 </script>
 
 {#if icon}
-	<svg class="face" viewBox="0 0 {icon.size} {icon.size}" width={size} height={size} aria-hidden="true">{@html icon.draw(color)}</svg>
+	<svg class="face" class:mirrored viewBox="0 0 {icon.size} {icon.size}" width={size} height={size} aria-hidden="true">{@html icon.draw(color)}</svg>
 {:else}
 	<svg class="face" viewBox="0 0 40 40" width={size} height={size} aria-hidden="true">
 		<circle cx="20" cy="20" r="17.5" fill={color} />
@@ -27,3 +30,9 @@
 		<circle cx="26" cy="16" r="2.3" fill="#0b2a2e" />
 	</svg>
 {/if}
+
+<style>
+	.mirrored {
+		transform: scaleX(-1);
+	}
+</style>

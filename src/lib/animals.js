@@ -141,3 +141,6 @@ export function killedThisYear(name, now = new Date()) {
 	const end = Date.UTC(now.getUTCFullYear() + 1, 0, 1);
 	return Math.floor((KILLED_A_YEAR[name] * (now.getTime() - start)) / (end - start));
 }
+
+// Which way each animal looks as drawn; the others face the front
+export const FACING = { fish: 'left', chicken: 'left', duck: 'left', turkey: 'left', sheep: 'left', rat: 'left', pigeon: 'right', horse: 'left', camel: 'left' };
