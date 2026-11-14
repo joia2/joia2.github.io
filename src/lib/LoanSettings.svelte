@@ -13,7 +13,6 @@
 	import X from '@lucide/svelte/icons/x';
 	import Files from '#lib/Files.svelte';
 	import Sheet from '#lib/Sheet.svelte';
-	import { remove } from '#lib/attachments.js';
 	import { session } from '#lib/session.svelte.js';
 	import Trash from '@lucide/svelte/icons/trash';
 	import Face from '#lib/Face.svelte';
@@ -23,6 +22,7 @@
 	import Heart from '@lucide/svelte/icons/heart';
 	import RefreshCcw from '@lucide/svelte/icons/refresh-ccw';
 	import { loan, changed } from '#lib/loan.svelte.js';
+	import { onDestroy } from 'svelte';
 	import Hourglass from '@lucide/svelte/icons/hourglass';
 	import Landmark from '@lucide/svelte/icons/landmark';
 	import { addMonths, costSplit, currentMonth, formatAmount, formatKr, formatPercent, parseAmount, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
@@ -85,6 +85,7 @@
 	// Maintenance, improvements and objects: each with its payments to the store or provider
 	// ({ date, amount, who }) and transfers between the two ({ date, amount, from, to })
 	const asFields = (c) => ({
+		id: c.id ?? crypto.randomUUID(), // so an upload finishing after the page closed finds its cost
 		kind: c.kind,
 		note: c.note ?? '',
 		entries: [...(c.entries ?? [])],
@@ -96,7 +97,7 @@
 	const label = (c) => ({ maintenance: 'maintain', improvement: 'improve', object: 'object' })[c.kind];
 	// A new cost starts with its first payment
 	function addCost(kind) {
-		costs.push({ kind, note: '', entries: [], files: [] });
+		costs.push({ id: crypto.randomUUID(), kind, note: '', entries: [], files: [] });
 		editEntry(costs.at(-1), { who: 'cyan' });
 	}
 
@@ -160,6 +161,7 @@
 		return costs.map((c) => {
 			const files = c.files.filter((f) => f.id).map(keep);
 			return {
+				id: c.id,
 				kind: c.kind,
 				...(c.note.trim() && { note: c.note.trim() }),
 				entries: $state.snapshot(c.entries),
@@ -170,17 +172,38 @@
 
 	// The costs page saves as it goes, with no save button: every change is written to the data
 	// (saved shortly after, like the payments), and attachments are uploaded as soon as named
+	//
+	// Attachments: an upload can finish after this page was closed, even while it's open again. It
+	// then lands straight in the data (uploaded), and a page that never saw it keeps it (withNew).
+	// A removed file is only taken out of the list; the clean-up deletes it later.
+	let alive = true;
+	onDestroy(() => (alive = false));
+	const known = new Set([...(data.costs ?? []).flatMap((c) => c.files ?? []), ...(data.documents ?? [])].map((f) => f.id));
+	const withNew = (mine, live) => [...mine, ...(live ?? []).filter((f) => !known.has(f.id))];
+	function uploaded(list, saved) {
+		known.add(saved.id);
+		if (alive) return; // this page lists it, and saves
+		const into = list(loan.data);
+		if (!into || into.some((f) => f.id === saved.id)) return; // its cost removed meanwhile: the clean-up takes it
+		into.push(keep(saved));
+		changed();
+	}
+	const costFiles = (id) => (d) => {
+		const c = d.costs?.find((x) => x.id === id);
+		return c && (c.files ??= []);
+	};
 	let lastSaved = JSON.stringify(section === 'costs' ? parseCosts() : null);
 	function saveCosts() {
-		const parsed = parseCosts();
+		if (!alive) return;
+		const parsed = parseCosts().map((c) => {
+			const files = withNew(c.files ?? [], data.costs?.find((x) => x.id === c.id)?.files);
+			return { ...c, ...(files.length && { files }) };
+		});
 		const text = JSON.stringify(parsed);
 		if (text === lastSaved) return;
-		const kept = new Set(parsed.flatMap((c) => (c.files ?? []).map((f) => f.id)));
-		const gone = (data.costs ?? []).flatMap((c) => c.files ?? []).filter((f) => !kept.has(f.id));
 		lastSaved = text;
 		data.costs = parsed;
 		changed();
-		for (const f of gone) remove(f).catch(() => {}); // a file left behind is only unused space
 	}
 	$effect(() => {
 		if (section === 'costs') saveCosts();
@@ -189,12 +212,9 @@
 	// The apartment's documents: saved as they go, whatever happens to the rest of the page
 	let documents = $state([...(data.documents ?? [])]);
 	function saveDocuments() {
-		const kept = documents.filter((f) => f.id).map(keep);
-		const ids = new Set(kept.map((f) => f.id));
-		const gone = (data.documents ?? []).filter((f) => !ids.has(f.id));
-		data.documents = kept;
+		if (!alive) return;
+		data.documents = withNew(documents.filter((f) => f.id).map(keep), data.documents);
 		changed();
-		for (const f of gone) remove(f).catch(() => {});
 	}
 
 	// The names page saves as it goes too: a name once it isn't empty, an animal when picked
@@ -305,7 +325,7 @@
 	{:else if section === 'apartment'}
 		<!-- The apartment's documents (contracts, plans…), saved as they are added or removed -->
 		<div class="documents">
-			<Files bind:files={documents} onchange={saveDocuments} tags />
+			<Files bind:files={documents} onchange={saveDocuments} onupload={(f) => uploaded((d) => (d.documents ??= []), f)} tags />
 		</div>
 		<label>
 			total price (kr)
@@ -427,7 +447,7 @@
 					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}><BanknoteArrowUp size={16} class="turn" />{@render initial('mint')}<span class="arrow">→</span>{@render initial('cyan')}</button>
 				</div>
 				<!-- Receipts, invoices, photos: tap one to see it -->
-				<Files bind:files={c.files} onchange={saveCosts} bind:this={filesOf[i]} />
+				<Files bind:files={c.files} onchange={saveCosts} onupload={(f) => uploaded(costFiles(c.id), f)} bind:this={filesOf[i]} />
 			</div>
 		{/each}
 		<div class="add">

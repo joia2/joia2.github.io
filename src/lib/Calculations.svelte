@@ -23,7 +23,7 @@
 	const year = $derived(addMonths(month, -1).slice(0, 4)); // the year this month's interest built up in
 	const paidYear = $derived(result.interestPaid[year]);
 	const end = $derived(result.yearEnd[month.slice(0, 4)]);
-	const loInterest = $derived(sum('interest'));
+	const charged = $derived(sum('interestDue')); // the bank's interest for the month, whatever was paid
 
 	const sections = $derived([
 		{
@@ -161,8 +161,8 @@
 			lines: [
 				[
 					'the one living there alone pays',
-					'total interest of the month ÷ 4',
-					[`total interest = ${kr(loInterest)}`, `÷ 4 = ${kr(Math.round(loInterest / 4))}`]
+					'total interest the bank charged for the month ÷ 4',
+					[`total interest charged = ${kr(charged)}`, `÷ 4 = ${kr(Math.round(charged / 4))}`]
 				]
 			]
 		}

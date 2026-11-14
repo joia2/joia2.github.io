@@ -49,6 +49,9 @@ const demo = () => ({
 export const loan = $state({ data: null, sha: null, status: 'idle', error: '' });
 
 let timer;
+// Every version of data.json this device has read or saved: GitHub can answer with one of them for a
+// moment after a save, which is never a change made elsewhere
+const seen = new Set();
 let cleaned = false;
 let queue = Promise.resolve(); // saves run one after another, each on top of the previous version
 
@@ -66,6 +69,7 @@ export async function loadLoan() {
 		const { v, names, animals, ...rest } = { ...empty(), ...file?.value };
 		loan.data = { v, names, ...(animals && { animals }), ...rest };
 		loan.sha = file?.sha ?? null;
+		seen.add(loan.sha);
 		loan.status = 'idle';
 		// An edit left from a closing before its save: saved now, if made on this same version
 		const draft = JSON.parse(storage()?.getItem(DRAFT) ?? 'null');
@@ -100,7 +104,7 @@ export async function loadLoan() {
 // Whether data.json changed in the repo since it was read here (saved from another device)
 export async function changedElsewhere() {
 	const file = await getFile(session.token, FILE);
-	return Boolean(file) && file.sha !== loan.sha;
+	return Boolean(file) && !seen.has(file.sha);
 }
 
 export function unloadLoan() {
@@ -153,6 +157,7 @@ async function saveNow() {
 	loan.status = 'saving';
 	try {
 		loan.sha = await write(FILE, plain(), loan.sha);
+		seen.add(loan.sha);
 		if (loan.status === 'saving') (loan.status = 'saved'), dropDraft();
 		else keepDraft(); // edited again meanwhile: that edit is kept on the new version
 	} catch (e) {

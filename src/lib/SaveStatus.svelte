@@ -5,11 +5,13 @@
 	import CloudDownload from '@lucide/svelte/icons/cloud-download';
 	import { loan, save, loadLoan, changedElsewhere } from '#lib/loan.svelte.js';
 	import { ui } from '#lib/ui.svelte.js';
+	import { uploading } from '#lib/attachments.js';
 
 	// What was saved on another device shows up by itself: checked when the app comes back to the
 	// screen and every 5 seconds while it's on it (720 requests an hour, of GitHub's 5 000). Only when everything here is saved and no popup
-	// with its own copy of the data (names, apartment, costs) is open, so nothing is ever lost.
-	const quiet = () => !session.demo && loan.data && ['idle', 'saved'].includes(loan.status) && ui.view === 'home';
+	// with its own copy of the data (names, apartment, costs) is open and no upload is going on, so
+	// nothing is ever lost.
+	const quiet = () => !session.demo && loan.data && ['idle', 'saved'].includes(loan.status) && ui.view === 'home' && !uploading();
 	async function check() {
 		if (document.visibilityState !== 'visible' || !quiet()) return;
 		if ((await changedElsewhere().catch(() => false)) && quiet()) loadLoan();

@@ -18,7 +18,8 @@
 	// removal, for the page to save the list. Tap a file to see it.
 	// files: bindable, saved ones { id, name, type }, new ones { name, type, file } while uploading
 	// tags: the first word of each name shows as a colored tag
-	let { files = $bindable([]), onchange, tags = false } = $props();
+	// onupload(saved): after an upload, also when this list is no longer on screen
+	let { files = $bindable([]), onchange, onupload, tags = false } = $props();
 
 	let error = $state('');
 
@@ -144,7 +145,8 @@
 			const saved = await upload(entry.file, entry.name, (done, parts) => (entry.progress = `${done}/${parts}`));
 			const i = files.indexOf(entry);
 			if (i >= 0) files[i] = saved;
-			onchange?.(); // also when the popup around was closed during the upload
+			onupload?.(saved);
+			onchange?.();
 		} catch (e) {
 			error = `${entry.name} could not be saved: ${e.message}`;
 		}
