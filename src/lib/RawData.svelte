@@ -5,10 +5,21 @@
 	import Sheet from '#lib/Sheet.svelte';
 	import { loan, plain } from '#lib/loan.svelte.js';
 	import { ui } from '#lib/ui.svelte.js';
+	import { session } from '#lib/session.svelte.js';
+	import { listFiles } from '#lib/github.js';
 
 	let copied = $state(false);
 
 	// The attachments the data lists: the costs' and the apartment's documents
+	// The parts of large files stored in the repo (files/<id>.<part>.json), counted when opened
+	let parts = $state(null);
+	$effect(() => {
+		if (!ui.rawOpen || session.demo) return;
+		parts = null;
+		listFiles(session.token)
+			.then((state) => (parts = state.files.filter((f) => /^files\/[^/]+\.\d+\.json$/.test(f.path)).length))
+			.catch(() => {});
+	});
 	const files = $derived(loan.data ? [...(loan.data.costs ?? []).flatMap((c) => c.files ?? []), ...(loan.data.documents ?? [])].length : 0);
 
 	// data.json as it is before encryption, indented with 2 spaces; follows edits while open
@@ -23,7 +34,10 @@
 
 <Sheet title="data.json" bind:open={ui.rawOpen}>
 	{#snippet after()}
-		<span class="files">• <Files size={16} />{files} file{files === 1 ? '' : 's'}</span>
+		<span class="files">
+			• <Files size={16} />{files} file{files === 1 ? '' : 's'}
+			{#if !session.demo}({parts ?? '…'} part{parts === 1 ? '' : 's'} total){/if}
+		</span>
 	{/snippet}
 	{#snippet actions()}
 		<button type="button" class="icon-button" onclick={copy} aria-label="copy">
