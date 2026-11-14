@@ -10,6 +10,7 @@
 	let { file, open = $bindable(false) } = $props();
 
 	let url = $state('');
+	let blob = $state(null);
 	let error = $state('');
 
 	$effect(() => {
@@ -18,9 +19,10 @@
 		let cancelled = false;
 		error = '';
 		(file.file ? Promise.resolve(file.file) : download(file.id))
-			.then((blob) => {
+			.then((got) => {
 				if (cancelled) return;
-				blobUrl = URL.createObjectURL(blob);
+				blob = got;
+				blobUrl = URL.createObjectURL(got);
 				url = blobUrl;
 			})
 			.catch((e) => (error = e.message));
@@ -36,7 +38,7 @@
 	// out at that point; one finger then moves around. The image is drawn larger and the box
 	// scrolls, keeping the point under the fingers in place.
 	let scale = $state(1);
-	let base = { w: 0, h: 0 }; // the image's size when it fits
+	let base = $state({ w: 0, h: 0 }); // the image's (or the pages') size when it fits
 	let box = $state();
 	const MAX = 6;
 	async function zoomAt(next, x, y) {
@@ -54,6 +56,28 @@
 	function save() {
 		const link = Object.assign(document.createElement('a'), { href: url, download: file.name });
 		link.click();
+	}
+	// A PDF drawn page by page with PDF.js (loaded only when needed): every page, where the
+	// browser's own viewer in a frame shows only the first one on an iPhone. Drawn sharper than the
+	// screen, so zooming in stays readable.
+	function pdfPages(node, file) {
+		let stopped = false;
+		(async () => {
+			const pdfjs = await import('pdfjs-dist');
+			pdfjs.GlobalWorkerOptions.workerSrc = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
+			const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+			const width = node.clientWidth;
+			const sharp = Math.min(3, 2 * devicePixelRatio);
+			for (let n = 1; n <= doc.numPages && !stopped; n++) {
+				const page = await doc.getPage(n);
+				const viewport = page.getViewport({ scale: (width / page.getViewport({ scale: 1 }).width) * sharp });
+				const canvas = Object.assign(document.createElement('canvas'), { width: viewport.width, height: viewport.height });
+				node.append(canvas);
+				await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+			}
+			doc.destroy();
+		})().catch((e) => (error = `This PDF could not be shown: ${e.message}`));
+		return { destroy: () => (stopped = true) };
 	}
 	const fitted = (e) => (base = { w: e.currentTarget.clientWidth, h: e.currentTarget.clientHeight });
 
@@ -110,6 +134,18 @@
 				onpointercancel={up}
 				draggable="false"
 			/>
+		{:else if file.type === 'application/pdf'}
+			<div
+				role="document"
+				aria-label={file.name}
+				class="pages"
+				style:width={scale > 1 ? `${base.w * scale}px` : null}
+				use:pdfPages={blob}
+				onpointerdown={(e) => (scale === 1 && (base = { w: e.currentTarget.clientWidth, h: 0 }), down(e))}
+				onpointermove={move}
+				onpointerup={up}
+				onpointercancel={up}
+			></div>
 		{:else}
 			<iframe src={url} title={file.name}></iframe>
 		{/if}
@@ -142,6 +178,22 @@
 		max-width: none;
 		max-height: none;
 		border-radius: 0;
+	}
+	/* The PDF's pages, one under the other, as wide as the popup until zoomed */
+	.pages {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		width: 100%;
+		flex-shrink: 0;
+		align-self: flex-start;
+		touch-action: pan-x pan-y; /* one finger scrolls; two are the zoom's */
+	}
+	.pages :global(canvas) {
+		width: 100%;
+		height: auto;
+		border-radius: 4px;
+		background: #fff;
 	}
 	iframe {
 		width: 100%;
