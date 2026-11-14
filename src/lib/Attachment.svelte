@@ -120,7 +120,7 @@
 	}
 </script>
 
-<Sheet title={file?.name ?? ''} bind:open>
+<Sheet title={file?.name ?? ''} bind:open wide={computer}>
 	{#snippet actions()}
 		{#if onrename}
 			<button type="button" class="icon-button" onclick={onrename} aria-label="rename"><Pencil size={20} /></button>
@@ -129,7 +129,7 @@
 			<button type="button" class="icon-button" onclick={save} aria-label="download"><Download size={22} /></button>
 		{/if}
 	{/snippet}
-	<div class="view" bind:this={box}>
+	<div class="view" class:wide={computer} bind:this={box}>
 		{#if error}
 			<p class="error">{error}</p>
 		{:else if !url}
@@ -214,6 +214,18 @@
 		height: auto;
 		border-radius: 4px;
 		background: #fff;
+	}
+	/* On a computer the popup fills the window: the image and the PDF viewer use all of it */
+	.view.wide {
+		flex: 1;
+		max-height: none;
+		min-height: 0;
+	}
+	.view.wide img:not(.zoomed) {
+		max-height: calc(100vh - 140px);
+	}
+	.view.wide iframe {
+		height: calc(100vh - 140px);
 	}
 	iframe {
 		width: 100%;

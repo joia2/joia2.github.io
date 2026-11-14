@@ -4,7 +4,8 @@
 	// A popup: a glass card over the dimmed page, closed with Escape, the × or a click outside.
 	// actions: optional buttons next to the ×. Every button here is type="button": a popup can sit
 	// inside a page's form (a file's preview in the apartment popup), and must not submit it
-	let { title, open = $bindable(false), actions, children } = $props();
+	// wide: nearly the whole window (a file's preview on a computer)
+	let { title, open = $bindable(false), actions, children, wide = false } = $props();
 
 	let dialog = $state();
 
@@ -17,6 +18,7 @@
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
 <dialog
 	bind:this={dialog}
+	class:wide
 	aria-label={title}
 	onclose={() => (open = false)}
 	onclick={(e) => e.target === dialog && dialog.close()}
@@ -42,6 +44,12 @@
 		backdrop-filter: saturate(180%) blur(20px);
 		box-shadow: var(--shadow);
 		color: var(--text);
+	}
+	dialog.wide {
+		width: calc(100vw - 48px);
+		max-width: 110rem;
+		height: calc(100vh - 48px);
+		max-height: none;
 	}
 	dialog[open] {
 		display: flex;
