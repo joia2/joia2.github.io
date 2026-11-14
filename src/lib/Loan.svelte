@@ -222,7 +222,7 @@
 	<!-- Each one's time left at their instalment, the instalment, and their loan left -->
 	<nav class="bottom" aria-label="time left" hidden={typing} bind:offsetHeight={barHeight}>
 		<!-- Costs and ownership: in the middle of the bar, over everything -->
-		<button class="icon-button costs" onclick={() => (ui.view = 'costs')} aria-label="costs/ownership"><ChartPie size={22} /></button>
+		<button class="icon-button costs" onclick={() => (ui.view = 'costs')} aria-label="costs/ownership"><ChartPie size={22} /><span>split</span></button>
 		{#each PEOPLE as p (p)}
 			<div class="left-for {p}">
 				<Face person={p} size={24} />
@@ -423,9 +423,13 @@
 		left: 0;
 		right: 0;
 		z-index: 11;
-		width: 44px;
+		width: fit-content;
 		height: 44px;
 		margin-inline: auto;
+		padding: 0 0.5rem;
+		gap: 0.3rem;
+		border-radius: 22px;
+		font-size: 0.75rem;
 		color: var(--muted);
 	}
 	.left-for {
