@@ -11,13 +11,14 @@
 	let copied = $state(false);
 
 	// The attachments the data lists: the costs' and the apartment's documents
-	// The parts of large files stored in the repo (files/<id>.<part>.json), counted when opened
+	// Everything stored in the repo's files/ folder (whole files, and each part of a large one), counted
+	// when opened
 	let parts = $state(null);
 	$effect(() => {
 		if (!ui.rawOpen || session.demo) return;
 		parts = null;
 		listFiles(session.token)
-			.then((state) => (parts = state.files.filter((f) => /^files\/[^/]+\.\d+\.json$/.test(f.path)).length))
+			.then((state) => (parts = state.files.filter((f) => f.path.startsWith('files/')).length))
 			.catch(() => {});
 	});
 	const files = $derived(loan.data ? [...(loan.data.costs ?? []).flatMap((c) => c.files ?? []), ...(loan.data.documents ?? [])].length : 0);
