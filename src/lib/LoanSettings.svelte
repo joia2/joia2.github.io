@@ -377,7 +377,12 @@
 				</div>
 				<label>
 					note
-					<input bind:value={c.note} placeholder={c.kind === 'object' ? 'washing machine, sofa…' : 'new kitchen, roof…'} autocomplete="off" />
+					<input
+						bind:value={c.note}
+						placeholder={c.kind === 'object' ? 'washing machine, sofa…' : 'new kitchen, roof…'}
+						autocomplete="off"
+						onpaste={(e) => [...(e.clipboardData?.items ?? [])].some((i) => i.kind === 'file') && pasted(c, e)}
+					/>
 				</label>
 				<!-- Receipts, invoices, photos: tap one to see it -->
 				<div class="files">
@@ -395,10 +400,15 @@
 					</label>
 					<button type="button" class="attach" onclick={() => paste(c)}><ClipboardPaste size={16} />+ paste</button>
 					{#if pasteBox === c}
-						<!-- svelte-ignore a11y_no_static_element_interactions -->
-						<div class="paste-box" contenteditable="true" role="textbox" tabindex="0" aria-label="paste here" onpaste={(e) => pasted(c, e)} onbeforeinput={(e) => e.preventDefault()}>
-							tap and hold here, then Paste
-						</div>
+						<!-- A plain text field, like a chat's: the system's Paste hands it files too. Typed text is dropped. -->
+						<textarea
+							class="paste-box"
+							rows="2"
+							placeholder="tap and hold here, then Paste"
+							aria-label="paste here"
+							onpaste={(e) => pasted(c, e)}
+							oninput={(e) => (e.currentTarget.value = '')}
+						></textarea>
 					{/if}
 				</div>
 			</fieldset>
@@ -580,6 +590,8 @@
 	}
 	.paste-box {
 		flex-basis: 100%;
+		resize: none;
+		font: inherit;
 		padding: 0.8rem;
 		border: 1px dashed var(--accent);
 		border-radius: 10px;
