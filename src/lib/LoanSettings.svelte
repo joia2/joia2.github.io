@@ -137,6 +137,11 @@
 		if (base) renaming.entry.name = base + renaming.ext;
 		renameOpen = false;
 	}
+	// The name field opens with its text selected, so typing replaces it; after the popup has taken
+	// the focus on opening
+	const selectAll = (input) => {
+		setTimeout(() => (input.focus(), input.setSelectionRange(0, input.value.length)), 50);
+	};
 	// The next one once this popup has closed, saved or not
 	$effect(() => {
 		if (!renameOpen && waiting.length) setTimeout(() => startRename(waiting.shift()));
@@ -466,8 +471,7 @@
 	{#if renaming}
 		<form class="rename" onsubmit={rename}>
 			<span class="field-name">
-				<!-- svelte-ignore a11y_autofocus -->
-				<input bind:value={renaming.base} aria-label="file name" autocomplete="off" autofocus />
+				<input bind:value={renaming.base} aria-label="file name" autocomplete="off" use:selectAll />
 				<span class="ext">{renaming.ext}</span>
 			</span>
 			<button class="primary" type="submit"><Check size={20} />ok</button>
