@@ -410,6 +410,13 @@
 				</legend>
 				<!-- Payments to the store or provider, and transfers between the two: tap one to change it -->
 				{#if c.entries.length}
+					{@const split = costSplit(c.entries)}
+					<p class="split">
+						total {formatKr(split.total)} kr
+						{#each PEOPLE as p (p)}
+							<span>· {data.names[p]} {formatKr(split[p])} ({formatPercent(split.total ? (split[p] / split.total) * 100 : 0)}<Pct />)</span>
+						{/each}
+					</p>
 					<ul class="entries">
 						{#each c.entries as e, j (j)}
 							<li>
@@ -427,13 +434,6 @@
 							</li>
 						{/each}
 					</ul>
-					{@const split = costSplit(c.entries)}
-					<p class="split">
-						total {formatKr(split.total)} kr
-						{#each PEOPLE as p (p)}
-							<span>· {data.names[p]} {formatKr(split[p])} ({formatPercent(split.total ? (split[p] / split.total) * 100 : 0)}<Pct />)</span>
-						{/each}
-					</p>
 				{/if}
 				<div class="chips">
 					<button type="button" class="attach" onclick={() => editEntry(c, { who: 'cyan' })}><Receipt size={16} />+ payment</button>
