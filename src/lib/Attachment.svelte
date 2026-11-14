@@ -27,7 +27,7 @@
 		let blobUrl = '';
 		let cancelled = false;
 		error = '';
-		(file.file ? Promise.resolve(file.file) : download(file.id))
+		(file.file ? Promise.resolve(file.file) : download(file))
 			.then((got) => {
 				if (cancelled) return;
 				blob = got;

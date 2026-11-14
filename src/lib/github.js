@@ -55,6 +55,13 @@ export async function getFile(token, path) {
 	return { text: new TextDecoder().decode(Uint8Array.fromBase64(content)), sha };
 }
 
+// Returns a file's bytes as they are, up to GitHub's 100 MB
+export async function getRawBytes(token, path) {
+	const response = await request(token, 'GET', contentsPath(path), undefined, 'application/vnd.github.raw+json');
+	if (!response.ok) throw await httpError(response, 'Reading a file');
+	return new Uint8Array(await response.arrayBuffer());
+}
+
 // Returns a file's text as it is, also above the 1 MB the JSON reply above holds
 export async function getRawFile(token, path) {
 	const response = await request(token, 'GET', contentsPath(path), undefined, 'application/vnd.github.raw+json');
@@ -63,11 +70,13 @@ export async function getRawFile(token, path) {
 }
 
 // Creates the file when sha is null, otherwise replaces that exact version. Returns the new sha.
+// The content is a text, or bytes (a Uint8Array).
 // GitHub answers 409 also when another save (an upload, data.json) moved the branch at the same
 // moment: tried again a few times, as only a real change of the file keeps failing. A new file has
 // nothing to conflict with, so its 422 is GitHub's own complaint (too large, say), shown as is.
 export async function putFile(token, path, text, sha, message) {
-	const body = { message, content: new TextEncoder().encode(text).toBase64(), ...(sha && { sha }) };
+	const bytes = typeof text === 'string' ? new TextEncoder().encode(text) : text;
+	const body = { message, content: bytes.toBase64(), ...(sha && { sha }) };
 	let response;
 	for (const wait of [1000, 2000, 4000, 0]) {
 		response = await request(token, 'PUT', contentsPath(path), body);
@@ -125,16 +134,21 @@ export async function listFiles(token) {
 }
 
 export async function getBlob(token, sha) {
-	const { content } = await gitJSON(token, 'GET', `/git/blobs/${sha}`);
-	return new TextDecoder().decode(Uint8Array.fromBase64(content));
+	return new TextDecoder().decode(await getBlobBytes(token, sha));
 }
 
-// Stores a text as a blob, not yet part of any commit; returns its sha. Tried again on a passing
+export async function getBlobBytes(token, sha) {
+	const { content } = await gitJSON(token, 'GET', `/git/blobs/${sha}`);
+	return Uint8Array.fromBase64(content.replace(/\n/g, ''));
+}
+
+// Stores a text or bytes as a blob, not yet part of any commit; returns its sha. Tried again on a passing
 // failure (network, GitHub busy), as a password change uploads many of them.
 export async function createBlob(token, text) {
 	for (let attempt = 1; ; attempt++) {
 		try {
-			return (await gitJSON(token, 'POST', '/git/blobs', { content: text, encoding: 'utf-8' })).sha;
+			const body = typeof text === 'string' ? { content: text, encoding: 'utf-8' } : { content: text.toBase64(), encoding: 'base64' };
+			return (await gitJSON(token, 'POST', '/git/blobs', body)).sha;
 		} catch (e) {
 			if (attempt === 3 || e instanceof TokenError) throw e;
 			await new Promise((done) => setTimeout(done, attempt * 2000));

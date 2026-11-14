@@ -7,19 +7,18 @@
 // removal is one commit, made only if nothing was saved meanwhile; otherwise it waits for the next
 // opening. It never changes data.json or any listed file.
 import { listFiles, filesAt, commitFiles } from '#lib/github.js';
+import { idOf, firstPath } from '#lib/paths.js';
 
 const GRACE = 7 * 24 * 60 * 60 * 1000;
 
 // Every attachment id the data lists: the costs' and the apartment's
 const listedIds = (data) => new Set([...(data.costs ?? []).flatMap((c) => c.files ?? []), ...(data.documents ?? [])].map((f) => f.id));
 
-// files/<id>.json and files/<id>.<part>.json → id
-const idOf = (path) => path.match(/^files\/([^/.]+)(?:\.\d+)?\.json$/)?.[1];
 
 // The data without attachments whose file isn't in the repo any more: for an edit saved late
 export async function keepExisting(token, data) {
 	const there = new Set((await listFiles(token)).files.map((f) => f.path));
-	const exists = (f) => there.has(`files/${f.id}.json`);
+	const exists = (f) => there.has(firstPath(f));
 	return {
 		...data,
 		...(data.costs && { costs: data.costs.map((c) => (c.files ? { ...c, files: c.files.filter(exists) } : c)) }),

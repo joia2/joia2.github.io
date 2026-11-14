@@ -1,6 +1,6 @@
 // Login and encrypted file access for joia2data, combining github.js and crypto.js
-import { checkAccess, getFile, putFile, listFiles, getBlob, createBlob, commitFiles } from '#lib/github.js';
-import { createVault, openVault, encryptJSON, decryptJSON, isEncryptedFile } from '#lib/crypto.js';
+import { checkAccess, getFile, putFile, listFiles, getBlob, getBlobBytes, createBlob, commitFiles } from '#lib/github.js';
+import { createVault, openVault, encryptJSON, decryptJSON, isEncryptedFile, encryptBytes, decryptBytes, isEncryptedBytes } from '#lib/crypto.js';
 import { NeedsSetupError } from '#lib/errors.js';
 
 const VAULT_FILE = 'salt.json';
@@ -24,7 +24,8 @@ export async function setup(token, password, vaultFile = VAULT_FILE) {
 	return { key, raw };
 }
 
-// Re-encrypts every encrypted file in salt.json's folder (and below) with a new password, together
+// Re-encrypts every encrypted file in salt.json's folder (and below): the .json ones (data.json, older
+// attachments) and the .bin ones (attachments, crypto.js encryptBytes), with a new password, together
 // with a new salt.json. Safe at every step:
 // - Nothing in the repo changes until the very end. Each file is read, decrypted with the old key,
 //   encrypted with the new one, checked to open again to the same content, and stored as a blob
@@ -43,7 +44,7 @@ export async function changePassword(token, current, next, vaultFile = VAULT_FIL
 	const { key: oldKey } = await openVault(JSON.parse(await getBlob(token, vaultEntry.sha)), current);
 
 	const folder = vaultFile.slice(0, vaultFile.lastIndexOf('/') + 1);
-	const candidates = state.files.filter(({ path }) => path !== vaultFile && path.startsWith(folder) && path.endsWith('.json'));
+	const candidates = state.files.filter(({ path }) => path !== vaultFile && path.startsWith(folder) && /\.(json|bin)$/.test(path));
 
 	// The new salt.json must open with the new password, as the next login will do
 	const { vault, key, raw } = await createVault(next);
@@ -52,14 +53,24 @@ export async function changePassword(token, current, next, vaultFile = VAULT_FIL
 	const entries = [{ path: vaultFile, text: vaultText(vault) }];
 	onprogress?.(0, candidates.length);
 	for (const [i, { path, sha }] of candidates.entries()) {
-		const text = await getBlob(token, sha);
-		if (isEncryptedFile(text)) {
-			const value = await decryptJSON(oldKey, text);
-			const fresh = await encryptJSON(key, value);
-			if (JSON.stringify(await decryptJSON(key, fresh)) !== JSON.stringify(value)) {
-				throw new Error(`${path} did not re-encrypt correctly. Nothing was changed.`);
+		const wrong = () => new Error(`${path} did not re-encrypt correctly. Nothing was changed.`);
+		if (path.endsWith('.bin')) {
+			const bytes = await getBlobBytes(token, sha);
+			if (isEncryptedBytes(bytes)) {
+				const plain = await decryptBytes(oldKey, bytes);
+				const fresh = await encryptBytes(key, plain);
+				const back = await decryptBytes(key, fresh);
+				if (back.length !== plain.length || back.some((b, k) => b !== plain[k])) throw wrong();
+				entries.push({ path, sha: await createBlob(token, fresh) });
 			}
-			entries.push({ path, sha: await createBlob(token, fresh) });
+		} else {
+			const text = await getBlob(token, sha);
+			if (isEncryptedFile(text)) {
+				const value = await decryptJSON(oldKey, text);
+				const fresh = await encryptJSON(key, value);
+				if (JSON.stringify(await decryptJSON(key, fresh)) !== JSON.stringify(value)) throw wrong();
+				entries.push({ path, sha: await createBlob(token, fresh) });
+			}
 		}
 		onprogress?.(i + 1, candidates.length);
 	}

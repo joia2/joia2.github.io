@@ -6,6 +6,7 @@
 	import Loan from '#lib/Loan.svelte';
 	import LoanSettings from '#lib/LoanSettings.svelte';
 	import Sheet from '#lib/Sheet.svelte';
+	import Convert from '#lib/Convert.svelte';
 	import { isUnlocked, session } from '#lib/session.svelte.js';
 	import { loan, loadLoan, unloadLoan, hasUnsavedChanges } from '#lib/loan.svelte.js';
 	import { ui } from '#lib/ui.svelte.js';
@@ -49,6 +50,7 @@
 	</p>
 {:else}
 	<Loan />
+	<Convert />
 	<Sheet title={SETTINGS[settings] ?? ''} bind:open={() => Boolean(settings), (open) => !open && home()}>
 		{#if settings}
 			{#key settings}<LoanSettings section={settings} onclose={home} />{/key}

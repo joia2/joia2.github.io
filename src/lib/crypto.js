@@ -72,6 +72,34 @@ export function isEncryptedFile(text) {
 	}
 }
 
+// Files are encrypted as bytes, not text: "J2B1", then the 12-byte IV, then the AES-GCM ciphertext
+// (with its 16-byte tag). 32 bytes more than the file itself.
+const MAGIC = new TextEncoder().encode('J2B1');
+
+export async function encryptBytes(key, bytes) {
+	const iv = random(12);
+	const data = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, bytes));
+	const out = new Uint8Array(MAGIC.length + iv.length + data.length);
+	out.set(MAGIC);
+	out.set(iv, MAGIC.length);
+	out.set(data, MAGIC.length + iv.length);
+	return out;
+}
+
+// Whether bytes are a file encrypted by encryptBytes, whatever key it was made with
+export const isEncryptedBytes = (bytes) => bytes.length > 32 && MAGIC.every((b, i) => bytes[i] === b);
+
+// Throws DecryptError if they aren't, or don't match the key
+export async function decryptBytes(key, bytes) {
+	if (!isEncryptedBytes(bytes)) throw new DecryptError();
+	try {
+		const iv = bytes.subarray(MAGIC.length, MAGIC.length + 12);
+		return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, bytes.subarray(MAGIC.length + 12)));
+	} catch {
+		throw new DecryptError();
+	}
+}
+
 // Returns the text of an encrypted file
 export async function encryptJSON(key, value) {
 	return JSON.stringify(await encrypt(key, JSON.stringify(value))) + '\n';

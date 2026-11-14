@@ -10,7 +10,7 @@ Uint8Array.prototype.toBase64 ??= function () {
 };
 
 const { changePassword } = await import('#lib/vault.js');
-const { createVault, openVault, encryptJSON, decryptJSON } = await import('#lib/crypto.js');
+const { createVault, openVault, encryptJSON, decryptJSON, encryptBytes, decryptBytes } = await import('#lib/crypto.js');
 const { WrongPasswordError, ConflictError, DecryptError } = await import('#lib/errors.js');
 
 // A repo: blobs by sha, trees (path → blob sha) by sha, commits by sha, and the branch's head
@@ -43,7 +43,7 @@ function fakeGitHub(files, { failBlobsFrom = Infinity, moveBranchMeanwhile = fal
 		if (method === 'POST' && path === '/git/blobs') {
 			if (++blobsCreated >= failBlobsFrom) throw new TypeError('offline');
 			const sha = id();
-			blobs.set(sha, data.content);
+			blobs.set(sha, data.encoding === 'base64' ? Buffer.from(data.content, 'base64') : data.content);
 			return reply(201, { sha });
 		}
 		if (method === 'POST' && path === '/git/trees') {
@@ -87,6 +87,8 @@ async function repo() {
 		'files/b.json': await encryptJSON(key, { name: 'big.pdf', type: 'application/pdf', parts: 2 }),
 		'files/b.1.json': await encryptJSON(key, { data: 'AAAA' }),
 		'files/b.2.json': await encryptJSON(key, { data: 'BBBB' }),
+		'files/c.bin': Buffer.from(await encryptBytes(key, new Uint8Array([1, 2, 3, 250, 251, 252]))),
+		'files/d.1.bin': Buffer.from(await encryptBytes(key, new Uint8Array(70000).fill(7))),
 		'notes.json': '{"plain": true}\n',
 		'README.md': 'hello\n'
 	};
@@ -96,6 +98,7 @@ const values = async (files, password) => {
 	const { key } = await openVault(JSON.parse(files['salt.json']), password);
 	const out = {};
 	for (const p of ['data.json', 'files/a.json', 'files/b.json', 'files/b.1.json', 'files/b.2.json']) out[p] = await decryptJSON(key, files[p]);
+	for (const p of ['files/c.bin', 'files/d.1.bin']) out[p] = [...(await decryptBytes(key, new Uint8Array(files[p])))];
 	return out;
 };
 
@@ -109,7 +112,7 @@ test('password change: every encrypted file opens with the new password, the sam
 	await assert.rejects(openVault(JSON.parse(after['salt.json']), 'old'), WrongPasswordError);
 	assert.equal(after['notes.json'], before['notes.json']);
 	assert.equal(after['README.md'], before['README.md']);
-	assert.deepEqual(steps, ['0/6', '1/6', '2/6', '3/6', '4/6', '5/6', '6/6']);
+	assert.deepEqual(steps, ['0/8', '1/8', '2/8', '3/8', '4/8', '5/8', '6/8', '7/8', '8/8']);
 });
 
 test('password change: a wrong current password changes nothing', async () => {

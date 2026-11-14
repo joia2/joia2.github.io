@@ -80,3 +80,13 @@ test('an edit saved late lists only files still there', async () => {
 	const late = { costs: [{ files: [{ id: 'kept' }, { id: 'removed' }] }, { entries: [] }], documents: [{ id: 'doc' }, { id: 'gone' }] };
 	assert.deepEqual(await keepExisting('token', late), { costs: [{ files: [{ id: 'kept' }] }, { entries: [] }], documents: [{ id: 'doc' }] });
 });
+
+test('the new format (.bin): an unlisted one is removed, a listed one kept, parts included', async () => {
+	const withBin = { ...data, documents: [...data.documents, { id: 'big', bin: true, parts: 2 }, { id: 'small', bin: true }] };
+	const files = [...listed, 'files/big.1.bin', 'files/big.2.bin', 'files/small.bin', 'files/stray.bin', 'files/stray2.1.bin'];
+	const now = fakeGitHub([{ date: new Date(NOW - 10 * DAY), files }]);
+	assert.equal(await cleanUp('token', withBin, NOW), 2);
+	assert.deepEqual(now(), files.filter((p) => !p.includes('stray')));
+	const late = { documents: [{ id: 'big', bin: true, parts: 2 }, { id: 'small', bin: true }, { id: 'stray', bin: true }] };
+	assert.deepEqual((await keepExisting('token', late)).documents.map((f) => f.id), ['big', 'small']);
+});

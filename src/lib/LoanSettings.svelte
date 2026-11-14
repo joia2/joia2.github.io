@@ -151,10 +151,12 @@
 
 
 	// Returns the costs for the data file, or an error message
+	// What data.json keeps of an attachment (not the File of one still uploading)
+	const keep = ({ id, name, type, size, bin, parts }) => ({ id, name, type, ...(size && { size }), ...(bin && { bin }), ...(parts && { parts }) });
 	// The costs as the data file keeps them: attachments only once uploaded
 	function parseCosts() {
 		return costs.map((c) => {
-			const files = c.files.filter((f) => f.id).map(({ id, name, type, size }) => ({ id, name, type, ...(size && { size }) }));
+			const files = c.files.filter((f) => f.id).map(keep);
 			return {
 				kind: c.kind,
 				...(c.note.trim() && { note: c.note.trim() }),
@@ -176,7 +178,7 @@
 		lastSaved = text;
 		data.costs = parsed;
 		changed();
-		for (const f of gone) remove(f.id).catch(() => {}); // a file left behind is only unused space
+		for (const f of gone) remove(f).catch(() => {}); // a file left behind is only unused space
 	}
 	$effect(() => {
 		if (section === 'costs') saveCosts();
@@ -185,12 +187,12 @@
 	// The apartment's documents: saved as they go, whatever happens to the rest of the page
 	let documents = $state([...(data.documents ?? [])]);
 	function saveDocuments() {
-		const kept = documents.filter((f) => f.id).map(({ id, name, type, size }) => ({ id, name, type, ...(size && { size }) }));
+		const kept = documents.filter((f) => f.id).map(keep);
 		const ids = new Set(kept.map((f) => f.id));
 		const gone = (data.documents ?? []).filter((f) => !ids.has(f.id));
 		data.documents = kept;
 		changed();
-		for (const f of gone) remove(f.id).catch(() => {});
+		for (const f of gone) remove(f).catch(() => {});
 	}
 
 	// The names page saves as it goes too: a name once it isn't empty, an animal when picked

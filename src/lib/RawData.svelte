@@ -7,6 +7,7 @@
 	import { ui } from '#lib/ui.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 	import { listPaths } from '#lib/github.js';
+	import { idOf } from '#lib/paths.js';
 
 	let copied = $state(false);
 
@@ -20,7 +21,7 @@
 		listPaths(session.token)
 			.then((paths) => {
 				const all = paths.filter((p) => p.startsWith('files/'));
-				stored = { files: all.filter((p) => /^files\/[^/.]+\.json$/.test(p)).length, parts: all.length };
+				stored = { files: new Set(all.map(idOf).filter(Boolean)).size, parts: all.length };
 			})
 			.catch(() => {});
 	});
