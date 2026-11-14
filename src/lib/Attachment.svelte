@@ -65,7 +65,8 @@
 		(async () => {
 			const pdfjs = await import('pdfjs-dist');
 			pdfjs.GlobalWorkerOptions.workerSrc = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
-			const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+			const task = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
+			const doc = await task.promise;
 			const width = node.clientWidth;
 			const sharp = Math.min(3, 2 * devicePixelRatio);
 			for (let n = 1; n <= doc.numPages && !stopped; n++) {
@@ -75,7 +76,7 @@
 				node.append(canvas);
 				await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
 			}
-			doc.destroy();
+			task.destroy?.(); // frees the PDF's memory once drawn
 		})().catch((e) => (error = `This PDF could not be shown: ${e.message}`));
 		return { destroy: () => (stopped = true) };
 	}
