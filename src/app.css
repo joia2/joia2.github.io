@@ -58,11 +58,10 @@
 
 /* Header, main and footer fill at least the screen's smallest height (Safari's toolbars shown), so
    the footer sits at the bottom of what is visible */
-/* A sideways swipe (a trackpad's, or on a row) never goes back or forward a page, and the page
-   doesn't bounce past its top or end (the top bar would slide down with it) */
+/* A sideways swipe (a trackpad's, or on a row) never goes back or forward a page */
 html,
 body {
-	overscroll-behavior: none;
+	overscroll-behavior-x: none;
 }
 body {
 	margin: 0;

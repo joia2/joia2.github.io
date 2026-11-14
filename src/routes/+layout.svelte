@@ -36,6 +36,8 @@
 		{/if}
 	</nav>
 </header>
+<!-- The top bar's place in the page: the bar itself is fixed, so it stays put while the page bounces -->
+<div class="under-header"></div>
 
 <!-- Outside the header: its blur would otherwise trap the fixed-position menu inside the bar -->
 {#if isUnlocked()}
@@ -54,14 +56,19 @@
 
 <style>
 	header {
-		position: sticky;
+		position: fixed;
 		top: 0;
+		left: 0;
+		right: 0;
 		z-index: 10;
 		background: var(--tint), var(--bar);
 		-webkit-backdrop-filter: saturate(180%) blur(20px);
 		backdrop-filter: saturate(180%) blur(20px);
 		border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
 		padding-top: env(safe-area-inset-top); /* below the iPhone's clock */
+	}
+	.under-header {
+		height: calc(49px + env(safe-area-inset-top)); /* with its border */
 	}
 	.unblur {
 		display: none;
