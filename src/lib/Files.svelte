@@ -114,7 +114,8 @@
 		if (renameOpen || !renaming) return;
 		const { entry } = renaming;
 		renaming = null;
-		uploadEntry(entry);
+		if (entry.file) uploadEntry(entry);
+		else onchange?.(); // a saved file renamed: only its name in the list changes
 		if (waiting.length) setTimeout(() => startRename(waiting.shift()));
 	});
 	async function uploadEntry(entry) {
@@ -179,7 +180,7 @@
 </div>
 {#if error}<p class="error" role="alert">{error}</p>{/if}
 
-<Attachment file={shown} bind:open={previewOpen} />
+<Attachment file={shown} bind:open={previewOpen} onrename={shown?.id ? () => startRename(shown) : undefined} />
 
 <Sheet title="file name" bind:open={renameOpen}>
 	{#if renaming}

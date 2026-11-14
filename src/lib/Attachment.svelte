@@ -1,13 +1,15 @@
 <script>
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
 	import Download from '@lucide/svelte/icons/download';
+	import Pencil from '@lucide/svelte/icons/pencil';
 	import Sheet from '#lib/Sheet.svelte';
 	import { tick } from 'svelte';
 	import { download } from '#lib/attachments.js';
 
 	// An attachment shown inside the app: an image, or a PDF in the browser's own viewer.
 	// file: { name, type, id } once saved, or { name, type, file } (a File) before
-	let { file, open = $bindable(false) } = $props();
+	// onrename: when given, a pencil to rename the file
+	let { file, open = $bindable(false), onrename } = $props();
 
 	let url = $state('');
 	let blob = $state(null);
@@ -112,6 +114,9 @@
 
 <Sheet title={file?.name ?? ''} bind:open>
 	{#snippet actions()}
+		{#if onrename}
+			<button class="icon-button" onclick={onrename} aria-label="rename"><Pencil size={20} /></button>
+		{/if}
 		{#if url}
 			<button class="icon-button" onclick={save} aria-label="download"><Download size={22} /></button>
 		{/if}
