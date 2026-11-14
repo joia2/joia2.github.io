@@ -27,11 +27,15 @@
 
 	let names = $state({ ...data.names });
 	let animals = $state({ ...data.animals });
-	// The counters under the animals: killed for food so far this year, updated every second
+	// The counters under the animals: killed for food so far this year, updated on every frame of the
+	// screen, so each one runs at its real pace (a chicken every few hundred microseconds, a camel every ten seconds)
 	let now = $state(new Date());
 	$effect(() => {
-		const timer = setInterval(() => (now = new Date()), 1000);
-		return () => clearInterval(timer);
+		let frame = requestAnimationFrame(function update() {
+			now = new Date();
+			frame = requestAnimationFrame(update);
+		});
+		return () => cancelAnimationFrame(frame);
 	});
 	const count = (a) => new Intl.NumberFormat('nb-NO').format(killedThisYear(a, now));
 	let total = $state(data.total ? formatAmount(data.total) : '');
