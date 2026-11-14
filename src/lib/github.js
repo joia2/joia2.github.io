@@ -3,7 +3,7 @@ import { TokenError, NetworkError, ConflictError } from '#lib/errors.js';
 
 const REPO = 'https://api.github.com/repos/joia2/joia2data';
 
-async function request(token, method, path, body) {
+async function request(token, method, path, body, accept = 'application/vnd.github+json') {
 	let response;
 	try {
 		response = await fetch(REPO + path, {
@@ -11,7 +11,7 @@ async function request(token, method, path, body) {
 			cache: 'no-store', // GitHub allows caching reads for 60 s, which would hide our own writes
 			headers: {
 				Authorization: `Bearer ${token}`,
-				Accept: 'application/vnd.github+json',
+				Accept: accept,
 				'X-GitHub-Api-Version': '2022-11-28'
 			},
 			body: body && JSON.stringify(body)
@@ -53,6 +53,13 @@ export async function getFile(token, path) {
 	if (!response.ok) throw await httpError(response, `Reading ${path}`);
 	const { content, sha } = await response.json();
 	return { text: new TextDecoder().decode(Uint8Array.fromBase64(content)), sha };
+}
+
+// Returns a file's text as it is, also above the 1 MB the JSON reply above holds
+export async function getRawFile(token, path) {
+	const response = await request(token, 'GET', contentsPath(path), undefined, 'application/vnd.github.raw+json');
+	if (!response.ok) throw await httpError(response, 'Reading a file');
+	return response.text();
 }
 
 // Creates the file when sha is null, otherwise replaces that exact version. Returns the new sha.

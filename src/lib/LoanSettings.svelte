@@ -7,6 +7,11 @@
 	import Wrench from '@lucide/svelte/icons/wrench';
 	import Paintbrush from '@lucide/svelte/icons/paintbrush';
 	import Sofa from '@lucide/svelte/icons/sofa';
+	import Paperclip from '@lucide/svelte/icons/paperclip';
+	import X from '@lucide/svelte/icons/x';
+	import Attachment from '#lib/Attachment.svelte';
+	import { upload, remove, MAX_SIZE } from '#lib/attachments.js';
+	import { session } from '#lib/session.svelte.js';
 	import Trash from '@lucide/svelte/icons/trash';
 	import Face from '#lib/Face.svelte';
 	import MonthInput from '#lib/MonthInput.svelte';
@@ -16,7 +21,7 @@
 	import RefreshCcw from '@lucide/svelte/icons/refresh-ccw';
 	import { loan, changed } from '#lib/loan.svelte.js';
 	import Hourglass from '@lucide/svelte/icons/hourglass';
-	import { addMonths, currentMonth, formatAmount, parseAmount, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
+	import { addMonths, currentMonth, formatAmount, formatPercent, parseAmount, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
 
 	// section: 'names' | 'apartment' (the apartment and its mortgage) | 'costs' (maintenance, improvements and objects)
 	let { section, onclose } = $props();
@@ -81,10 +86,30 @@
 		note: c.note ?? '',
 		total: formatAmount((c.cyan || 0) + (c.mint || 0)),
 		cyan: formatAmount(c.cyan || 0),
-		mint: formatAmount(c.mint || 0)
+		mint: formatAmount(c.mint || 0),
+		files: [...(c.files ?? [])] // saved ones { id, name, type }; new ones { name, type, file } until saved
 	});
 	let costs = $state((data.costs ?? []).map(asFields));
-	const addCost = (kind) => costs.push({ kind, month: currentMonth(), note: '', total: '', cyan: '', mint: '' });
+	const addCost = (kind) => costs.push({ kind, month: currentMonth(), note: '', total: '', cyan: '', mint: '', files: [] });
+
+	// Attachments: picked files wait here, and are uploaded (encrypted) when the page is saved
+	let shown = $state(null); // the attachment in the preview
+	let previewOpen = $state(false);
+	function attach(c, event) {
+		for (const file of event.currentTarget.files) {
+			if (file.size > MAX_SIZE) error = `${file.name} is larger than ${MAX_SIZE / 1024 / 1024} MB.`;
+			else c.files.push({ name: file.name, type: file.type, file });
+		}
+		event.currentTarget.value = '';
+	}
+	// What one person paid of a cost, in percent of what both paid
+	const paidShare = (c, p) => {
+		const [cyan, mint] = PEOPLE.map((q) => parseAmount(c[q]) ?? 0);
+		const sum = (cyan ?? 0) + (mint ?? 0);
+		return formatPercent(sum ? ((p === 'cyan' ? cyan : mint) / sum) * 100 : 0);
+	};
+	const preview = (f) => ((shown = f), (previewOpen = true));
+	let saving = $state(false);
 
 	function totalChanged(c) {
 		const total = parseAmount(c.total);
@@ -105,13 +130,21 @@
 			const [cyan, mint] = PEOPLE.map((p) => parseAmount(c[p]));
 			if (cyan === undefined || mint === undefined || !(cyan || mint)) return `Enter what each paid for the ${c.kind === 'object' ? 'object' : `${c.kind} cost`}.`;
 			if (!MONTH.test(c.month)) return `Enter the month of the ${c.kind === 'object' ? 'object' : `${c.kind} cost`} as YYYY-MM.`;
-			parsed.push({ kind: c.kind, month: c.month, cyan: cyan ?? 0, mint: mint ?? 0, ...(c.note.trim() && { note: c.note.trim() }) });
+			parsed.push({
+				kind: c.kind,
+				month: c.month,
+				cyan: cyan ?? 0,
+				mint: mint ?? 0,
+				...(c.note.trim() && { note: c.note.trim() }),
+				...(c.files.length && { files: c.files })
+			});
 		}
 		return parsed.sort((a, b) => (a.month < b.month ? -1 : 1));
 	}
 
-	function submit(event) {
+	async function submit(event) {
 		event.preventDefault();
+		if (saving) return;
 		if (section === 'names') {
 			const cyan = names.cyan.trim();
 			const mint = names.mint.trim();
@@ -127,9 +160,23 @@
 			}
 		}
 		if (section === 'costs') {
-			const parsed = parseCosts();
+			let parsed = parseCosts();
 			if (typeof parsed === 'string') return (error = parsed);
+			if (session.demo && costs.some((c) => c.files.some((f) => f.file))) return (error = 'Attachments are not kept in the demo.');
+			// New attachments are uploaded first, then loan.json lists them; removed ones are deleted after
+			saving = true;
+			try {
+				for (const c of costs) c.files = await Promise.all(c.files.map((f) => (f.file ? upload(f.file) : f)));
+			} catch (e) {
+				saving = false;
+				return (error = `The attachments could not be saved: ${e.message}`);
+			}
+			saving = false;
+			parsed = parseCosts();
+			const kept = new Set(parsed.flatMap((c) => (c.files ?? []).map((f) => f.id)));
+			const gone = (data.costs ?? []).flatMap((c) => c.files ?? []).filter((f) => !kept.has(f.id));
 			data.costs = parsed; // always there, empty when there are none
+			for (const f of gone) remove(f.id).catch(() => {}); // a file left behind is only unused space
 		}
 		if (section === 'apartment') {
 			const price = parseAmount(total);
@@ -285,7 +332,7 @@
 				<div class="pair">
 					{#each PEOPLE as p (p)}
 						<label>
-							{data.names[p]} (kr)
+							<span>{data.names[p]} (kr) <span class="share">{paidShare(c, p)}<Pct /></span></span>
 							<span class="field">
 								<Face person={p} size={18} />
 								<input bind:value={c[p]} oninput={() => partChanged(c)} inputmode="decimal" placeholder="0,00" />
@@ -297,6 +344,21 @@
 					note
 					<input bind:value={c.note} placeholder={c.kind === 'object' ? 'washing machine, sofa…' : 'new kitchen, roof…'} autocomplete="off" />
 				</label>
+				<!-- Receipts, invoices, photos: tap one to see it -->
+				<div class="files">
+					{#each c.files as f, j (f.id ?? f.name + j)}
+						<span class="file">
+							<button type="button" class="name" onclick={() => preview(f)}>{f.name}</button>
+							<button type="button" class="icon-button" onclick={() => c.files.splice(j, 1)} aria-label="remove {f.name}">
+								<X size={16} />
+							</button>
+						</span>
+					{/each}
+					<label class="attach">
+						<Paperclip size={16} />+ attachment
+						<input type="file" accept="application/pdf,image/*" multiple onchange={(e) => attach(c, e)} />
+					</label>
+				</div>
 			</fieldset>
 		{/each}
 		<div class="add">
@@ -311,10 +373,12 @@
 	{/if}
 
 	<p class="actions">
-		<button class="primary" type="submit"><Check size={20} />save</button>
+		<button class="primary" type="submit" disabled={saving}><Check size={20} />{saving ? 'saving…' : 'save'}</button>
 		<button type="button" onclick={onclose}>cancel</button>
 	</p>
 </form>
+
+<Attachment file={shown} bind:open={previewOpen} />
 
 <style>
 	.animals {
@@ -425,6 +489,49 @@
 		width: 100%;
 		min-width: 0;
 		box-sizing: border-box;
+	}
+	.share {
+		font-variant-numeric: tabular-nums;
+		opacity: 0.8;
+	}
+	.files {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+	.file {
+		display: inline-flex;
+		align-items: center;
+		min-width: 0;
+		max-width: 100%;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+	}
+	.file .name {
+		overflow: hidden;
+		padding: 0.3rem 0.2rem 0.3rem 0.6rem;
+		border: 0;
+		background: transparent;
+		font-size: 0.82rem;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.file .icon-button {
+		width: 28px;
+		height: 28px;
+	}
+	form .attach {
+		flex-direction: row;
+		align-items: center;
+		gap: 0.3rem;
+		padding: 0.3rem 0.6rem;
+		border: 1px dashed var(--border);
+		border-radius: 10px;
+		font-size: 0.82rem;
+		cursor: pointer;
+	}
+	.attach input {
+		display: none;
 	}
 	.add {
 		display: flex;
