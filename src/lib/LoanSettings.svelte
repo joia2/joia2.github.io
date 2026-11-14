@@ -101,6 +101,8 @@
 
 	// The small popup for one payment or transfer: its date and amount (and, for a payment, who paid)
 	const today = () => new Date().toLocaleDateString('sv'); // YYYY-MM-DD
+	// A transfer as written: cyan on the left, the arrow showing the way (John → Iago, John ← Iago)
+	const transfer = (e) => (e.from === 'cyan' ? `${data.names.cyan} → ${data.names.mint}` : `${data.names.cyan} ← ${data.names.mint}`);
 	let entry = $state(null); // { cost, index (−1: new), who | from + to, date, amount (text) }
 	let entryOpen = $state(false);
 	function editEntry(cost, kind, index = -1) {
@@ -426,7 +428,7 @@
 									<span class="date">{e.date}</span>
 									<span class="what">
 										{#if e.who}<Face person={e.who} size={16} />{data.names[e.who]} paid
-										{:else}<Face person={e.from} size={16} />{data.names[e.from]} → {data.names[e.to]}{/if}
+										{:else}<Face person={e.from} size={16} />{transfer(e)}{/if}
 									</span>
 									<span class="amount">{formatAmount(e.amount)}</span>
 								</button>
@@ -440,7 +442,7 @@
 				<div class="chips">
 					<button type="button" class="attach" onclick={() => editEntry(c, { who: 'cyan' })}><Wallet size={16} />+ pay</button>
 					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'cyan', to: 'mint' })}><BanknoteArrowUp size={16} class="turn" />{data.names.cyan} → {data.names.mint}</button>
-					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}><BanknoteArrowDown size={16} class="turn" />{data.names.mint} → {data.names.cyan}</button>
+					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}><BanknoteArrowDown size={16} class="turn" />{data.names.cyan} ← {data.names.mint}</button>
 				</div>
 				<label>
 					note
@@ -504,7 +506,7 @@
 
 <Attachment file={shown} bind:open={previewOpen} />
 
-<Sheet title={entry?.who !== undefined ? 'payment' : entry ? `${data.names[entry.from]} → ${data.names[entry.to]}` : ''} bind:open={entryOpen}>
+<Sheet title={entry?.who !== undefined ? 'payment' : entry ? transfer(entry) : ''} bind:open={entryOpen}>
 	{#if entry}
 		{#key entry}
 			<form class="rename" onsubmit={saveEntry}>
