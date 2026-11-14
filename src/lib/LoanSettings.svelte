@@ -104,7 +104,10 @@
 		return c.files.at(-1);
 	}
 	function attach(c, event) {
-		for (const file of event.currentTarget.files) add(c, file);
+		for (const file of event.currentTarget.files) {
+			const entry = add(c, file);
+			if (entry) startRename(entry);
+		}
 		event.currentTarget.value = '';
 	}
 	// An image or PDF copied to the clipboard, named by when it was pasted: pasted 2026-11-14 18.05.png
@@ -117,10 +120,13 @@
 		const entry = add(c, new File([blob], own || `pasted ${stamp}.${ext}`, { type }));
 		if (entry) startRename(entry);
 	}
-	// Right after a paste: a small popup to name the file; the extension stays as it is
+	// Right after a file is added or pasted: a small popup to name it, one file after another; the
+	// extension stays as it is
 	let renaming = $state(null); // { entry, base, ext }
 	let renameOpen = $state(false);
+	const waiting = []; // files added together, named one after another
 	function startRename(entry) {
+		if (renameOpen) return void waiting.push(entry);
 		const dot = entry.name.lastIndexOf('.');
 		renaming = { entry, base: dot > 0 ? entry.name.slice(0, dot) : entry.name, ext: dot > 0 ? entry.name.slice(dot) : '' };
 		renameOpen = true;
@@ -131,6 +137,10 @@
 		if (base) renaming.entry.name = base + renaming.ext;
 		renameOpen = false;
 	}
+	// The next one once this popup has closed, saved or not
+	$effect(() => {
+		if (!renameOpen && waiting.length) setTimeout(() => startRename(waiting.shift()));
+	});
 	// What a file really is, from its first bytes, when the clipboard doesn't say (an iPhone can give
 	// a PDF from Mail no type at all)
 	async function sniff(blob) {
