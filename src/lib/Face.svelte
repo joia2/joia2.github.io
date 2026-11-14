@@ -1,11 +1,15 @@
 <script>
-	import { ANIMALS } from '#lib/animals.js';
+	import { ANIMALS, ANIMAL_NAMES } from '#lib/animals.js';
+	import { clock } from '#lib/clock.svelte.js';
 	import { loan } from '#lib/loan.svelte.js';
 	// A person's icon: the animal they picked, or the logo's face. cyan for person A, mint for person B.
-	// animal: shows that one instead of the picked one (the picker in the names popup)
+	// animal: shows that one instead of the picked one (the picker in the names popup). 'rotate': each
+	// animal in turn, a new one every minute; the right one runs half the list ahead, so the two differ
 	let { person, size = 56, animal } = $props();
 	const color = $derived(person === 'cyan' ? '#22d3ee' : '#2dd4bf');
-	const icon = $derived(ANIMALS[animal ?? loan.data?.animals?.[person]]);
+	const chosen = $derived(animal ?? loan.data?.animals?.[person]);
+	const turn = $derived(ANIMAL_NAMES[(clock.minute + (person === 'mint' ? ANIMAL_NAMES.length / 2 : 0)) % ANIMAL_NAMES.length]);
+	const icon = $derived(ANIMALS[chosen === 'rotate' ? turn : chosen]);
 </script>
 
 {#if icon}

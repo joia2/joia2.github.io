@@ -10,6 +10,7 @@
 	import Face from '#lib/Face.svelte';
 	import MonthInput from '#lib/MonthInput.svelte';
 	import { ANIMAL_NAMES } from '#lib/animals.js';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import { loan, changed } from '#lib/loan.svelte.js';
 	import Hourglass from '@lucide/svelte/icons/hourglass';
 	import { addMonths, currentMonth, formatAmount, parseAmount, setValue, toOre, PEOPLE, TERM } from '#lib/loan.js';
@@ -163,6 +164,18 @@
 						<Face person={p} size={44} animal={a} />
 					</button>
 				{/each}
+				<button
+					type="button"
+					role="radio"
+					aria-checked={animals[p] === 'rotate'}
+					aria-label="each animal in turn, a new one every minute"
+					class:chosen={animals[p] === 'rotate'}
+					class="{p} rotate"
+					onclick={() => (animals[p] = animals[p] === 'rotate' ? undefined : 'rotate')}
+				>
+					<RefreshCw size={30} />
+					<span>rotate</span>
+				</button>
 			</div>
 		{/each}
 	{:else if section === 'apartment'}
@@ -288,6 +301,17 @@
 		border: 2px solid transparent;
 		border-radius: 14px;
 		background: transparent;
+	}
+	.animals .rotate {
+		gap: 0.2rem;
+		font-size: 0.75rem;
+		color: var(--muted);
+	}
+	.animals .rotate.cyan :global(svg) {
+		color: var(--cyan);
+	}
+	.animals .rotate.mint :global(svg) {
+		color: var(--mint);
 	}
 	.animals button.chosen.cyan {
 		border-color: var(--cyan);
