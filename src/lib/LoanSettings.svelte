@@ -824,6 +824,7 @@
 		font-weight: 600;
 		line-height: 1;
 		color: #0b2a2e;
+		font-variant-caps: all-small-caps;
 		vertical-align: middle;
 	}
 	.initial.cyan {
