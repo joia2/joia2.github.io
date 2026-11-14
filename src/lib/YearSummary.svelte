@@ -27,7 +27,7 @@
 			<dd>{formatKr(total(p, 'principal'))}</dd>
 			{#if paid}
 				<!-- Skattemelding: interest and fees that built up in the year (rentefradrag) -->
-				<dt><span class="long">interest</span><span class="short">int.</span> + fees ({share(paid, p)}<Pct />)</dt>
+				<dt><span class="long">interest</span><span class="short">intere.</span> + fees ({share(paid, p)}<Pct />)</dt>
 				<dd class="tax">{formatKr(paid[p])}</dd>
 			{/if}
 			{#if end}

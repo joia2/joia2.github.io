@@ -168,7 +168,7 @@
 					<dd>{formatKr(actually(s))}</dd>
 					<dt>principal</dt>
 					<dd>{formatKr(s.principal)}</dd>
-					<dt><span class="long">interest</span><span class="short">int.</span> ({part(p, 'interest')}<Pct />)</dt>
+					<dt><span class="long">interest</span><span class="short">intere.</span> ({part(p, 'interest')}<Pct />)</dt>
 					<dd>{formatKr(s.interest)}</dd>
 					{#if p === 'mint'}
 						<!-- Iago's part of the LO fee: less 22%, by the principal left (3.9) -->
