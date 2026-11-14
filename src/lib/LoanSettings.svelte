@@ -255,6 +255,25 @@
 	$effect(() => {
 		if (section === 'costs') saveCosts();
 	});
+
+	// The names page saves as it goes too: a name once it isn't empty, an animal when picked
+	$effect(() => {
+		if (section !== 'names') return;
+		const next = { cyan: names.cyan.trim(), mint: names.mint.trim() };
+		const picked = { ...animals };
+		if (!next.cyan || !next.mint) return;
+		if (JSON.stringify([next, picked]) === JSON.stringify([data.names, data.animals ?? {}])) return;
+		data.names = next;
+		data.animals = picked;
+		// The animals right after the names in the file: every other field moves after them
+		for (const k of Object.keys(data)) {
+			if (k === 'v' || k === 'names' || k === 'animals') continue;
+			const v = data[k];
+			delete data[k];
+			data[k] = v;
+		}
+		changed();
+	});
 	async function uploadEntry(entry) {
 		if (session.demo) return void (error = 'Attachments are not kept in the demo.');
 		entry.uploading = true;
@@ -273,20 +292,7 @@
 
 	async function submit(event) {
 		event.preventDefault();
-		if (section === 'names') {
-			const cyan = names.cyan.trim();
-			const mint = names.mint.trim();
-			if (!cyan || !mint) return (error = 'Enter both names.');
-			data.names = { cyan, mint };
-			data.animals = { ...animals };
-			// The animals right after the names in the file: every other field moves after them
-			for (const k of Object.keys(data)) {
-				if (k === 'v' || k === 'names' || k === 'animals') continue;
-				const v = data[k];
-				delete data[k];
-				data[k] = v;
-			}
-		}
+		if (section === 'names') return; // saved as it goes
 		if (section === 'costs') return; // saved as it goes
 		if (section === 'apartment') {
 			const price = parseAmount(total);
@@ -522,7 +528,7 @@
 		<p class="error" role="alert"><CircleAlert size={18} />{error}</p>
 	{/if}
 
-	{#if section !== 'costs'}
+	{#if section === 'apartment'}
 		<p class="actions">
 			<button class="primary" type="submit"><Check size={20} />save</button>
 			<button type="button" onclick={onclose}>cancel</button>
