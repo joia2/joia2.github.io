@@ -170,6 +170,11 @@
 					<dd>{formatKr(s.principal)}</dd>
 					<dt><span class="long">interest</span><span class="short">int.</span> ({part(p, 'interest')}<Pct />)</dt>
 					<dd>{formatKr(s.interest)}</dd>
+					{#if p === 'mint'}
+						<!-- Iago's part of the LO fee: less 22%, by the principal left (3.9) -->
+						<dt>LO ({formatPercent(row.lo.share * 100)}<Pct />)</dt>
+						<dd>{formatKr(row.lo.owed)}</dd>
+					{/if}
 				</dl>
 				{#if s.covered < 0}
 					<p class="minus">−{formatKr(-s.covered)} kr</p>
@@ -214,10 +219,6 @@
 						/>
 						<span class="suffix" aria-hidden="true">kr</span>
 					</span>
-				{:else}
-					<p class="lo-share" title="{names[p]}'s part of the principal left, and of the LO fee less 22%">
-						{formatPercent(row.lo.share * 100)}<Pct /> LO {formatKr(row.lo.owed)} kr
-					</p>
 				{/if}
 				{#if s.uncovered}
 					<p class="warn"><TriangleAlert size={14} />{formatKr(s.uncovered)} kr unpaid</p>
@@ -505,11 +506,6 @@
 	}
 	.lo .prefix {
 		left: 0.45rem;
-	}
-	.lo-share {
-		margin: 0.15rem 0.6rem 0;
-		font-size: 0.75rem;
-		color: var(--muted);
 	}
 	.mid input.prefixed {
 		padding-left: 1.6rem;
