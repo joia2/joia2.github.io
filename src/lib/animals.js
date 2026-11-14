@@ -1,7 +1,7 @@
 // The animals each person can pick as their icon, recolored in the person's color.
 // Fluent Emoji (flat), © Microsoft Corporation, MIT License: https://github.com/microsoft/fluentui-emoji
 // The sheep: Noto Emoji, © Google, Apache License 2.0: https://github.com/googlefonts/noto-emoji
-// The pigeon: drawn for this app in the same flat style. The turkey's beak has its body color.
+// The pigeon: drawn for this app in the same flat style. The turkey is shaded by hand (roles).
 const ICONS = {
 	"fish": {
 		"size": 32,
@@ -31,7 +31,15 @@ const ICONS = {
 	},
 	"turkey": {
 		"size": 32,
-		"body": "<g fill=\"none\"><path fill=\"#9b9b9b\" d=\"m11.79 29l.6-4.312h1.641L13.384 29h2.39l.601-4.312h1.64L17.37 29h1.537c.389 0 .945.218 1.08.745c.034.133-.082.247-.22.247h-11.5c-.138 0-.254-.113-.229-.249c.076-.413.361-.743 1.01-.743z\"/><path fill=\"#f3ad61\" d=\"M27.703 2h.594a1.703 1.703 0 0 1 .559 3.313a1.704 1.704 0 0 1-.56 3.312a1.703 1.703 0 0 1 .661 3.273a1.704 1.704 0 0 1-.262 3.227a1.704 1.704 0 0 1 .137 3.273a1.704 1.704 0 0 1-.535 3.32h.062a1.64 1.64 0 1 1 0 3.282h-4.14v-3.281h3.062v-16.5h.422z\"/><path fill=\"#f70a8d\" d=\"M2.031 14.594V18.5h3.266l2.937-9.281c.516-1.39 1.063-4.203-1.609-4.203c-2.281 0-1.776 2.817-1.234 4.203c.453 1.156.484 2.64-.766 2.797c-2.109.263-2.583 1.713-2.594 2.578\"/><path fill=\"#a56953\" d=\"M2.88 7.145L4.5 5.953v2.813l-1.622-1.22a.25.25 0 0 1 .002-.401\"/><path fill=\"#ff6dc6\" d=\"M4.297 6.078a.5.5 0 1 1 1 0V9.5a.5.5 0 0 1-1 0z\"/><path fill=\"#1c1c1c\" d=\"M7.031 6.523a.5.5 0 1 1-1 0a.5.5 0 0 1 1 0\"/><path fill=\"#6d4534\" d=\"M8.091 25C6.04 24.854 2 23.571 2 18.077c0-3.073 2.355-4.741 4.663-5.934c.693-.359.867-.565 1.02-.99C8.543 8.762 11.671 5 17.04 5c1.085 0 2.097.186 3.033.518c.333-1.232 1.713-2.174 2.385-2.61C23.595 2.172 25.608 2 28 2v17.266c0 .822-.08 1.77-.291 2.656c-.302 1.417-.91 2.598-2.134 2.962q-.35.114-.769.116z\"/><path fill=\"#d3883e\" d=\"M21.852 16.564a278 278 0 0 1 4.653 4.36c1.206 1.204.873 2.37.568 2.848C26.52 24.638 25.56 25 25.118 25h-8.921q-.365 0-.74-.015z\"/><path fill=\"#a56953\" d=\"M21.853 16.563a120 120 0 0 0-2.788-2.485C17.061 12.363 15.015 12 14.085 12C9.418 12 8 16.375 8 17.95c0 5.676 4.025 6.896 7.456 7.035a7 7 0 0 0 6.397-8.422\"/></g>",
+		"body": "<g fill=\"none\"><path fill=\"#9b9b9b\" d=\"m11.79 29l.6-4.312h1.641L13.384 29h2.39l.601-4.312h1.64L17.37 29h1.537c.389 0 .945.218 1.08.745c.034.133-.082.247-.22.247h-11.5c-.138 0-.254-.113-.229-.249c.076-.413.361-.743 1.01-.743z\"/><path fill=\"#f3ad61\" d=\"M27.703 2h.594a1.703 1.703 0 0 1 .559 3.313a1.704 1.704 0 0 1-.56 3.312a1.703 1.703 0 0 1 .661 3.273a1.704 1.704 0 0 1-.262 3.227a1.704 1.704 0 0 1 .137 3.273a1.704 1.704 0 0 1-.535 3.32h.062a1.64 1.64 0 1 1 0 3.282h-4.14v-3.281h3.062v-16.5h.422z\"/><path fill=\"#f70a8d\" d=\"M2.031 14.594V18.5h3.266l2.937-9.281c.516-1.39 1.063-4.203-1.609-4.203c-2.281 0-1.776 2.817-1.234 4.203c.453 1.156.484 2.64-.766 2.797c-2.109.263-2.583 1.713-2.594 2.578\"/><path fill=\"#d3883e\" d=\"M2.88 7.145L4.5 5.953v2.813l-1.622-1.22a.25.25 0 0 1 .002-.401\"/><path fill=\"#ff6dc6\" d=\"M4.297 6.078a.5.5 0 1 1 1 0V9.5a.5.5 0 0 1-1 0z\"/><path fill=\"#1c1c1c\" d=\"M7.031 6.523a.5.5 0 1 1-1 0a.5.5 0 0 1 1 0\"/><path fill=\"#6d4534\" d=\"M8.091 25C6.04 24.854 2 23.571 2 18.077c0-3.073 2.355-4.741 4.663-5.934c.693-.359.867-.565 1.02-.99C8.543 8.762 11.671 5 17.04 5c1.085 0 2.097.186 3.033.518c.333-1.232 1.713-2.174 2.385-2.61C23.595 2.172 25.608 2 28 2v17.266c0 .822-.08 1.77-.291 2.656c-.302 1.417-.91 2.598-2.134 2.962q-.35.114-.769.116z\"/><path fill=\"#d3883e\" d=\"M21.852 16.564a278 278 0 0 1 4.653 4.36c1.206 1.204.873 2.37.568 2.848C26.52 24.638 25.56 25 25.118 25h-8.921q-.365 0-.74-.015z\"/><path fill=\"#a56953\" d=\"M21.853 16.563a120 120 0 0 0-2.788-2.485C17.061 12.363 15.015 12 14.085 12C9.418 12 8 16.375 8 17.95c0 5.676 4.025 6.896 7.456 7.035a7 7 0 0 0 6.397-8.422\"/></g>",
+		"roles": {
+			"#a56953": "pale",
+			"#f70a8d": "deep",
+			"#ff6dc6": "deep",
+			"#6d4534": "deep",
+			"#d3883e": "base",
+			"#9b9b9b": "base"
+		},
 		"main": "#a56953"
 	},
 	"sheep": {
@@ -79,7 +87,7 @@ const HEX = /#[0-9a-f]{6}\b/gi;
 
 // Every color becomes a shade of the person's: near-black stays dark; the icon's main color (its
 // body) takes the color itself, darker ones a deep shade of it and lighter ones a pale tint, for contrast
-function recolor(body, main, color, soft = 0) {
+function recolor(body, main, color, soft = 0, roles = {}) {
 	const base = mix(rgb(color), WHITE, soft);
 	const deep = mix(DARK, base, 0.3);
 	const pale = mix(base, WHITE, 0.8);
@@ -87,7 +95,9 @@ function recolor(body, main, color, soft = 0) {
 	const mid = lightness(main);
 	const lo = values[0];
 	const hi = values.at(-1);
+	const fixed = { deep, base, pale };
 	return body.replace(HEX, (hex) => {
+		if (roles[hex]) return `rgb(${fixed[roles[hex]].join(' ')})`;
 		const l = lightness(hex);
 		// A square root: even a small difference from the main color shows clearly
 		const c = l < 0.12 ? DARK : l < mid ? mix(base, deep, Math.sqrt((mid - l) / (mid - lo))) : l > mid ? mix(base, pale, Math.sqrt((l - mid) / (hi - mid))) : base;
@@ -96,10 +106,11 @@ function recolor(body, main, color, soft = 0) {
 }
 
 // ICONS: per animal, the viewBox size, the SVG body, its main color (the one covering the most)
-// and how much paler than the person's color that one is drawn (soft, 0–1)
+// and how much paler than the person's color that one is drawn (soft, 0–1); roles: colors drawn
+// as a set shade instead (deep, base or pale)
 // name → { size: the viewBox's width and height, draw: (color '#rrggbb') → the SVG's inner markup }
 export const ANIMALS = Object.fromEntries(
-	Object.entries(ICONS).map(([name, { size, body, main, soft }]) => [name, { size, draw: (color) => recolor(body, main, color, soft) }])
+	Object.entries(ICONS).map(([name, { size, body, main, soft, roles }]) => [name, { size, draw: (color) => recolor(body, main, color, soft, roles) }])
 );
 
 export const ANIMAL_NAMES = Object.keys(ANIMALS);

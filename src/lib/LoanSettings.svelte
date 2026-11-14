@@ -176,7 +176,7 @@
 					</button>
 				</span>
 			</label>
-			<p class="honour"><Heart size={18} />in memory and honour of the individuals killed and their families…</p>
+			<p class="honour"><Heart size={24} />in memory and honour of the individuals killed and their families…</p>
 			<!-- The icon: one of the animals, in this person's color; picking the chosen one again goes back to the face -->
 			<div class="animals" role="radiogroup" aria-label="{names[p] || p}'s icon">
 				{#each ANIMAL_NAMES as a (a)}
