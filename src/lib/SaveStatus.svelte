@@ -12,9 +12,16 @@
 	// with its own copy of the data (names, apartment, costs) is open and no upload is going on, so
 	// nothing is ever lost.
 	const quiet = () => !session.demo && loan.data && ['idle', 'saved'].includes(loan.status) && ui.view === 'home' && !uploading();
+	// One check at a time: on a slow connection the next waits until the last has returned
+	let checking = false;
 	async function check() {
-		if (document.visibilityState !== 'visible' || !quiet()) return;
-		if ((await changedElsewhere().catch(() => false)) && quiet()) loadLoan();
+		if (checking || document.visibilityState !== 'visible' || !quiet()) return;
+		checking = true;
+		try {
+			if ((await changedElsewhere().catch(() => false)) && quiet()) await loadLoan();
+		} finally {
+			checking = false;
+		}
 	}
 	$effect(() => {
 		const timer = setInterval(check, 5_000);
