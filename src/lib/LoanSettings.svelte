@@ -89,7 +89,8 @@
 		files: [...(c.files ?? [])] // saved ones { id, name, type }; new ones { name, type, file } until saved
 	});
 	let costs = $state((data.costs ?? []).map(asFields));
-	const label = (c) => (c.kind === 'object' ? 'object' : `${c.kind} cost`);
+	// What each kind is called on screen; the data file keeps maintenance, improvement and object
+	const label = (c) => ({ maintenance: 'maintain', improvement: 'improve', object: 'object' })[c.kind];
 	// A new cost starts with its first payment
 	function addCost(kind) {
 		costs.push({ kind, note: '', entries: [], files: [] });
@@ -403,8 +404,8 @@
 			<fieldset class="cost">
 				<legend>
 					{#if c.kind === 'maintenance'}<Wrench size={18} />{:else if c.kind === 'object'}<Sofa size={18} />{:else}<Paintbrush size={18} />{/if}
-					{c.kind === 'object' ? 'object' : `${c.kind} cost`}
-					<button type="button" class="icon-button remove" onclick={() => costs.splice(i, 1)} aria-label="remove {c.kind} cost">
+					{label(c)}
+					<button type="button" class="icon-button remove" onclick={() => costs.splice(i, 1)} aria-label="remove {label(c)}">
 						<Trash size={18} />
 					</button>
 				</legend>
@@ -483,8 +484,8 @@
 		{/each}
 		<div class="add">
 			<div class="add-row">
-				<button type="button" onclick={() => addCost('maintenance')}><Wrench size={18} />+ maintenance</button>
-				<button type="button" onclick={() => addCost('improvement')}><Paintbrush size={18} />+ improvement</button>
+				<button type="button" onclick={() => addCost('maintenance')}><Wrench size={18} />+ maintain</button>
+				<button type="button" onclick={() => addCost('improvement')}><Paintbrush size={18} />+ improve</button>
 				<button type="button" onclick={() => addCost('object')}><Sofa size={18} />+ object</button>
 			</div>
 		</div>
