@@ -2,6 +2,7 @@
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
 	import Download from '@lucide/svelte/icons/download';
 	import Pencil from '@lucide/svelte/icons/pencil';
+	import FileBox from '@lucide/svelte/icons/file-box';
 	import Sheet from '#lib/Sheet.svelte';
 	import { tick } from 'svelte';
 	import { download } from '#lib/attachments.js';
@@ -131,7 +132,7 @@
 			<!-- Too large to draw here without the page running out of memory: opened as a download is -->
 			<div class="large">
 				<p>{(blob.size / 1e6).toFixed(1).replace('.', ',')} MB: too large to show here.</p>
-				<button class="primary" onclick={save}><Download size={20} />open</button>
+				<button class="primary" onclick={save}><FileBox size={20} />open</button>
 			</div>
 		{:else if file.type.startsWith('image/')}
 			<img
