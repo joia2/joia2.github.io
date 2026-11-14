@@ -441,8 +441,8 @@
 				{/if}
 				<div class="chips">
 					<button type="button" class="attach" onclick={() => editEntry(c, { who: 'cyan' })}><Wallet size={16} />+ pay</button>
-					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'cyan', to: 'mint' })}><BanknoteArrowUp size={16} class="turn" />{data.names.cyan} → {data.names.mint}</button>
-					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}><BanknoteArrowDown size={16} class="turn" />{data.names.cyan} ← {data.names.mint}</button>
+					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'cyan', to: 'mint' })}><BanknoteArrowDown size={16} class="turn" />{data.names.cyan} → {data.names.mint}</button>
+					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}><BanknoteArrowUp size={16} class="turn" />{data.names.cyan} ← {data.names.mint}</button>
 				</div>
 				<label>
 					note
