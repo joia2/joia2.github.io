@@ -218,10 +218,10 @@
 	<nav class="bottom" aria-label="time left" hidden={typing} bind:offsetHeight={barHeight}>
 		<!-- Costs and ownership, and this month's instalment: at the top of the bar, in the middle, over everything -->
 		<span class="actions">
-			<button class="icon-button" onclick={() => (ui.view = 'costs')} aria-label="costs/ownership"><ChartPie size={22} /><span>split</span></button>
+			<button class="icon-button" onclick={() => (ui.view = 'costs')} aria-label="costs/ownership"><ChartPie size={18} /><span>split</span></button>
 			{#if thisRow}
 				<button class="icon-button" onclick={() => (ui.instalmentOpen = true)} aria-label="this month's instalment">
-					<BanknoteArrowUp size={22} /><span>pay</span>
+					<BanknoteArrowUp size={18} /><span>pay</span>
 				</button>
 			{/if}
 		</span>
@@ -409,7 +409,7 @@
 	   button press style changes transforms */
 	.actions {
 		position: absolute;
-		top: 0.25rem;
+		top: 0.2rem;
 		left: 0;
 		right: 0;
 		z-index: 11;
@@ -422,9 +422,9 @@
 		align-items: center;
 		gap: 0.3rem;
 		width: auto;
-		height: 44px;
+		height: 30px;
 		padding: 0 0.5rem;
-		border-radius: 22px;
+		border-radius: 15px;
 		font-size: 0.75rem;
 		color: var(--muted);
 	}
