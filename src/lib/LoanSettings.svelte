@@ -192,8 +192,12 @@
 	};
 	// The name field opens with its text selected, so typing replaces it; after the popup has taken
 	// the focus on opening
+	// The focus comes at once, while still in the tap or paste that opened the popup: an iPhone
+	// only brings up the keyboard then (or keeps it, when it is already up)
 	const selectAll = (input) => {
-		setTimeout(() => (input.focus(), input.setSelectionRange(0, input.value.length)), 50);
+		const select = () => (input.focus(), input.setSelectionRange(0, input.value.length));
+		select();
+		requestAnimationFrame(select); // again once the popup is open, which moves the focus to itself
 	};
 	// Once this popup has closed, named or not: the file is uploaded, and the next one named
 	$effect(() => {
@@ -570,7 +574,8 @@
 				</label>
 				<label>
 					amount (kr)
-					<input bind:value={entry.amount} inputmode="decimal" placeholder="0,00" use:selectAll />
+					<!-- svelte-ignore a11y_autofocus -->
+					<input bind:value={entry.amount} inputmode="decimal" placeholder="0,00" autofocus use:selectAll />
 				</label>
 				{#if entryError}<p class="error" role="alert"><CircleAlert size={18} />{entryError}</p>{/if}
 				<button class="primary" type="submit"><Check size={20} />ok</button>
@@ -584,7 +589,8 @@
 		{#key renaming}
 		<form class="rename" onsubmit={rename}>
 			<span class="field-name">
-				<input bind:value={renaming.base} aria-label="file name" autocomplete="off" use:selectAll />
+				<!-- svelte-ignore a11y_autofocus -->
+				<input bind:value={renaming.base} aria-label="file name" autocomplete="off" autofocus use:selectAll />
 				<span class="ext">{renaming.ext}</span>
 			</span>
 			<button class="primary" type="submit"><Check size={20} />ok</button>
