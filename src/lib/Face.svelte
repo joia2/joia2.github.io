@@ -9,7 +9,7 @@
 </script>
 
 {#if draw}
-	<svg class="face" viewBox="-1 -1 42 42" width={size} height={size} aria-hidden="true">{@html draw(color)}</svg>
+	<svg class="face" viewBox="0 0 32 32" width={size} height={size} aria-hidden="true">{@html draw(color)}</svg>
 {:else}
 	<svg class="face" viewBox="0 0 40 40" width={size} height={size} aria-hidden="true">
 		<circle cx="20" cy="20" r="17.5" fill={color} />
