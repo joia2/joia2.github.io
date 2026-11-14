@@ -175,8 +175,7 @@
 
 <Sheet title="calculations" bind:open>
 	<label>
-			year month
-			<select bind:value={month}>
+			<select bind:value={month} aria-label="year month">
 				{#each rows as x (x.month)}<option value={x.month}>{monthLabel(x.month)}</option>{/each}
 			</select>
 	</label>
