@@ -470,7 +470,7 @@
 					</ul>
 				{/if}
 				<div class="chips">
-					<button type="button" class="attach" onclick={() => editEntry(c, { who: 'cyan' })}><Wallet size={16} />+ pay</button>
+					<button type="button" class="attach" onclick={() => editEntry(c, { who: 'cyan' })}><Wallet size={16} />+pay</button>
 					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'cyan', to: 'mint' })}><BanknoteArrowDown size={16} class="turn" />{@render initial('cyan')}<span class="arrow">→</span>{@render initial('mint')}</button>
 					<button type="button" class="attach" onclick={() => editEntry(c, { from: 'mint', to: 'cyan' })}><BanknoteArrowUp size={16} class="turn" />{@render initial('cyan')}<span class="arrow">←</span>{@render initial('mint')}</button>
 				</div>
