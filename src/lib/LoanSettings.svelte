@@ -137,6 +137,13 @@
 		if (base) renaming.entry.name = base + renaming.ext;
 		renameOpen = false;
 	}
+	// A text area as tall as its text: set on opening and after every change
+	const grow = (area) => {
+		const fit = () => ((area.style.height = 'auto'), (area.style.height = `${area.scrollHeight + 2}px`));
+		fit();
+		area.addEventListener('input', fit);
+		return { update: fit, destroy: () => area.removeEventListener('input', fit) };
+	};
 	// The name field opens with its text selected, so typing replaces it; after the popup has taken
 	// the focus on opening
 	const selectAll = (input) => {
@@ -409,12 +416,14 @@
 				</div>
 				<label>
 					note
-					<input
+					<textarea
+						class="note-field"
+						rows="1"
 						bind:value={c.note}
 						placeholder={c.kind === 'object' ? 'washing machine, sofa…' : 'new kitchen, roof…'}
-						autocomplete="off"
 						onpaste={(e) => [...(e.clipboardData?.items ?? [])].some((i) => i.kind === 'file') && pasted(c, e)}
-					/>
+						use:grow={c.note}
+					></textarea>
 				</label>
 				<!-- Receipts, invoices, photos: tap one to see it -->
 				<div class="files">
@@ -592,6 +601,24 @@
 		box-sizing: border-box;
 	}
 	/* Not the page's card: the popup is the card */
+	/* Like the other fields, a bit smaller, growing with its text */
+	.note-field {
+		font: inherit;
+		font-size: 0.875rem;
+		line-height: 1.4;
+		padding: 0.6rem 0.9rem;
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		background: var(--surface);
+		color: var(--text);
+		resize: none;
+		overflow: hidden;
+	}
+	.note-field:focus {
+		outline: none;
+		border-color: var(--accent);
+		box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent);
+	}
 	.rename {
 		display: flex;
 		flex-direction: column;
