@@ -133,12 +133,6 @@
 	aside.open {
 		transform: none;
 	}
-	/* In line with the top bar, which sits a little lower when installed on an iPhone */
-	@media (display-mode: standalone) {
-		aside {
-			padding-top: calc(env(safe-area-inset-top) + 12px);
-		}
-	}
 	.top {
 		height: 48px;
 		margin-right: -1rem;

@@ -16,6 +16,9 @@
 	setLucideProps({ strokeWidth: 1.25 });
 </script>
 
+<!-- iOS 27 blurs the top edge of an installed app with a fixed element there: a thin fixed strip,
+     drawn as nothing (its background clipped to its text, which it has none of), stops it -->
+<div class="unblur" aria-hidden="true"></div>
 <header>
 	<nav>
 		<a href="/" onclick={(e) => (e.preventDefault(), goHome())}><img src="/favicon.svg" alt="" width="22" height="22" />joia2</a>
@@ -60,12 +63,23 @@
 		border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
 		padding-top: env(safe-area-inset-top); /* below the iPhone's clock */
 	}
+	.unblur {
+		display: none;
+	}
 	/* Installed: darker towards the top, so the white clock and battery stay readable */
 	@media (display-mode: standalone) {
 		header {
 			background: linear-gradient(to top, transparent, rgb(0 0 0 / 0.45)), var(--tint), var(--bar);
-			/* The iPhone softly blurs the screen's edge just below the clock: the bar's items stay clear of it */
-			padding-top: calc(env(safe-area-inset-top) + 12px);
+		}
+		.unblur {
+			position: fixed;
+			inset: 0 0 auto;
+			z-index: 11;
+			height: 11px;
+			pointer-events: none;
+			background: var(--bar);
+			-webkit-background-clip: text;
+			background-clip: text;
 		}
 	}
 	nav {
