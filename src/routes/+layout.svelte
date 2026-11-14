@@ -64,6 +64,8 @@
 	@media (display-mode: standalone) {
 		header {
 			background: linear-gradient(to top, transparent, rgb(0 0 0 / 0.45)), var(--tint), var(--bar);
+			/* The iPhone softly blurs the screen's edge just below the clock: the bar's items stay clear of it */
+			padding-top: calc(env(safe-area-inset-top) + 12px);
 		}
 	}
 	nav {
