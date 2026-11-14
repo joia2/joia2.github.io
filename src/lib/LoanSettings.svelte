@@ -120,7 +120,6 @@
 		entryError = '';
 		entryOpen = false;
 	}
-	const dateLabel = (d) => new Date(`${d}T12:00:00`).toLocaleDateString('en', { day: '2-digit', month: 'short', year: 'numeric' }).toLowerCase();
 
 	// Attachments: picked files wait here, and are uploaded (encrypted) when the page is saved
 	let shown = $state(null); // the attachment in the preview
@@ -415,7 +414,7 @@
 						{#each c.entries as e, j (j)}
 							<li>
 								<button type="button" class="entry" onclick={() => editEntry(c, {}, j)}>
-									<span class="date">{dateLabel(e.date)}</span>
+									<span class="date">{e.date}</span>
 									<span class="what">
 										{#if e.who}<Face person={e.who} size={16} />{data.names[e.who]} paid
 										{:else}<Face person={e.from} size={16} />{data.names[e.from]} → {data.names[e.to]}{/if}
