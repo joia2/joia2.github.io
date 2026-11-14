@@ -4,11 +4,13 @@
 	import { loan } from '#lib/loan.svelte.js';
 	// A person's icon: the animal they picked, or the logo's face. cyan for person A, mint for person B.
 	// animal: shows that one instead of the picked one (the picker in the names popup). 'rotate': each
-	// animal in turn, a new one every minute; the right one runs half the list ahead, so the two differ
+	// animal in turn, a new one every minute: backwards on the left, forwards on the right. The right
+	// one starts one ahead: the two then never show the same animal (they'd meet only on an odd step)
 	let { person, size = 56, animal } = $props();
 	const color = $derived(person === 'cyan' ? '#22d3ee' : '#2dd4bf');
 	const chosen = $derived(animal ?? loan.data?.animals?.[person]);
-	const turn = $derived(ANIMAL_NAMES[(clock.minute + (person === 'mint' ? ANIMAL_NAMES.length / 2 : 0)) % ANIMAL_NAMES.length]);
+	const n = ANIMAL_NAMES.length;
+	const turn = $derived(ANIMAL_NAMES[person === 'mint' ? (clock.minute + 1) % n : (n - (clock.minute % n)) % n]);
 	const icon = $derived(ANIMALS[chosen === 'rotate' ? turn : chosen]);
 </script>
 
