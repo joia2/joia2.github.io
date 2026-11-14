@@ -2,14 +2,15 @@
 	import { tick } from 'svelte';
 	import { loan } from '#lib/loan.svelte.js';
 	import { ui } from '#lib/ui.svelte.js';
-	import { TERM } from '#lib/loan.js';
+	import { addMonths, TERM } from '#lib/loan.js';
 
-	// Shortcuts to every 6th year of the loan, from the first payment; a dropdown on narrow screens
+	// Shortcuts to every 6th year of the loan, from the first payment to the last; a dropdown on narrow screens
 	const first = $derived(loan.data && Object.keys(loan.data.payments).sort()[0]);
 	const years = $derived.by(() => {
 		if (!first) return [];
 		const start = Number(first.slice(0, 4));
-		return Array.from({ length: Math.floor(TERM / 12 / 6) + 1 }, (_, i) => start + i * 6);
+		const end = Number(addMonths(first, TERM - 1).slice(0, 4));
+		return Array.from({ length: Math.floor((end - start) / 6) + 1 }, (_, i) => start + i * 6);
 	});
 
 	// Shows every month first, since the year may be among the collapsed ones
