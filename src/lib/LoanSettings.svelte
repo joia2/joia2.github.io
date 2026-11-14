@@ -822,10 +822,13 @@
 	}
 	/* Each payment, transfer or attachment as a line of a list */
 	.entries li::before {
-		content: '•';
-		margin-right: 0.15rem;
-		color: var(--muted);
-		font-size: 0.75rem;
+		content: '';
+		flex-shrink: 0;
+		width: 5px;
+		height: 5px;
+		margin-right: 0.2rem;
+		border-radius: 50%;
+		background: var(--muted); /* a drawn dot: exactly in the line's middle, unlike the • character */
 	}
 	.entry {
 		display: grid;
