@@ -11,20 +11,20 @@
 	let copied = $state(false);
 
 	// The attachments the data lists: the costs' and the apartment's documents
-	// Everything stored in the repo's files/ folder (whole files, and each part of a large one), counted
-	// when opened
-	let parts = $state(null);
+	// What the repo's files/ folder holds, counted when opened: the attachments (files/<id>.json) and
+	// all its files, the parts of large attachments included
+	let stored = $state(null); // { files, parts }
 	$effect(() => {
 		if (!ui.rawOpen || session.demo) return;
-		parts = null;
+		stored = null;
 		listFiles(session.token)
-			.then((state) => (parts = state.files.filter((f) => f.path.startsWith('files/')).length))
+			.then((state) => {
+				const all = state.files.filter((f) => f.path.startsWith('files/'));
+				stored = { files: all.filter((f) => /^files\/[^/.]+\.json$/.test(f.path)).length, parts: all.length };
+			})
 			.catch(() => {});
 	});
-	const files = $derived(loan.data ? [...(loan.data.costs ?? []).flatMap((c) => c.files ?? []), ...(loan.data.documents ?? [])].length : 0);
-
-	// data.json as it is before encryption, indented with 2 spaces; follows edits while open
-	const text = $derived(loan.data ? JSON.stringify(plain(), null, 2) : '');
+	const plural = (n, word) => `${n ?? '…'} ${word}${n === 1 ? '' : 's'}`;
 
 	async function copy() {
 		await navigator.clipboard.writeText(text);
@@ -36,8 +36,8 @@
 <Sheet title="data.json" bind:open={ui.rawOpen}>
 	{#snippet after()}
 		<span class="files">
-			• <Files size={16} />{files} file{files === 1 ? '' : 's'}
-			{#if !session.demo}({parts ?? '…'} part{parts === 1 ? '' : 's'} total){/if}
+			• <Files size={16} />{plural(session.demo ? 0 : stored?.files, 'file')}
+			{#if !session.demo}({plural(stored?.parts, 'part')}){/if}
 		</span>
 	{/snippet}
 	{#snippet actions()}
