@@ -120,7 +120,7 @@
 	async function uploadEntry(entry) {
 		if (session.demo) return void (error = 'Attachments are not kept in the demo.');
 		try {
-			const saved = await upload(entry.file, entry.name);
+			const saved = await upload(entry.file, entry.name, (done, parts) => (entry.progress = `${done}/${parts}`));
 			const i = files.indexOf(entry);
 			if (i >= 0) files[i] = saved;
 			onchange?.(); // also when the popup around was closed during the upload
@@ -148,6 +148,7 @@
 					{#if f.type?.startsWith('image/')}<ImageIcon size={14} />{:else if f.type === 'application/pdf'}<FileText size={14} />{:else}<FileIcon size={14} />{/if}
 					{#if tags}<span class="tag" style:--hue={hue(parts.tag)}>{parts.tag}</span>{/if}
 					<span class="text">{tags ? parts.name : f.name}</span>
+					{#if f.progress}<span class="progress">{f.progress}</span>{/if}
 				</button>
 				<button type="button" class="icon-button" onclick={() => removeAt(i)} aria-label="remove {f.name}">
 					<X size={16} />
@@ -221,6 +222,13 @@
 	/* Its place in the list, small, right after the dot */
 	.num {
 		min-width: 0.9em;
+		font-size: 0.65rem;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+	}
+	/* How many parts of a large file are uploaded */
+	.progress {
+		flex-shrink: 0;
 		font-size: 0.65rem;
 		color: var(--muted);
 		font-variant-numeric: tabular-nums;
