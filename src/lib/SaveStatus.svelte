@@ -3,7 +3,7 @@
 	import CloudUpload from '@lucide/svelte/icons/cloud-upload';
 	import CloudAlert from '@lucide/svelte/icons/cloud-exclamation-point';
 	import CloudDownload from '@lucide/svelte/icons/cloud-download';
-	import { loan, save } from '#lib/loan.svelte.js';
+	import { loan, save, loadLoan } from '#lib/loan.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 </script>
 
@@ -17,8 +17,13 @@
 		<button class="error" onclick={save} title="{loan.error} Click to try saving again.">
 			<CloudAlert size={18} />not saved
 		</button>
+	{:else if loan.status === 'loading' && loan.data}
+		<CloudDownload size={18} />loading…
 	{:else if loan.data}
-		<CloudCheck size={18} />saved
+		<!-- Everything here is saved: a click fetches what was saved elsewhere since (another device) -->
+		<button class="refresh" onclick={loadLoan} title="Saved. Click to get the latest data from joia2data.">
+			<CloudCheck size={18} />saved
+		</button>
 	{:else}
 		<CloudDownload size={18} />loading…
 	{/if}
@@ -30,6 +35,16 @@
 		align-items: center;
 		gap: 0.35rem;
 		margin-right: 0.5rem;
+		font-size: 0.78rem;
+		color: var(--muted);
+	}
+	.refresh {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.2rem 0.6rem;
+		border: 0;
+		background: transparent;
 		font-size: 0.78rem;
 		color: var(--muted);
 	}
