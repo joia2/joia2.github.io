@@ -802,10 +802,12 @@
 		color: var(--muted);
 		font-variant-numeric: tabular-nums;
 	}
-	/* The transfer icons on their side: the arrow points along the → */
+	/* The transfer icons on their side, the arrow along the →. On its side the banknote is 16 of 24
+	   wide and sits 2 off center: stretched to the wallet's 18 and centered, its height unchanged
+	   (the stretch and shift are along the note's own height, which the turn makes the width) */
 	.chips :global(.turn),
 	.entries :global(.turn) {
-		transform: rotate(-90deg);
+		transform: rotate(-90deg) translateY(-9.4%) scaleY(1.125);
 	}
 	.chips {
 		display: flex;
