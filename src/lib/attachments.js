@@ -1,5 +1,5 @@
 // Files attached to the costs and the apartment (PDFs, images), kept in joia2data's files/ folder,
-// encrypted like loan.json with their name and type inside, so the repo shows neither. loan.json
+// encrypted like data.json with their name and type inside, so the repo shows neither. data.json
 // lists them as { id, name, type, size } (size in bytes). A password change re-encrypts them with the rest.
 //
 // A small file is one file: files/<random id>.json. A larger one is cut into parts of 5 MB, as
@@ -16,7 +16,7 @@ const path = (id, part) => `files/${id}${part ? `.${part}` : ''}.json`;
 const encrypt = (value) => encryptJSON(session.key, value);
 const read = async (p) => decryptJSON(session.key, await getRawFile(session.token, p));
 
-// Uploads a File, under its name or another; returns what loan.json keeps of it.
+// Uploads a File, under its name or another; returns what data.json keeps of it.
 // onprogress(done, parts): after each part of a larger file
 export async function upload(file, name = file.name, onprogress) {
 	const id = crypto.randomUUID();

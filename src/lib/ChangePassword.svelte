@@ -36,7 +36,7 @@
 			await save(); // a waiting loan edit is saved first, so it gets re-encrypted too
 			if (hasUnsavedChanges()) throw new UserError('Your last change could not be saved. Try again first.');
 			await changePassword(current, next, (n, total) => (progress = `${n}/${total}`));
-			await loadLoan(); // re-encrypting gave loan.json a new version to save on top of
+			await loadLoan(); // re-encrypting gave data.json a new version to save on top of
 			done = true;
 			current = next = repeat = '';
 		} catch (e) {

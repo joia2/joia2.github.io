@@ -7,7 +7,7 @@
 
 	let copied = $state(false);
 
-	// loan.json as it is before encryption, indented with 2 spaces; follows edits while open
+	// data.json as it is before encryption, indented with 2 spaces; follows edits while open
 	const text = $derived(loan.data ? JSON.stringify(plain(), null, 2) : '');
 
 	async function copy() {
@@ -17,7 +17,7 @@
 	}
 </script>
 
-<Sheet title="loan.json" bind:open={ui.rawOpen}>
+<Sheet title="data.json" bind:open={ui.rawOpen}>
 	{#snippet actions()}
 		<button class="icon-button" onclick={copy} aria-label="copy">
 			{#if copied}<CopyCheck size={20} />{:else}<Copy size={20} />{/if}

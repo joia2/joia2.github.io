@@ -1,13 +1,14 @@
-// The loan data file (loan.json in joia2data): loaded after login, saved shortly after each edit,
+// The loan data file (data.json in joia2data): loaded after login, saved shortly after each edit,
 // and dropped from memory when the app locks
 import { read, write, session } from '#lib/session.svelte.js';
 import { encryptJSON, decryptJSON } from '#lib/crypto.js';
 import { DecryptError } from '#lib/errors.js';
+import { cleanUp } from '#lib/cleanup.js';
 
-const FILE = 'loan.json';
+const FILE = 'data.json';
 const SAVE_DELAY = 3000; // ms after the last edit or keystroke, so a burst of edits saves once
 
-// An edit not saved yet is also kept on this device, encrypted, with the version of loan.json it
+// An edit not saved yet is also kept on this device, encrypted, with the version of data.json it
 // was made on: if the app closes before the save, it is saved on the next opening
 const DRAFT = 'joia2.draft';
 const storage = () => {
@@ -55,7 +56,9 @@ export async function loadLoan() {
 	}
 	loan.status = 'loading';
 	try {
-		const file = await read(FILE);
+		// Before data.json, the file was loan.json: read while data.json isn't there yet, and saved
+		// as data.json from the first edit on
+		const file = (await read(FILE)) ?? (await read('loan.json').then((old) => old && { ...old, sha: null }));
 		// The file keeps its fields in this order: the animals right after the names
 		const { v, names, animals, ...rest } = { ...empty(), ...file?.value };
 		loan.data = { v, names, ...(animals && { animals }), ...rest };
@@ -75,6 +78,9 @@ export async function loadLoan() {
 		delete loan.data.debtRate;
 		delete loan.data.member;
 		for (const entry of Object.values(loan.data.payments ?? {})) delete entry.lofavor;
+		// Unused attachment files left by an upload or removal that stopped halfway: removed in the
+		// background (failing quietly: it tries again on the next opening)
+		cleanUp(session.token, $state.snapshot(loan.data)).catch(() => {});
 	} catch (e) {
 		loan.status = 'error';
 		// A key that no longer opens the data: the password was most likely changed on another device
@@ -118,7 +124,7 @@ export function save() {
 	return queue;
 }
 
-// The loan data as a plain object, months in order: exactly what is encrypted into loan.json
+// The loan data as a plain object, months in order: exactly what is encrypted into data.json
 export function plain() {
 	const data = $state.snapshot(loan.data);
 	data.payments = Object.fromEntries(Object.entries(data.payments).sort(([a], [b]) => (a < b ? -1 : 1)));

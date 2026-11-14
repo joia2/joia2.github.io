@@ -82,7 +82,7 @@ async function repo() {
 	const { vault, key } = await createVault('old');
 	const files = {
 		'salt.json': JSON.stringify(vault),
-		'loan.json': await encryptJSON(key, { total: 8770310, names: { cyan: 'John', mint: 'Iago' } }),
+		'data.json': await encryptJSON(key, { total: 8770310, names: { cyan: 'John', mint: 'Iago' } }),
 		'files/a.json': await encryptJSON(key, { name: 'receipt.pdf', type: 'application/pdf', data: 'JVBERi0x' }),
 		'files/b.json': await encryptJSON(key, { name: 'big.pdf', type: 'application/pdf', parts: 2 }),
 		'files/b.1.json': await encryptJSON(key, { data: 'AAAA' }),
@@ -95,7 +95,7 @@ async function repo() {
 const values = async (files, password) => {
 	const { key } = await openVault(JSON.parse(files['salt.json']), password);
 	const out = {};
-	for (const p of ['loan.json', 'files/a.json', 'files/b.json', 'files/b.1.json', 'files/b.2.json']) out[p] = await decryptJSON(key, files[p]);
+	for (const p of ['data.json', 'files/a.json', 'files/b.json', 'files/b.1.json', 'files/b.2.json']) out[p] = await decryptJSON(key, files[p]);
 	return out;
 };
 

@@ -1,6 +1,6 @@
 // UI state shared between the top bar menu and the page.
 // view: 'home' | 'names' | 'apartment' | 'costs' | 'password'
-// the popups: rawOpen (loan.json as plain text), saleOpen, calcOpen (calculations), ownedOpen (what
+// the popups: rawOpen (data.json as plain text), saleOpen, calcOpen (calculations), ownedOpen (what
 // each has paid), instalmentOpen, yearsOpen (tax return)
 // earlier, later: whether the months collapsed before and after the visible ones are shown
 const POPUPS = ['rawOpen', 'saleOpen', 'calcOpen', 'ownedOpen', 'instalmentOpen', 'yearsOpen'];

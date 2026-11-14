@@ -63,7 +63,7 @@ export async function getRawFile(token, path) {
 }
 
 // Creates the file when sha is null, otherwise replaces that exact version. Returns the new sha.
-// GitHub answers 409 also when another save (an upload, loan.json) moved the branch at the same
+// GitHub answers 409 also when another save (an upload, data.json) moved the branch at the same
 // moment: tried again a few times, as only a real change of the file keeps failing. A new file has
 // nothing to conflict with, so its 422 is GitHub's own complaint (too large, say), shown as is.
 export async function putFile(token, path, text, sha, message) {
@@ -96,6 +96,17 @@ async function gitJSON(token, method, path, body) {
 	return response.json();
 }
 
+// The paths of the files on the branch as it was at a moment (a Date), or an empty Set if it
+// didn't exist yet
+export async function filesAt(token, branch, moment) {
+	const query = `?sha=${encodeURIComponent(branch)}&until=${moment.toISOString()}&per_page=1`;
+	const [commit] = await gitJSON(token, 'GET', `/commits${query}`);
+	if (!commit) return new Set();
+	const tree = await gitJSON(token, 'GET', `/git/trees/${commit.commit.tree.sha}?recursive=1`);
+	if (tree.truncated) throw new Error('joia2data has too many files to list at once.');
+	return new Set(tree.tree.filter((entry) => entry.type === 'blob').map((entry) => entry.path));
+}
+
 // Returns the current state of the default branch: { branch, head, tree, files: [{ path, sha }] }
 export async function listFiles(token) {
 	const { default_branch: branch } = await gitJSON(token, 'GET', '');
@@ -124,13 +135,18 @@ export async function createBlob(token, text) {
 	}
 }
 
-// Writes the files as one commit on top of state.head: entries are { path, text } or { path, sha }
-// (a blob stored before). The branch moves to it only if nobody moved it since listFiles (no
+// Writes the files as one commit on top of state.head: entries are { path, text }, { path, sha }
+// (a blob stored before) or { path, remove: true }. The branch moves to it only if nobody moved it since listFiles (no
 // force): a change is all or nothing, and never overwrites what changed meanwhile (ConflictError).
 export async function commitFiles(token, { branch, head, tree: baseTree }, entries, message) {
 	const tree = await gitJSON(token, 'POST', '/git/trees', {
 		base_tree: baseTree,
-		tree: entries.map(({ path, text, sha }) => ({ path, mode: '100644', type: 'blob', ...(sha ? { sha } : { content: text }) }))
+		tree: entries.map(({ path, text, sha, remove }) => ({
+			path,
+			mode: '100644',
+			type: 'blob',
+			...(remove ? { sha: null } : sha ? { sha } : { content: text })
+		}))
 	});
 	const commit = await gitJSON(token, 'POST', '/git/commits', { message, tree: tree.sha, parents: [head] });
 	const response = await request(token, 'PATCH', `/git/refs/heads/${branch}`, { sha: commit.sha });
