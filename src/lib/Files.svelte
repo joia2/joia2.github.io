@@ -8,6 +8,7 @@
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import Paperclip from '@lucide/svelte/icons/paperclip';
 	import X from '@lucide/svelte/icons/x';
+	import Trash from '@lucide/svelte/icons/trash';
 	import Attachment from '#lib/Attachment.svelte';
 	import Sheet from '#lib/Sheet.svelte';
 	import { upload, MAX_SIZE } from '#lib/attachments.js';
@@ -151,7 +152,14 @@
 			error = `${entry.name} could not be saved: ${e.message}`;
 		}
 	}
-	function removeAt(i) {
+	// Removing asks first, in a small popup
+	let removing = $state(null); // the file asked about
+	let removeOpen = $state(false);
+	const askRemove = (f) => ((removing = f), (removeOpen = true));
+	function remove() {
+		removeOpen = false;
+		const i = files.indexOf(removing);
+		if (i < 0) return; // already gone, or replaced by its upload meanwhile
 		files.splice(i, 1);
 		onchange?.();
 	}
@@ -171,7 +179,7 @@
 			{#if f.progress}<span class="progress">{f.progress}</span>{/if}
 		</button>
 		{#if f.size ?? f.file?.size}<span class="size">{sizeLabel(f.size ?? f.file.size)}</span>{/if}
-		<button type="button" class="icon-button" onclick={() => removeAt(i)} aria-label="remove {f.name}">
+		<button type="button" class="icon-button" onclick={() => askRemove(f)} aria-label="remove {f.name}">
 			<X size={16} />
 		</button>
 	</li>
@@ -228,6 +236,18 @@
 	onrename={shown?.id ? () => startRename(shown) : undefined}
 	onsize={(bytes) => shown?.id && !shown.size && ((shown.size = bytes), onchange?.())}
 />
+
+<Sheet title="remove file?" bind:open={removeOpen}>
+	{#if removing}
+		<div class="rename">
+			<p class="removing">{removing.name}</p>
+			<div class="choices">
+				<button type="button" onclick={() => (removeOpen = false)}>cancel</button>
+				<button type="button" class="primary danger" onclick={remove}><Trash size={18} />remove</button>
+			</div>
+		</div>
+	{/if}
+</Sheet>
 
 <Sheet title="file name" bind:open={renameOpen}>
 	{#if renaming}
@@ -427,6 +447,23 @@
 		background: none;
 		border-radius: 0;
 		box-shadow: none;
+	}
+	.removing {
+		margin: 0;
+		overflow-wrap: anywhere;
+		color: var(--muted);
+	}
+	.choices {
+		display: flex;
+		gap: 0.75rem;
+	}
+	.choices button {
+		flex: 1;
+	}
+	.danger,
+	.danger:hover:not(:disabled) {
+		background: var(--error);
+		color: #fff;
 	}
 	.field-name {
 		display: flex;
