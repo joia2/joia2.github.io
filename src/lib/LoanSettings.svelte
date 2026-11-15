@@ -2,6 +2,7 @@
 	import Pct from '#lib/Pct.svelte';
 	import Check from '@lucide/svelte/icons/check';
 	import Send from '@lucide/svelte/icons/send';
+	import Coins from '@lucide/svelte/icons/coins';
 	import CircleAlert from '@lucide/svelte/icons/circle-alert';
 	import House from '@lucide/svelte/icons/house';
 	import Calendar from '@lucide/svelte/icons/calendar';
@@ -439,7 +440,7 @@
 							onpaste={(e) => [...(e.clipboardData?.items ?? [])].some((item) => item.kind === 'file') && filesOf[i]?.paste(e)}
 							use:grow={c.note}
 						></textarea>
-						<span class="total">{formatKr(split.total)} kr</span>
+						<span class="total"><Coins size={14} />{formatKr(split.total)} kr</span>
 						{#each PEOPLE as p (p)}
 							<span class="each">{@render initial(p)} {formatKr(split[p])} kr ({formatPercent(split.total ? (split[p] / split.total) * 100 : 0)}<Pct />)</span>
 						{/each}
@@ -785,6 +786,9 @@
 		box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
 	}
 	.total {
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
 		color: var(--text);
 	}
 	.each {
