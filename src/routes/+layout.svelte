@@ -58,30 +58,11 @@
 		left: 0;
 		right: 0;
 		z-index: 10;
-		background: var(--tint), var(--bar);
-		-webkit-backdrop-filter: saturate(180%) blur(20px);
-		backdrop-filter: saturate(180%) blur(20px);
+		background: var(--top); /* the same color behind the iPhone's clock (theme-color) */
 		border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
-		padding-top: env(safe-area-inset-top); /* below the iPhone's clock */
 	}
 	.under-header {
-		height: calc(49px + env(safe-area-inset-top)); /* with its border */
-	}
-	/* Installed: darker towards the top, so the white clock and battery stay readable */
-	@media (display-mode: standalone) {
-		/* iOS 27 blurs the screen's top edge, a little past the clock: the bar's items stay below it */
-		header {
-			background: linear-gradient(to top, transparent, rgb(0 0 0 / 0.45)), var(--tint), var(--bar);
-			padding-top: calc(env(safe-area-inset-top) + 14px);
-		}
-		.under-header {
-			height: calc(63px + env(safe-area-inset-top));
-		}
-		/* The items 4px lower in the bar, the bar itself the same */
-		nav {
-			position: relative;
-			top: 4px;
-		}
+		height: 49px; /* with its border */
 	}
 	nav {
 		max-width: 980px;
