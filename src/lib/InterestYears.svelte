@@ -143,24 +143,56 @@
 	th {
 		position: sticky;
 		top: 0;
-		padding: 0.4rem 0.5rem;
+		padding: 0.4rem 0.3rem;
 		font-weight: 600;
 		text-align: left;
 		color: var(--muted);
 		background: color-mix(in srgb, var(--surface) 92%, transparent);
 	}
 	td {
-		padding: 0.45rem 0.5rem;
+		padding: 0.45rem 0.3rem;
 		border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 		vertical-align: top;
 	}
+	th:first-child,
+	td:first-child {
+		padding-left: 0;
+	}
+	th:last-child,
+	td:last-child {
+		padding-right: 0;
+	}
 	.num {
 		text-align: right;
+		white-space: nowrap; /* an amount never breaks; the notes under it may */
+	}
+	/* A small phone: the tables fit its width, no sideways scrolling */
+	@media (max-width: 430px) {
+		.scroll {
+			padding: 0 1rem 1.25rem;
+		}
+		table {
+			font-size: 0.74rem;
+		}
+	}
+	/* The smallest phones: without the total column */
+	@media (max-width: 359px) {
+		th:last-child,
+		td:last-child {
+			display: none;
+		}
+		th:nth-last-child(2),
+		td:nth-last-child(2) {
+			padding-right: 0;
+		}
 	}
 	.who {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
+	}
+	.owed {
+		white-space: normal;
 	}
 	.pct,
 	.owed {
