@@ -142,7 +142,7 @@
 	/* In line with the top bar, a little lower when installed (iOS 27 blurs the top edge) */
 	@media (display-mode: standalone) {
 		aside {
-			padding-top: calc(env(safe-area-inset-top) + 16px); /* in line with the top bar's items */
+			padding-top: calc(env(safe-area-inset-top) + 18px); /* in line with the top bar's items */
 		}
 	}
 	.top {
