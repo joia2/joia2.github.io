@@ -2,6 +2,7 @@
 	import Copy from '@lucide/svelte/icons/copy';
 	import CopyCheck from '@lucide/svelte/icons/copy-check';
 	import Files from '@lucide/svelte/icons/files';
+	import Search from '@lucide/svelte/icons/search';
 	import Sheet from '#lib/Sheet.svelte';
 	import { loan, plain } from '#lib/loan.svelte.js';
 	import { ui } from '#lib/ui.svelte.js';
@@ -41,6 +42,33 @@
 		if (at < text.length) out.push({ text: text.slice(at) });
 		return out;
 	});
+	// Search: every match marked, the current one scrolled to while typing; Enter goes to the next
+	let query = $state('');
+	let current = $state(0);
+	let count = $state(0);
+	let pre = $state();
+	const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	const find = $derived(query.trim() && new RegExp(`(${escape(query.trim())})`, 'gi'));
+	// A piece's text cut at the matches: the odd ones are matches
+	const cut = (s) => (find ? s.split(find) : [s]);
+	$effect(() => {
+		find; // when the search changes, back to its first match
+		current = 0;
+	});
+	$effect(() => {
+		pieces, find, current;
+		const marks = pre ? [...pre.querySelectorAll('mark')] : [];
+		count = marks.length;
+		marks.forEach((m, i) => m.classList.toggle('current', i === current % count));
+		const mark = marks[current % count];
+		if (mark) pre.scrollTop = mark.offsetTop - pre.clientHeight / 2;
+	});
+	function next(e) {
+		if (e.key !== 'Enter' || !count) return;
+		e.preventDefault();
+		current = (current + (e.shiftKey ? count - 1 : 1)) % count;
+	}
+
 	const plural = (n, word) => `${n ?? '…'} ${word}${n === 1 ? '' : 's'}`;
 
 	async function copy() {
@@ -62,7 +90,13 @@
 			{#if copied}<CopyCheck size={20} />{:else}<Copy size={20} />{/if}
 		</button>
 	{/snippet}
-	<pre>{#each pieces as t, i (i)}{#if t.kind}<span class={t.kind}>{t.text}</span>{:else}{t.text}{/if}{/each}</pre>
+	{#snippet marked(text)}{#each cut(text) as s, k (k)}{#if k % 2}<mark>{s}</mark>{:else}{s}{/if}{/each}{/snippet}
+	<pre bind:this={pre}>{#each pieces as t, i (i)}{#if t.kind}<span class={t.kind}>{@render marked(t.text)}</span>{:else}{@render marked(t.text)}{/if}{/each}</pre>
+	<label class="search">
+		<Search size={16} />
+		<input type="search" bind:value={query} onkeydown={next} placeholder="search…" aria-label="search the data" autocomplete="off" />
+		{#if find}<span class="count">{count ? `${(current % count) + 1}/${count}` : '0'}</span>{/if}
+	</label>
 </Sheet>
 
 <style>
@@ -77,6 +111,7 @@
 		vertical-align: middle;
 	}
 	pre {
+		position: relative; /* the matches' offsetTop counts from here */
 		margin: 0;
 		padding: 0.5rem 1.5rem 1.5rem;
 		overflow: auto;
@@ -87,6 +122,40 @@
 		white-space: pre-wrap; /* long lines wrap instead of scrolling sideways */
 		overflow-wrap: anywhere;
 		color: var(--muted); /* brackets, commas and colons */
+	}
+	mark {
+		border-radius: 3px;
+		background: color-mix(in srgb, #ffd60a 35%, transparent);
+		color: inherit;
+	}
+	mark:global(.current) {
+		background: #ffd60a;
+		color: #000;
+	}
+	/* Always at the bottom, under the text that scrolls */
+	.search {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin: 0 1rem 1rem;
+		padding: 0.35rem 0.75rem;
+		border-radius: 980px;
+		background: color-mix(in srgb, var(--muted) 12%, transparent);
+		color: var(--muted);
+	}
+	.search input {
+		flex: 1;
+		min-width: 0;
+		padding: 0.2rem 0;
+		border: 0;
+		background: none;
+		font-size: 16px; /* no zooming in on an iPhone */
+		color: var(--text);
+		outline: none;
+	}
+	.count {
+		font-size: 0.75rem;
+		font-variant-numeric: tabular-nums;
 	}
 	.key {
 		color: color-mix(in srgb, var(--cyan) 65%, var(--text));

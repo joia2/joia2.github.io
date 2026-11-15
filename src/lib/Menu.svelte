@@ -34,15 +34,20 @@
 	// Removes attachment files the data doesn't list (cleanup.js), sparing any from the last 10
 	// minutes (an upload going on). The menu stays open to show how it went.
 	let cleaning = $state('');
+	let busy = $state(false);
 	async function cleanNow() {
+		busy = true;
 		cleaning = 'cleaning…';
 		try {
 			await save();
 			if (hasUnsavedChanges()) throw new Error('save your last change first');
-			const removed = await cleanUp(session.token, $state.snapshot(loan.data), new Date(), 10 * 60 * 1000);
+			const found = (n) => (cleaning = `cleaning… (${n})`);
+			const removed = await cleanUp(session.token, $state.snapshot(loan.data), new Date(), 10 * 60 * 1000, found);
 			cleaning = removed ? `removed ${removed} unused file${removed === 1 ? '' : 's'}` : 'nothing to clean';
 		} catch (e) {
 			cleaning = `not cleaned: ${e.message}`;
+		} finally {
+			busy = false;
 		}
 	}
 
@@ -58,7 +63,7 @@
 
 	$effect(() => {
 		if (!ui.menuOpen) return;
-		if (cleaning !== 'cleaning…') cleaning = ''; // a fresh menu: the last clean-up's message is gone
+		if (!busy) cleaning = ''; // a fresh menu: the last clean-up's message is gone
 		// The page behind stays put while the menu is open
 		document.documentElement.style.overflow = 'hidden';
 		tick().then(() => first?.focus());
@@ -87,7 +92,7 @@
 		<button onclick={choose(() => ((ui.view = 'home'), (ui.saleOpen = true)))}><Receipt size={20} />sale</button>
 		<hr />
 		{#if !session.demo}
-			<button onclick={cleanNow} disabled={cleaning === 'cleaning…'}><MopSparkles size={20} />{cleaning || 'clean up'}</button>
+			<button onclick={cleanNow} disabled={busy}><MopSparkles size={20} />{cleaning || 'clean up'}</button>
 			<button onclick={choose(show('password'))}><KeyRound size={20} />password</button>
 		{/if}
 		<button onclick={choose(lockApp)}><Lock size={20} />lock</button>
