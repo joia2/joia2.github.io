@@ -3,6 +3,8 @@
 	import CopyCheck from '@lucide/svelte/icons/copy-check';
 	import Files from '@lucide/svelte/icons/files';
 	import Search from '@lucide/svelte/icons/search';
+	import ChevronUp from '@lucide/svelte/icons/chevron-up';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Sheet from '#lib/Sheet.svelte';
 	import { loan, plain } from '#lib/loan.svelte.js';
 	import { ui } from '#lib/ui.svelte.js';
@@ -63,10 +65,12 @@
 		const mark = marks[current % count];
 		if (mark) pre.scrollTop = mark.offsetTop - pre.clientHeight / 2;
 	});
+	// To the next match (step 1) or the one before (-1), round from the end to the start
+	const go = (step) => count && (current = (current + step + count) % count);
 	function next(e) {
-		if (e.key !== 'Enter' || !count) return;
+		if (e.key !== 'Enter') return;
 		e.preventDefault();
-		current = (current + (e.shiftKey ? count - 1 : 1)) % count;
+		go(e.shiftKey ? -1 : 1);
 	}
 
 	const plural = (n, word) => `${n ?? '…'} ${word}${n === 1 ? '' : 's'}`;
@@ -96,6 +100,8 @@
 		<Search size={16} />
 		<input type="search" bind:value={query} onkeydown={next} placeholder="search…" aria-label="search the data" autocomplete="off" />
 		{#if find}<span class="count">{count ? `${(current % count) + 1}/${count}` : '0'}</span>{/if}
+		<button type="button" class="step" onclick={() => go(-1)} disabled={!count} aria-label="previous match"><ChevronUp size={18} /></button>
+		<button type="button" class="step" onclick={() => go(1)} disabled={!count} aria-label="next match"><ChevronDown size={18} /></button>
 	</label>
 </Sheet>
 
@@ -138,7 +144,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		margin: 0 1rem 1rem;
-		padding: 0.35rem 0.75rem;
+		padding: 0.35rem 0.4rem 0.35rem 0.75rem;
 		border-radius: 980px;
 		background: color-mix(in srgb, var(--muted) 12%, transparent);
 		color: var(--muted);
@@ -152,6 +158,16 @@
 		font-size: 16px; /* no zooming in on an iPhone */
 		color: var(--text);
 		outline: none;
+	}
+	.step {
+		display: grid;
+		place-items: center;
+		width: 28px;
+		height: 28px;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		color: var(--text);
 	}
 	.count {
 		font-size: 0.75rem;
