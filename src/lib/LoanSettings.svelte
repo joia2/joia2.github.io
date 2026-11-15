@@ -414,11 +414,18 @@
 				<div class="head">
 					<!-- Behind the icon, a pie of who owns how much: mint on the right (from the top, clockwise), cyan on the left -->
 					<div class="side">
-						<span class="kind" class:empty={!split.total} style:--share={split.total ? Math.min(100, Math.max(0, (split.cyan / split.total) * 100)) : 0}>
+						<!-- The pie and the send button both copy it as a message to send the other, to confirm -->
+						<button
+							type="button"
+							class="kind"
+							class:empty={!split.total}
+							style:--share={split.total ? Math.min(100, Math.max(0, (split.cyan / split.total) * 100)) : 0}
+							onclick={() => send(c, i)}
+							aria-label="copy {label(c)} as a message"
+						>
 							{#if c.kind === 'maintenance'}<Wrench size={22} />{:else if c.kind === 'object'}<Sofa size={22} />{:else}<Paintbrush size={22} />{/if}
-						</span>
-						<!-- Copies it as a message to send the other, to confirm -->
-						<button type="button" class="icon-button send" onclick={() => send(c, i)} aria-label="copy {label(c)} as a message">
+						</button>
+						<button type="button" class="icon-button send" onclick={() => send(c, i)} aria-label="send {label(c)}">
 							{#if sent === i}<Check size={16} />{:else}<Send size={16} />{/if}
 						</button>
 					</div>
@@ -726,6 +733,9 @@
 		flex-shrink: 0;
 		width: 50px;
 		height: 50px;
+		padding: 0;
+		border: 0;
+		background: none;
 		color: #0b2a2e;
 	}
 	.kind::before {
