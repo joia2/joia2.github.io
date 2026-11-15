@@ -77,6 +77,11 @@
 		.under-header {
 			height: calc(63px + env(safe-area-inset-top));
 		}
+		/* The items 2px lower in the bar, the bar itself the same */
+		nav {
+			position: relative;
+			top: 2px;
+		}
 	}
 	nav {
 		max-width: 980px;
