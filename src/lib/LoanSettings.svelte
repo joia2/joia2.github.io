@@ -1,6 +1,7 @@
 <script>
 	import Pct from '#lib/Pct.svelte';
 	import Check from '@lucide/svelte/icons/check';
+	import Send from '@lucide/svelte/icons/send';
 	import CircleAlert from '@lucide/svelte/icons/circle-alert';
 	import House from '@lucide/svelte/icons/house';
 	import Calendar from '@lucide/svelte/icons/calendar';
@@ -94,6 +95,20 @@
 	let costs = $state((data.costs ?? []).map(asFields));
 	const filesOf = $state([]); // each cost's file list, for a paste into its description
 	// What each kind is called on screen; the data file keeps maintenance, improvement and object
+	// A cost as a message to the other, to confirm it: copied to the clipboard by its send button
+	const TITLES = { object: 'Household item / innbo', maintenance: 'Maintenance / vedlikehold', improvement: 'Improvement / påkostning' };
+	const percent = new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 2 });
+	let sent = $state(-1); // the cost just copied: its icon shows a tick for a moment
+	async function send(c, i) {
+		const split = costSplit(c.entries);
+		const paid = c.entries.filter((e) => e.who).map((e) => e.date).sort()[0] ?? c.entries.map((e) => e.date).sort()[0] ?? '';
+		const share = (p) => (split.total ? Math.round((split[p] / split.total) * 10000) / 100 : 0);
+		const who = share('cyan') === share('mint') ? '50/50%' : PEOPLE.map((p) => `${percent.format(share(p))}% ${data.names[p]}`).join(', ');
+		const line = [c.note.trim() || label(c), paid, `${formatKr(split.total)} kr`, who].filter(Boolean).join(', ');
+		await navigator.clipboard.writeText(`${TITLES[c.kind]}:\n• ${line}\nPlease reply to confirm 🫶`);
+		sent = i;
+		setTimeout(() => sent === i && (sent = -1), 1500);
+	}
 	const label = (c) => ({ maintenance: 'maintain', improvement: 'improve', object: 'object' })[c.kind];
 	// A new cost starts with its first payment
 	function addCost(kind) {
@@ -398,9 +413,15 @@
 				<!-- At a glance: the kind's icon, and the description, the total and what each paid -->
 				<div class="head">
 					<!-- Behind the icon, a pie of who owns how much: mint on the right (from the top, clockwise), cyan on the left -->
-					<span class="kind" class:empty={!split.total} style:--share={split.total ? Math.min(100, Math.max(0, (split.cyan / split.total) * 100)) : 0}>
-						{#if c.kind === 'maintenance'}<Wrench size={22} />{:else if c.kind === 'object'}<Sofa size={22} />{:else}<Paintbrush size={22} />{/if}
-					</span>
+					<div class="side">
+						<span class="kind" class:empty={!split.total} style:--share={split.total ? Math.min(100, Math.max(0, (split.cyan / split.total) * 100)) : 0}>
+							{#if c.kind === 'maintenance'}<Wrench size={22} />{:else if c.kind === 'object'}<Sofa size={22} />{:else}<Paintbrush size={22} />{/if}
+						</span>
+						<!-- Copies it as a message to send the other, to confirm -->
+						<button type="button" class="icon-button send" onclick={() => send(c, i)} aria-label="copy {label(c)} as a message">
+							{#if sent === i}<Check size={16} />{:else}<Send size={16} />{/if}
+						</button>
+					</div>
 					<div class="lines">
 						<textarea
 							class="description"
@@ -687,6 +708,17 @@
 		display: flex;
 		align-items: flex-start;
 		gap: 0.3rem;
+	}
+	.side {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		flex-shrink: 0;
+	}
+	.send {
+		width: 32px;
+		height: 32px;
+		color: var(--muted);
 	}
 	.kind {
 		display: grid;
