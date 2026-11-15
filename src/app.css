@@ -63,6 +63,13 @@ html,
 body {
 	overscroll-behavior-x: none;
 }
+/* A popup open: the page under it stays still, only the popup scrolls */
+html:has(dialog[open]) {
+	overflow: hidden;
+}
+dialog {
+	overscroll-behavior: contain;
+}
 body {
 	margin: 0;
 	min-height: 100svh;
